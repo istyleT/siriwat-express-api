@@ -72,7 +72,7 @@ app.get("/", (req, res) => {
 
 app.get("/testapi", (req, res) => {
   res.status(200).render("base", {
-    page: "Welcome to Siriwat Server",
+    page: "Welcome to SRW Server",
   });
 });
 
