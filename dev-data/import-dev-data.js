@@ -19,8 +19,29 @@ mongoose
 
 // READ JSON FILE
 const pricelists = JSON.parse(
-  fs.readFileSync(`${__dirname}/data/Pricelist.json`, "utf-8")
+  fs.readFileSync(`${__dirname}/data/Pricelist2024.json`, "utf-8")
 );
+
+// UPDATE DATA INTO DB
+const updateDataPricelists = async () => {
+  try {
+    for (let i = 0; i < pricelists.length; i++) {
+      await Pricelist.findOneAndUpdate(
+        { partnumber: pricelists[i].partnumber },
+        pricelists[i],
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+    }
+    console.log("Data pricelist successfully updated!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
+
 // IMPORT DATA INTO DB
 const importDataPricelists = async () => {
   try {
@@ -47,6 +68,11 @@ const deleteDataPricelists = async () => {
 if (process.argv[2] === "--importpricelists") {
   // console.log(process.argv);
   importDataPricelists();
+}
+
+//updatedata
+if (process.argv[2] === "--updatepricelists") {
+  updateDataPricelists();
 }
 
 //deletedata

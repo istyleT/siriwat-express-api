@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { trim } = require("validator");
 
 const pricelistSchema = new mongoose.Schema({
   partnumber: {
@@ -39,6 +38,10 @@ const pricelistSchema = new mongoose.Schema({
     type: String,
     default: null,
     maxlength: [100, "ห้ามกรอกเกิน 100 ตัวอักษร"],
+  },
+  change_partnumber: {
+    type: String,
+    default: null,
   },
   update_lasted: {
     type: Date,

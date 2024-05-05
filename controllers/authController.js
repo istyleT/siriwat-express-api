@@ -102,8 +102,8 @@ exports.protect = catchAsync(async (req, res, next) => {
 });
 
 exports.defalutPassword = catchAsync(async (req, res, next) => {
-  req.body.password = "Password_1234";
-  req.body.passwordConfirm = "Password_1234";
+  req.body.password = "rmbkk1234";
+  req.body.passwordConfirm = "rmbkk1234";
   next();
 });
 
@@ -176,6 +176,10 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id).select("+password");
   //2) ตรวจสอบรหัสผ่านปัจจุบัน
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+    res.status(401).json({
+      status: "fail",
+      message: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
+    });
     return next(new AppError("รหัสผ่านปัจจุบันไม่ถูกต้อง", 401));
   }
   //3) ถ้ารหัสผ่านถูกต้อง ให้เปลี่ยนรหัสผ่าน
