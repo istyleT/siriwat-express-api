@@ -11,8 +11,13 @@ var hpp = require("hpp");
 var morgan = require("morgan");
 var cors = require("cors");
 const globalErrorHandler = require("./controllers/errorController");
-const priceRouter = require("./routes/appRoutes/pricelistRoutes");
 const usersRouter = require("./routes/userRoutes");
+//Routes ของ Application
+const priceRouter = require("./routes/appRoutes/pricelistRoutes");
+const quotationRouter = require("./routes/appRoutes/quotationRoutes");
+const orderRouter = require("./routes/appRoutes/orderRoutes");
+const paymentRouter = require("./routes/appRoutes/paymentRoutes");
+const deliverRouter = require("./routes/appRoutes/deliverRoutes");
 
 const app = express();
 
@@ -70,16 +75,14 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/testapi", (req, res) => {
-  res.status(200).render("base", {
-    page: "Welcome to SRW Server",
-  });
-});
-
-// Global Routes dfsdf
+// Global Routes
 app.use("/users", usersRouter);
-// first routes
+// application routes
 app.use("/price", priceRouter);
+app.use("/quotation", quotationRouter);
+app.use("/order", orderRouter);
+app.use("/payment", paymentRouter);
+app.use("/deliver", deliverRouter);
 
 // ค้นหา ROUTES ไม่พบ
 app.all("*", (req, res, next) => {
