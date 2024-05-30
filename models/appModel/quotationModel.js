@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 
 const quotationSchema = new mongoose.Schema({
   id: {
@@ -10,10 +11,6 @@ const quotationSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  created_at: {
-    type: Date,
-    required: [true, "กรุณาระบุวันที่ใบเสนอราคา"],
-  },
   cust_tier: {
     type: String,
     required: [true, "กรุณาระบุ Tire ลูกค้า"],
@@ -21,6 +18,10 @@ const quotationSchema = new mongoose.Schema({
       values: ["ขายปลีก", "ขายส่ง-1", "ขายส่ง-2", "ทั่วไป"],
       message: "Tire ลูกค้าไม่ถูกต้อง",
     },
+  },
+  created_at: {
+    type: Date,
+    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
   },
   custname: {
     type: String,
@@ -33,14 +34,15 @@ const quotationSchema = new mongoose.Schema({
     enum: {
       values: [
         "หน้าร้าน",
-        "Facebook",
-        "Line",
         "Lazada",
         "Shopee",
-        "IG",
+        "Facebook",
+        "Line",
+        "Tiktok",
+        "Website",
         "อื่นๆ",
       ],
-      message: "ช่องทางการสั่งซื้อไม่ถูกต้อง",
+      message: "ช่องทางไม่ถูกต้อง",
     },
   },
   anothercost: {
@@ -107,20 +109,10 @@ const quotationSchema = new mongoose.Schema({
     ref: "User",
     required: [true, "กรุณาระบุผู้สร้างใบเสนอราคา"],
   },
-  create_order: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 //create index
 quotationSchema.index({ custname: 1 });
-
-//ก่อนค้นหาไม่เอา create_order = true
-quotationSchema.pre(/^find/, function (next) {
-  this.find({ create_order: { $ne: true } });
-  next();
-});
 
 //populate user_create
 quotationSchema.pre(/^find/, function (next) {

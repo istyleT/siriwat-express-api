@@ -39,7 +39,7 @@ exports.createOne = (Model) =>
 exports.updateOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const user = req.user;
-
+    console.log("update", user);
     if (!user) {
       return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
     }
@@ -63,7 +63,12 @@ exports.updateOne = (Model) =>
 
 exports.deleteOne = (Model) =>
   catchAsync(async (req, res, next) => {
-    const doc = await Model.findOneAndDelete({ _id: req.params.id });
+    const user = req.user;
+    console.log("delete", user);
+    const doc = await Model.findOneAndDelete(
+      { _id: req.params.id },
+      { context: { user } }
+    );
     if (!doc) {
       return next(new AppError("ไม่พบเอกสารที่ต้องการจะลบ", 404));
     }

@@ -6,7 +6,7 @@ const logSchema = new mongoose.Schema({
   action: { type: String, required: true },
   collectionName: { type: String, required: true },
   documentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-  changedBy: { type: String, required: true },
+  changedBy: { type: String, default: null },
   timestamp: {
     type: Date,
     default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),

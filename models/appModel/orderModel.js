@@ -138,7 +138,7 @@ const orderSchema = new mongoose.Schema({
 
 orderSchema.index({ custname: 1 });
 
-//populate path
+// populate path
 orderSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
@@ -182,6 +182,7 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
 };
 
 orderSchema.methods.checkSuccessCondition = async function () {
+  console.log("checkSuccessCondition");
   // ใช้ query เพื่อ populate ข้อมูล
   const populatedOrder = await this.constructor
     .findById(this._id)
@@ -198,7 +199,7 @@ orderSchema.methods.checkSuccessCondition = async function () {
     0
   );
   const totalPartsPrice = populatedOrder.partslist.reduce(
-    (total, part) => total + part.price,
+    (total, part) => total + Number(part.price * part.qty),
     0
   );
 
@@ -235,9 +236,10 @@ orderSchema.methods.checkSuccessCondition = async function () {
   await populatedOrder.save();
 };
 
-//Pre Middleware
+// Pre Middleware
 orderSchema.pre("findOneAndUpdate", async function (next) {
   //เก็บข้อมูลไว้ทำ log
+  console.log("orderSchema.findOneAndUpdate");
   this._updateLog = await this.model.findOne(this.getQuery()); // Get the document before update
   this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
   next();
@@ -252,7 +254,7 @@ orderSchema.pre("findOneAndDelete", async function (next) {
   next();
 });
 
-//Post Middleware
+// Post Middleware
 orderSchema.post("findOneAndUpdate", async function (doc, next) {
   const log = new Log({
     action: "update",

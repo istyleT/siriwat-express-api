@@ -40,6 +40,10 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  confirmed_payment_date: {
+    type: Date,
+    default: null,
+  },
   remark: {
     type: String,
     default: null,
@@ -62,7 +66,7 @@ const paymentSchema = new mongoose.Schema({
 
 paymentSchema.index({ order_no: 1 });
 
-//populate path
+// populate path
 paymentSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
@@ -72,24 +76,44 @@ paymentSchema.pre(/^find/, function (next) {
   next();
 });
 
-//Methods
+// Methods
 
-//Pre Middleware
-paymentSchema.pre("findOneAndUpdate", async function (next) {
-  const doc = await this.model.findOne(this.getQuery());
-  this._updateLog = doc; // Get the document before update
-  this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
-  this._previousAmount = doc.amount; // บันทึกค่า amount ก่อนการอัพเดต
+// Pre Middleware for save
+paymentSchema.pre("save", function (next) {
+  if (this.method !== "COD") {
+    this.confirmed_payment_date = moment
+      .tz(Date.now(), "Asia/Bangkok")
+      .toDate();
+  }
   next();
 });
 
-//Post Middleware
+// Pre Middleware for findOneAndUpdate
+paymentSchema.pre("findOneAndUpdate", async function (next) {
+  console.log("prefindOneAndUpdate");
+  const doc = await this.model.findOne(this.getQuery());
+  if (doc) {
+    this._updateLog = doc; // Get the document before update
+    this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
+    this._previousAmount = doc.amount; // บันทึกค่า amount ก่อนการอัพเดต
+    this._previousMethod = doc.method; // เก็บค่า method ก่อนอัพเดต
+  }
+  next();
+});
+
+// Post Middleware for findOneAndUpdate
 paymentSchema.post("findOneAndUpdate", async function (doc, next) {
+  console.log("postfindOneAndUpdate");
   if (doc && doc.amount !== this._previousAmount) {
     const order = await Order.findOne({ id: doc.order_no });
     if (order) {
       await order.checkSuccessCondition();
     }
+  }
+  // ตรวจสอบ method ก่อนและหลังการอัพเดต
+  if (doc && this._previousMethod !== "COD" && doc.method === "COD") {
+    doc.confirmed_payment_date = null;
+    await doc.save();
   }
   const log = new Log({
     action: "update",
@@ -103,21 +127,43 @@ paymentSchema.post("findOneAndUpdate", async function (doc, next) {
   next();
 });
 
-paymentSchema.post("findOneAndDelete", async function (doc, next) {
+// Pre Middleware for findOneAndDelete
+paymentSchema.pre("findOneAndDelete", async function (next) {
+  const doc = await this.model.findOne(this.getQuery());
+  console.log("prefindOneAndDelete");
   if (doc) {
+    this._deleteLog = doc;
     try {
       const paymentId = doc._id;
       await Order.findOneAndUpdate(
         { payment: paymentId },
-        { $pull: { payment: paymentId } }
+        {
+          $pull: { payment: paymentId },
+        },
+        { context: this.getOptions().context } // Pass context to findOneAndUpdate
       );
       next();
     } catch (error) {
-      next(error);
+      return next(error);
     }
-  } else {
-    next();
   }
+  next();
+});
+
+// Post Middleware for findOneAndDelete
+paymentSchema.post("findOneAndDelete", async function (doc, next) {
+  if (doc) {
+    const log = new Log({
+      action: "delete",
+      collectionName: "Payment",
+      documentId: doc._id,
+      changedBy: doc.user_updated,
+      oldData: this._deleteLog,
+      newData: null,
+    });
+    await log.save();
+  }
+  next();
 });
 
 const Payment = mongoose.model("Payment", paymentSchema);

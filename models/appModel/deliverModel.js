@@ -95,7 +95,7 @@ const deliverSchema = new mongoose.Schema({
 
 deliverSchema.index({ order_no: 1 });
 
-//populate user_created
+// populate user_created
 deliverSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
@@ -105,18 +105,20 @@ deliverSchema.pre(/^find/, function (next) {
   next();
 });
 
-//Methods
-
-//Pre Middleware
+// Pre Middleware
 deliverSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
   this._updateLog = doc;
-  this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
+  if (this.getOptions().context && this.getOptions().context.user) {
+    this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
+  } else {
+    return next(new Error("Context user is not defined"));
+  }
   next();
 });
 
 deliverSchema.pre("findOneAndDelete", async function (next) {
-  //ก่อนเอาจำนวนอะไหล่ที่จัดส่งไปคืนให้ order
+  // ก่อนเอาจำนวนอะไหล่ที่จัดส่งไปคืนให้ order
   const deliver = await this.model.findOne(this.getQuery());
 
   if (!deliver) {
@@ -143,7 +145,7 @@ deliverSchema.pre("findOneAndDelete", async function (next) {
   next();
 });
 
-//Post Middleware
+// Post Middleware
 deliverSchema.post("findOneAndUpdate", async function (doc, next) {
   // เก็บ Log เเละ ตรวจสอบการเปลี่ยนแปลงของ deliverlist ไป update order
   const original = this._updateLog;
@@ -158,7 +160,7 @@ deliverSchema.post("findOneAndUpdate", async function (doc, next) {
     return next(new Error("ไม่พบคำสั่งซื้อที่เกี่ยวข้อง"));
   }
 
-  //ส่งไปตรวจสอบสถานะ
+  // ส่งไปตรวจสอบสถานะ
   await order.checkSuccessCondition();
 
   // Update the order partslist by adjusting the qty_deliver
@@ -217,14 +219,18 @@ deliverSchema.post("findOneAndUpdate", async function (doc, next) {
 });
 
 deliverSchema.post("findOneAndDelete", async function (doc, next) {
-  //ดึงตัวเองออกจาก Array ของ Order
+  // ดึงตัวเองออกจาก Array ของ Order
   if (doc) {
     try {
       const deliverId = doc._id;
-      await Order.findOneAndUpdate(
+      const order = await Order.findOneAndUpdate(
         { deliver: deliverId },
         { $pull: { deliver: deliverId } }
       );
+      // ส่งไปตรวจสอบสถานะ
+      if (order) {
+        await order.checkSuccessCondition();
+      }
       next();
     } catch (error) {
       next(error);
