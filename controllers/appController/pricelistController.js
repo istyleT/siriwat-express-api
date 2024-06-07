@@ -5,6 +5,22 @@ const factory = require("../handlerFactory");
 //Middleware
 
 // Method
+//สำหรับการ Sugesst partnumber
+exports.getPartsSugesst = catchAsync(async (req, res, next) => {
+  const partnum = req.params.partnum;
+  const regex = new RegExp(partnum, "i"); // 'i' สำหรับ case-insensitive
+  const partlists = await Pricelist.find({ partnumber: { $regex: regex } });
+
+  // เพิ่มการส่งกลับ response
+  res.status(200).json({
+    status: "success",
+    results: partlists.length,
+    data: {
+      partlists,
+    },
+  });
+});
+
 //หาข้อมูลอะไหล่
 exports.getPartDetail = catchAsync(async (req, res, next) => {
   const partnumber = req.query.partnumber;

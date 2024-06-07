@@ -190,42 +190,48 @@ orderSchema.methods.checkSuccessCondition = async function () {
     .populate("deliver")
     .exec();
 
+  //จำนวนเงินที่จ่ายจริง
   const totalPaymentAmount = populatedOrder.payment.reduce(
     (total, payment) => total + payment.amount,
     0
   );
+  //จำนวนเงินค่าใช้จ่ายอื่นๆ
   const totalAnotherCost = populatedOrder.anothercost.reduce(
     (total, cost) => total + cost.price,
     0
   );
+  //จำนวนเงินค่าอะไหล่ในบิล
   const totalPartsPrice = populatedOrder.partslist.reduce(
     (total, part) => total + Number(part.price * part.qty),
     0
   );
 
+  //จำนวนของที่ส่งจริง
   const totalQtyDeliver = populatedOrder.deliver.reduce(
     (total, deliver) =>
       total +
       deliver.deliverlist.reduce(
-        (subTotal, item) => subTotal + item.qty_order,
+        (subTotal, item) => subTotal + item.qty_deliver,
         0
       ),
     0
   );
+  //จำนวนของที่สั่ง
   const totalPartsQty = populatedOrder.partslist.reduce(
     (total, part) => total + part.qty,
     0
   );
+
   if (
-    totalPaymentAmount >= totalAnotherCost + totalPartsPrice ||
-    totalQtyDeliver >= totalPartsQty
+    totalPaymentAmount === totalAnotherCost + totalPartsPrice ||
+    totalQtyDeliver === totalPartsQty
   ) {
     if (
-      totalPaymentAmount >= totalAnotherCost + totalPartsPrice &&
-      totalQtyDeliver >= totalPartsQty
+      totalPaymentAmount === totalAnotherCost + totalPartsPrice &&
+      totalQtyDeliver === totalPartsQty
     ) {
       populatedOrder.status_bill = "เสร็จสิ้น";
-    } else if (totalPaymentAmount >= totalAnotherCost + totalPartsPrice) {
+    } else if (totalPaymentAmount === totalAnotherCost + totalPartsPrice) {
       populatedOrder.status_bill = "จ่ายครบ";
     } else {
       populatedOrder.status_bill = "ส่งครบ";
