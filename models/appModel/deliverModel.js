@@ -110,6 +110,10 @@ deliverSchema.pre(/^find/, function (next) {
     path: "user_created",
     select: "firstname lastname",
     options: { lean: true },
+  }).populate({
+    path: "confirmed_invoice_user",
+    select: "firstname",
+    options: { lean: true },
   });
   next();
 });
