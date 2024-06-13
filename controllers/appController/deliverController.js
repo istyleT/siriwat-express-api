@@ -27,3 +27,29 @@ exports.createDeliver = catchAsync(async (req, res, next) => {
     message: "เพิ่มการจัดส่งสำเร็จ",
   });
 });
+
+//ใช้ในการเปลี่ยนแปลงการออกใบกำกับ
+exports.statusInvoice = catchAsync(async (req, res, next) => {
+  const deliverId = req.params.id;
+  console.log(deliverId);
+  // อัปเดตและส่งคืนเอกสารที่อัปเดต
+  const updatedDeliver = await Deliver.findByIdAndUpdate(deliverId, req.body, {
+    new: true, // ส่งคืนเอกสารที่อัปเดตแล้ว
+    runValidators: true, // รัน validators ก่อนการอัปเดต
+    context: { user: req.user }, // ส่ง context ไปด้วย
+  });
+
+  // ตรวจสอบว่าพบเอกสารหรือไม่
+  if (!updatedDeliver) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบเอกสารที่ต้องการอัปเดต",
+    });
+  }
+
+  // ส่งคืน response ที่มีเอกสารที่อัปเดตแล้ว
+  res.status(200).json({
+    status: "success",
+    message: "เปลี่ยนแปลงสำเร็จ",
+  });
+});

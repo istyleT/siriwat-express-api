@@ -10,6 +10,7 @@ const {
   updatePassword,
   defalutPassword,
   setDefalutPassword,
+  checkToken,
   login,
   protect,
   restrictTo,
@@ -17,6 +18,7 @@ const {
 
 // Authentication Routes
 router.route("/login").post(login);
+router.route("/checktoken").get(checkToken);
 
 //Middleware Router After Authentication
 router.use(protect);

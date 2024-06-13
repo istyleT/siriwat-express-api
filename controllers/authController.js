@@ -124,6 +124,65 @@ exports.signup = catchAsync(async (req, res, next) => {
   createSendToken(newUser, 201, res);
 });
 
+//check Token ว่ายังใช้งานได้หรือไม่
+exports.checkToken = catchAsync(async (req, res, next) => {
+  // 1) Getting token and check if it's there
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+  if (!token) {
+    return res.status(403).json({
+      message: "กรุณา login เพื่อเข้าสู่ระบบ",
+      status: "fail",
+    });
+  }
+
+  // 2) Verifying token
+  let decoded;
+  try {
+    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({
+        message: "Token หมดอายุ กรุณา Login อีกครั้ง",
+        status: "fail",
+      });
+    }
+    return next(new AppError("Token ไม่ถูกต้อง กรุณา Login เข้าสู่ระบบ", 401));
+  }
+
+  // 3) Check if user still exists
+  const freshUser = await User.findById(decoded.id);
+  if (!freshUser) {
+    return next(
+      new AppError(
+        "The user belonging to this token does no longer exist.",
+        401
+      )
+    );
+  }
+
+  // 4) Check if user changed password after the token was issued
+  if (freshUser.changedPasswordAfter(decoded.iat)) {
+    return next(
+      new AppError("User recently changed password! Please log in again.", 401)
+    );
+  }
+
+  // GRANT ACCESS TO PROTECTED ROUTE
+  req.user = freshUser;
+  res.status(200).json({
+    status: "success",
+    data: {
+      data: freshUser,
+    },
+  });
+});
+
 exports.login = catchAsync(async (req, res, next) => {
   const { username, password } = req.body;
   // 1) ตรวจสอบว่ามี username และ password หรือไม่ ตรงนี้ควรป้องกันตั้งเเต่ Browser

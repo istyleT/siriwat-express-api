@@ -6,12 +6,14 @@ const {
   updateDeliver,
   deleteDeliver,
   setDeliverNo,
+  statusInvoice,
 } = require("../../controllers/appController/deliverController");
 const { protect, restrictTo } = require("../../controllers/authController");
 //Global
 router.use(protect);
 router.use(restrictTo("Owner", "Sale"));
 //Routes
+router.route("/invoice/:id").put(statusInvoice);
 router.route("/").get(getAllDeliver).post(setDeliverNo, createDeliver);
 router.route("/:id").put(updateDeliver).delete(deleteDeliver);
 

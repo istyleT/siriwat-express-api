@@ -171,7 +171,7 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
   deliverList.forEach(({ partnumber, qty_deliver }) => {
     const part = this.partslist.find((item) => item.partnumber === partnumber);
     if (part) {
-      part.qty_deliver += qty_deliver;
+      part.qty_deliver += Number(qty_deliver);
     }
   });
   await this.save();
@@ -182,7 +182,6 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
 };
 
 orderSchema.methods.checkSuccessCondition = async function () {
-  console.log("checkSuccessCondition");
   // ใช้ query เพื่อ populate ข้อมูล
   const populatedOrder = await this.constructor
     .findById(this._id)

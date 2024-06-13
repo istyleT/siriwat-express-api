@@ -64,7 +64,6 @@ exports.updateOne = (Model) =>
 exports.deleteOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const user = req.user;
-    console.log("delete", user);
     const doc = await Model.findOneAndDelete(
       { _id: req.params.id },
       { context: { user } }

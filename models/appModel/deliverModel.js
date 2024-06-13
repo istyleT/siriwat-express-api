@@ -82,6 +82,15 @@ const deliverSchema = new mongoose.Schema({
     ],
     default: [],
   },
+  confirmed_invoice_date: {
+    type: Date,
+    default: null,
+  },
+  confirmed_invoice_user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
   remark: {
     type: String,
     default: null,
@@ -108,6 +117,7 @@ deliverSchema.pre(/^find/, function (next) {
 // Pre Middleware
 deliverSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
+  console.log(doc);
   this._updateLog = doc;
   if (this.getOptions().context && this.getOptions().context.user) {
     this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
