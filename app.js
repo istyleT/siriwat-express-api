@@ -35,7 +35,7 @@ app.use(helmet());
 
 // ป้องกัน Bot Attack ขอ requset จนเว็บล่ม
 const limiter = rateLimit({
-  max: 400,
+  max: 500,
   windowMs: 30 * 60 * 1000,
   message: "IP นี้มี request มากเกินไปกรุณาลองใหม่ในอีกครึ่งชั่วโมง",
 });

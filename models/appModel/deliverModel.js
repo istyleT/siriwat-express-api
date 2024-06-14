@@ -21,15 +21,7 @@ const deliverSchema = new mongoose.Schema({
     type: String,
     required: [true, "กรุณาระบุช่องทางการจัดส่งสินค้า"],
     enum: {
-      values: [
-        "มารับเอง",
-        "ไปรษณีย์",
-        "Kerry",
-        "J&T",
-        "Flash",
-        "Ninja",
-        "อื่นๆ",
-      ],
+      values: ["มารับเอง", "ไปรษณีย์", "Kerry", "J&T", "Flash", "อื่นๆ"],
       message: "ช่องทางการจัดส่งไม่ถูกต้อง",
     },
   },
@@ -90,6 +82,15 @@ const deliverSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     default: null,
+  },
+  cod: {
+    type: "Boolean",
+    default: false,
+  },
+  cod_amount: {
+    type: "Number",
+    default: 0,
+    min: [0, "ค่า COD ต้องมากกว่า 0"],
   },
   remark: {
     type: String,
