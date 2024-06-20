@@ -182,6 +182,7 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
 };
 
 orderSchema.methods.checkSuccessCondition = async function () {
+  console.log("Check success condition working");
   // ใช้ query เพื่อ populate ข้อมูล
   const populatedOrder = await this.constructor
     .findById(this._id)

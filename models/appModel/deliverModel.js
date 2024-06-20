@@ -105,7 +105,7 @@ const deliverSchema = new mongoose.Schema({
 
 deliverSchema.index({ order_no: 1 });
 
-// populate user_created
+// populate path
 deliverSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
@@ -119,48 +119,17 @@ deliverSchema.pre(/^find/, function (next) {
   next();
 });
 
-// Pre Middleware
+// Pre Middleware for findOneAndUpdate
 deliverSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
-  console.log(doc);
-  this._updateLog = doc;
-  if (this.getOptions().context && this.getOptions().context.user) {
+  if (!doc) {
+    this._updateLog = doc;
     this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
-  } else {
-    return next(new Error("Context user is not defined"));
   }
   next();
 });
 
-deliverSchema.pre("findOneAndDelete", async function (next) {
-  // ก่อนเอาจำนวนอะไหล่ที่จัดส่งไปคืนให้ order
-  const deliver = await this.model.findOne(this.getQuery());
-
-  if (!deliver) {
-    return next(new Error("ไม่พบเอกสารที่ต้องการจะลบ"));
-  }
-
-  // Find the related order
-  const order = await Order.findOne({ id: deliver.order_no });
-  if (!order) {
-    return next(new Error("ไม่พบคำสั่งซื้อที่เกี่ยวข้อง"));
-  }
-
-  // Update the order partslist by subtracting the qty_deliver
-  deliver.deliverlist.forEach((deliverItem) => {
-    const partItem = order.partslist.find(
-      (part) => part.partnumber === deliverItem.partnumber
-    );
-    if (partItem) {
-      partItem.qty_deliver -= deliverItem.qty_deliver;
-    }
-  });
-
-  await order.save();
-  next();
-});
-
-// Post Middleware
+// Post Middleware for findOneAndUpdate
 deliverSchema.post("findOneAndUpdate", async function (doc, next) {
   // เก็บ Log เเละ ตรวจสอบการเปลี่ยนแปลงของ deliverlist ไป update order
   const original = this._updateLog;
@@ -171,12 +140,9 @@ deliverSchema.post("findOneAndUpdate", async function (doc, next) {
 
   // Find the related order
   const order = await Order.findOne({ id: doc.order_no });
-  if (!order) {
-    return next(new Error("ไม่พบคำสั่งซื้อที่เกี่ยวข้อง"));
+  if (order) {
+    await order.checkSuccessCondition();
   }
-
-  // ส่งไปตรวจสอบสถานะ
-  await order.checkSuccessCondition();
 
   // Update the order partslist by adjusting the qty_deliver
   original.deliverlist.forEach((originalItem) => {
@@ -233,14 +199,41 @@ deliverSchema.post("findOneAndUpdate", async function (doc, next) {
   next();
 });
 
-deliverSchema.post("findOneAndDelete", async function (doc, next) {
+// Pre Middleware for findOneAndDelete
+deliverSchema.pre("findOneAndDelete", async function (next) {
+  // ก่อนเอาจำนวนอะไหล่ที่จัดส่งไปคืนให้ order
+  console.log("findOneAndDelete Working");
+  const deliver = await this.model.findOne(this.getQuery());
+  if (!deliver) {
+    return next(new Error("ไม่พบเอกสารที่ต้องการจะลบ"));
+  }
+
+  // Find the related order
+  const order = await Order.findOne({ id: deliver.order_no });
+  if (!order) {
+    return next(new Error("ไม่พบคำสั่งซื้อที่เกี่ยวข้อง"));
+  }
+
+  // Update the order partslist by subtracting the qty_deliver
+  deliver.deliverlist.forEach((deliverItem) => {
+    const partItem = order.partslist.find(
+      (part) => part.partnumber === deliverItem.partnumber
+    );
+    if (partItem) {
+      partItem.qty_deliver -= deliverItem.qty_deliver;
+    }
+  });
+
+  await order.save();
+
   // ดึงตัวเองออกจาก Array ของ Order
-  if (doc) {
+  if (deliver) {
     try {
-      const deliverId = doc._id;
+      const deliverId = deliver._id;
       const order = await Order.findOneAndUpdate(
         { deliver: deliverId },
-        { $pull: { deliver: deliverId } }
+        { $pull: { deliver: deliverId } },
+        { context: this.getOptions().context } // Pass context to findOneAndUpdate
       );
       // ส่งไปตรวจสอบสถานะ
       if (order) {
@@ -250,9 +243,24 @@ deliverSchema.post("findOneAndDelete", async function (doc, next) {
     } catch (error) {
       next(error);
     }
-  } else {
-    next();
   }
+  next();
+});
+
+// Post Middleware for findOneAndDelete
+deliverSchema.post("findOneAndDelete", async function (doc, next) {
+  if (doc) {
+    const log = new Log({
+      action: "delete",
+      collectionName: "Deliver",
+      documentId: doc._id,
+      changedBy: doc.user_updated,
+      oldData: this._deleteLog,
+      newData: null,
+    });
+    await log.save();
+  }
+  next();
 });
 
 const Deliver = mongoose.model("Deliver", deliverSchema);

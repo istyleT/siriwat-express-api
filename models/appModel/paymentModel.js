@@ -90,7 +90,7 @@ paymentSchema.pre("save", function (next) {
 
 // Pre Middleware for findOneAndUpdate
 paymentSchema.pre("findOneAndUpdate", async function (next) {
-  console.log("prefindOneAndUpdate");
+  // console.log("prefindOneAndUpdate");
   const doc = await this.model.findOne(this.getQuery());
   if (doc) {
     this._updateLog = doc; // Get the document before update
