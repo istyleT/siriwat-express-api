@@ -6,6 +6,28 @@ const moment = require("moment-timezone");
 // ตั้งค่าโซนเวลาเริ่มต้นเป็น "Asia/Bangkok"
 moment.tz.setDefault("Asia/Bangkok");
 
+exports.cancelData = (req, res, next) => {
+  try {
+    // ตั้งค่าเวลาปัจจุบันเป็นโซนเวลา "Asia/Bangkok"
+    const currentTime = moment.tz(new Date(), "Asia/Bangkok").format();
+
+    // ตั้งค่า req.body.date_canceled เป็นเวลาปัจจุบัน
+    req.body.date_canceled = currentTime;
+
+    // ตั้งค่า req.body.user_canceled เป็น req.user
+    req.body.user_canceled = req.user;
+
+    // เรียก next() เพื่อไปยัง middleware ถัดไป
+    next();
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: "เกิดข้อผิดพลาดในการตั้งค่าวันที่ยกเลิก",
+      error: err.message,
+    });
+  }
+};
+
 exports.getAll = (Model) =>
   catchAsync(async (req, res, next) => {
     let filter = {};
@@ -39,7 +61,6 @@ exports.createOne = (Model) =>
 exports.updateOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const user = req.user;
-    console.log("update", user);
     if (!user) {
       return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
     }

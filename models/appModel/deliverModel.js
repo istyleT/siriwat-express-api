@@ -13,10 +13,6 @@ const deliverSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  created_at: {
-    type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
-  },
   deliver_channel: {
     type: String,
     required: [true, "กรุณาระบุช่องทางการจัดส่งสินค้า"],
@@ -96,25 +92,40 @@ const deliverSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  //ส่วนที่ทำการสร้าง
+  created_at: {
+    type: Date,
+    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+  },
   user_created: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: [true, "กรุณาระบุผู้ทำรายการ"],
+  },
+  //ส่วนที่ทำการยกเลิก
+  user_canceled: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  date_canceled: {
+    type: Date,
+    default: null,
   },
 });
 
 deliverSchema.index({ order_no: 1 });
 
 // populate path
+const populateFields = [
+  { path: "user_created", select: "firstname" },
+  { path: "confirmed_invoice_user", select: "firstname" },
+  { path: "user_canceled", select: "firstname" },
+];
+
 deliverSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "user_created",
-    select: "firstname lastname",
-    options: { lean: true },
-  }).populate({
-    path: "confirmed_invoice_user",
-    select: "firstname",
-    options: { lean: true },
+  populateFields.forEach((field) => {
+    this.populate({ ...field, options: { lean: true } });
   });
   next();
 });

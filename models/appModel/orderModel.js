@@ -20,10 +20,6 @@ const orderSchema = new mongoose.Schema({
       message: "Tire ลูกค้าไม่ถูกต้อง",
     },
   },
-  created_at: {
-    type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
-  },
   custname: {
     type: String,
     trim: true,
@@ -103,12 +99,6 @@ const orderSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  remark: {
-    type: String,
-    default: null,
-    trim: true,
-    maxlength: [200, "ห้ามกรอกเกิน 100 ตัวอักษร"],
-  },
   payment: {
     type: [{ type: mongoose.Schema.ObjectId, ref: "Payment" }],
     default: [],
@@ -134,6 +124,32 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  remark: {
+    type: String,
+    default: null,
+    trim: true,
+    maxlength: [200, "ห้ามกรอกเกิน 100 ตัวอักษร"],
+  },
+  //ส่วนที่ทำการสร้าง
+  created_at: {
+    type: Date,
+    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+  },
+  user_created: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: [true, "กรุณาระบุผู้ทำรายการ"],
+  },
+  //ส่วนที่ทำการยกเลิก
+  user_canceled: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  date_canceled: {
+    type: Date,
+    default: null,
+  },
 });
 
 orderSchema.index({ custname: 1 });
@@ -142,7 +158,7 @@ orderSchema.index({ custname: 1 });
 orderSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
-    select: "firstname lastname",
+    select: "firstname",
     options: { lean: true },
   })
     .populate("payment")
@@ -190,8 +206,16 @@ orderSchema.methods.checkSuccessCondition = async function () {
     .populate("deliver")
     .exec();
 
+  // Filter payments and delivers where user_canceled is null
+  const validPayments = populatedOrder.payment.filter(
+    (payment) => payment.user_canceled === null
+  );
+  const validDelivers = populatedOrder.deliver.filter(
+    (deliver) => deliver.user_canceled === null
+  );
+
   //จำนวนเงินที่จ่ายจริง
-  const totalPaymentAmount = populatedOrder.payment.reduce(
+  const totalPaymentAmount = validPayments.reduce(
     (total, payment) => total + payment.amount,
     0
   );
@@ -207,7 +231,7 @@ orderSchema.methods.checkSuccessCondition = async function () {
   );
 
   //จำนวนของที่ส่งจริง
-  const totalQtyDeliver = populatedOrder.deliver.reduce(
+  const totalQtyDeliver = validDelivers.reduce(
     (total, deliver) =>
       total +
       deliver.deliverlist.reduce(

@@ -13,10 +13,6 @@ const paymentSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  created_at: {
-    type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
-  },
   order_no: {
     type: String,
     required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
@@ -48,18 +44,24 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  //ส่วนที่ทำการสร้าง
+  created_at: {
+    type: Date,
+    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+  },
   user_created: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: [true, "กรุณาระบุผู้ทำรายการ"],
   },
-  updated_at: {
-    type: Date,
-    default: null,
-  },
-  user_updated: {
+  //ส่วนที่ทำการยกเลิก
+  user_canceled: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
+    default: null,
+  },
+  date_canceled: {
+    type: Date,
     default: null,
   },
 });
@@ -67,16 +69,16 @@ const paymentSchema = new mongoose.Schema({
 paymentSchema.index({ order_no: 1 });
 
 // populate path
+const populateFields = [
+  { path: "user_created", select: "firstname" },
+  { path: "user_canceled", select: "firstname" },
+];
 paymentSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "user_created",
-    select: "firstname lastname",
-    options: { lean: true },
+  populateFields.forEach((field) => {
+    this.populate({ ...field, options: { lean: true } });
   });
   next();
 });
-
-// Methods
 
 // Pre Middleware for save
 paymentSchema.pre("save", function (next) {
@@ -103,7 +105,6 @@ paymentSchema.pre("findOneAndUpdate", async function (next) {
 
 // Post Middleware for findOneAndUpdate
 paymentSchema.post("findOneAndUpdate", async function (doc, next) {
-  console.log("postfindOneAndUpdate");
   if (doc && doc.amount !== this._previousAmount) {
     const order = await Order.findOne({ id: doc.order_no });
     if (order) {
