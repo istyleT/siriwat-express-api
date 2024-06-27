@@ -95,12 +95,20 @@ const orderSchema = new mongoose.Schema({
           type: Number,
           default: 0,
         },
+        qty_canceled: {
+          type: Number,
+          default: 0,
+        },
       },
     ],
     default: [],
   },
   payment: {
     type: [{ type: mongoose.Schema.ObjectId, ref: "Payment" }],
+    default: [],
+  },
+  partcancel: {
+    type: [{ type: mongoose.Schema.ObjectId, ref: "Ordercanpart" }],
     default: [],
   },
   deliver: {
@@ -116,7 +124,14 @@ const orderSchema = new mongoose.Schema({
     type: String,
     default: "บันทึกแล้ว",
     enum: {
-      values: ["บันทึกแล้ว", "จ่ายครบ", "ส่งครบ", "เสร็จสิ้น", "รอแก้ไข"],
+      values: [
+        "บันทึกแล้ว",
+        "จ่ายครบ",
+        "ส่งครบ",
+        "เสร็จสิ้น",
+        "รอแก้ไข",
+        "ยกเลิกแล้ว",
+      ],
       message: "สถานะไม่ถูกต้อง",
     },
   },
@@ -150,6 +165,10 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  remark_canceled: {
+    type: String,
+    default: null,
+  },
 });
 
 orderSchema.index({ custname: 1 });
@@ -161,24 +180,28 @@ orderSchema.pre(/^find/, function (next) {
     select: "firstname",
     options: { lean: true },
   })
+    .populate({
+      path: "user_canceled",
+      select: "firstname",
+      options: { lean: true },
+    })
     .populate("payment")
-    .populate("deliver");
-
+    .populate("deliver")
+    .populate("partcancel");
   next();
 });
 
+//เพิ่มเลขที่ payment._id เข้าไปใน payment ของ order
 orderSchema.methods.addPayment = async function (paymentId) {
-  //เพิ่ม payment
   this.payment.push(paymentId);
   await this.save();
-
   //ตรวจสอบเงื่อนไข
   await this.checkSuccessCondition();
   return this;
 };
 
+//เพิ่ม deliver._id และอัปเดต qty_deliver ใน partslist ของ order
 orderSchema.methods.addDeliverAndUpdateParts = async function (
-  //เพิ่ม deliver และอัปเดต qty_deliver ใน partslist
   deliverId,
   deliverList
 ) {
@@ -191,6 +214,30 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
     }
   });
   await this.save();
+  //ตรวจสอบเงื่อนไข
+  await this.checkSuccessCondition();
+  return this;
+};
+
+//method ตอนที่ทำการยกเลิก deliver ต้องทำการลด qty_deliver ลงให้เท่ากับที่อยู่ใน deliver นั้นๆ
+orderSchema.methods.cancelDeliverAndUpdateParts = async function (deliverList) {
+  //ต้อง confirm ว่าใน 1 order จะต้องไม่มี partnumber ซ้ำกัน
+  deliverList.forEach(({ partnumber, qty_deliver }) => {
+    const part = this.partslist.find((item) => item.partnumber === partnumber);
+    if (part) {
+      part.qty_deliver -= Number(qty_deliver);
+    }
+  });
+  await this.save();
+  //ตรวจสอบเงื่อนไข
+  await this.checkSuccessCondition();
+  return this;
+};
+
+orderSchema.methods.addPartcancel = async function (partcancelId) {
+  //เพิ่ม partcancel
+  this.partcancel.push(partcancelId);
+  await this.save();
 
   //ตรวจสอบเงื่อนไข
   await this.checkSuccessCondition();
@@ -198,91 +245,113 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
 };
 
 orderSchema.methods.checkSuccessCondition = async function () {
-  console.log("Check success condition working");
   // ใช้ query เพื่อ populate ข้อมูล
   const populatedOrder = await this.constructor
     .findById(this._id)
     .populate("payment")
     .populate("deliver")
+    .populate("partcancel")
     .exec();
 
-  // Filter payments and delivers where user_canceled is null
-  const validPayments = populatedOrder.payment.filter(
-    (payment) => payment.user_canceled === null
-  );
-  const validDelivers = populatedOrder.deliver.filter(
-    (deliver) => deliver.user_canceled === null
-  );
-
-  //จำนวนเงินที่จ่ายจริง
-  const totalPaymentAmount = validPayments.reduce(
-    (total, payment) => total + payment.amount,
-    0
-  );
-  //จำนวนเงินค่าใช้จ่ายอื่นๆ
-  const totalAnotherCost = populatedOrder.anothercost.reduce(
-    (total, cost) => total + cost.price,
-    0
-  );
-  //จำนวนเงินค่าอะไหล่ในบิล
-  const totalPartsPrice = populatedOrder.partslist.reduce(
-    (total, part) => total + Number(part.price * part.qty),
-    0
-  );
-
-  //จำนวนของที่ส่งจริง
-  const totalQtyDeliver = validDelivers.reduce(
-    (total, deliver) =>
-      total +
-      deliver.deliverlist.reduce(
-        (subTotal, item) => subTotal + item.qty_deliver,
-        0
-      ),
-    0
-  );
-  //จำนวนของที่สั่ง
-  const totalPartsQty = populatedOrder.partslist.reduce(
-    (total, part) => total + part.qty,
-    0
-  );
-
-  if (
-    totalPaymentAmount === totalAnotherCost + totalPartsPrice ||
-    totalQtyDeliver === totalPartsQty
-  ) {
-    if (
-      totalPaymentAmount === totalAnotherCost + totalPartsPrice &&
-      totalQtyDeliver === totalPartsQty
-    ) {
-      populatedOrder.status_bill = "เสร็จสิ้น";
-    } else if (totalPaymentAmount === totalAnotherCost + totalPartsPrice) {
-      populatedOrder.status_bill = "จ่ายครบ";
-    } else {
-      populatedOrder.status_bill = "ส่งครบ";
-    }
+  // ถ้า order ถูกยกเลิก status_bill จะต้องเป็น "ยกเลิกแล้ว"
+  if (populatedOrder.user_canceled) {
+    populatedOrder.status_bill = "ยกเลิกแล้ว";
   } else {
-    populatedOrder.status_bill = "บันทึกแล้ว";
+    // เอาเฉพาะ payment ที่ยังไม่ยกเลิก
+    const validPayments = populatedOrder.payment.filter(
+      (payment) => payment.user_canceled === null
+    );
+    // เอาเฉพาะ deliver ที่ยังไม่ยกเลิก
+    const validDelivers = populatedOrder.deliver.filter(
+      (deliver) => deliver.user_canceled === null
+    );
+
+    // จำนวนเงินที่จ่ายจริงใน payment
+    const totalPaymentAmount = validPayments.reduce(
+      (total, payment) => total + payment.amount,
+      0
+    );
+    // จำนวนของที่ส่งจริงใน deliver
+    const totalQtyDeliver = validDelivers.reduce(
+      (total, deliver) =>
+        total +
+        deliver.deliverlist.reduce(
+          (subTotal, item) => subTotal + item.qty_deliver,
+          0
+        ),
+      0
+    );
+    // จำนวนของที่ยกเลิก partcancel
+    const totalPartsCancelQty = populatedOrder.partcancel.reduce(
+      (total, cancelpart) =>
+        total +
+        cancelpart.partscancellist.reduce(
+          (subTotal, item) => subTotal + item.qty_canceled,
+          0
+        ),
+      0
+    );
+
+    // จำนวนของที่สั่งทั้งหมด
+    const totalPartsQty = populatedOrder.partslist.reduce(
+      (total, part) => total + part.qty,
+      0
+    );
+
+    // จำนวนเงินค่าใช้จ่ายอื่นๆในบิล
+    const totalAnotherCost = populatedOrder.anothercost.reduce(
+      (total, cost) => total + cost.price,
+      0
+    );
+    // จำนวนเงินค่าอะไหล่ในบิล
+    const totalPartsPrice = populatedOrder.partslist.reduce(
+      (total, part) => total + Number(part.price * part.qty),
+      0
+    );
+
+    // จำนวนเงินที่ต้องชำระทั้งหมดในบิล
+    const totalMustPay = Number(totalAnotherCost) + Number(totalPartsPrice);
+    const totalMustDeliver =
+      Number(totalPartsQty) - Number(totalPartsCancelQty);
+
+    if (
+      totalPaymentAmount === totalMustPay ||
+      totalQtyDeliver === totalMustDeliver
+    ) {
+      if (
+        totalPaymentAmount === totalMustPay &&
+        totalQtyDeliver === totalMustDeliver
+      ) {
+        populatedOrder.status_bill = "เสร็จสิ้น";
+      } else if (totalPaymentAmount === totalMustPay) {
+        populatedOrder.status_bill = "จ่ายครบ";
+      } else {
+        populatedOrder.status_bill = "ส่งครบ";
+      }
+    } else {
+      populatedOrder.status_bill = "บันทึกแล้ว";
+    }
   }
+
   await populatedOrder.save();
 };
 
 // Pre Middleware
 orderSchema.pre("findOneAndUpdate", async function (next) {
   //เก็บข้อมูลไว้ทำ log
-  console.log("orderSchema.findOneAndUpdate");
   this._updateLog = await this.model.findOne(this.getQuery()); // Get the document before update
   this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
   next();
 });
 
-orderSchema.pre("findOneAndDelete", async function (next) {
-  // ตรวจสอบก่อนลบ order จะต้องไม่มีการชำระเงินหรือจัดส่ง
-  const order = await this.model.findOne(this.getQuery());
-  if (order.payment.length > 0 || order.deliver.length > 0) {
-    return next(new Error("มีการชำระเงินหรือการจัดส่งแล้ว"));
-  }
-  next();
-});
+// orderSchema.pre("findOneAndDelete", async function (next) {
+//   // ตรวจสอบก่อนลบ order จะต้องไม่มีการชำระเงินหรือจัดส่ง
+//   const order = await this.model.findOne(this.getQuery());
+//   if (order.payment.length > 0 || order.deliver.length > 0) {
+//     return next(new Error("มีการชำระเงินหรือการจัดส่งแล้ว"));
+//   }
+//   next();
+// });
 
 // Post Middleware
 orderSchema.post("findOneAndUpdate", async function (doc, next) {

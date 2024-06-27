@@ -18,6 +18,8 @@ exports.cancelData = (req, res, next) => {
     req.body.user_canceled = req.user;
 
     // เรียก next() เพื่อไปยัง middleware ถัดไป
+    console.log("pass canceldata");
+    // console.log(req.user, req.params.id, req.body);
     next();
   } catch (err) {
     res.status(500).json({
@@ -31,6 +33,7 @@ exports.cancelData = (req, res, next) => {
 exports.getAll = (Model) =>
   catchAsync(async (req, res, next) => {
     let filter = {};
+    console.log(Model);
     const features = new APIFeatures(Model.find(filter), req.query)
       .filter()
       .sort()
@@ -64,12 +67,14 @@ exports.updateOne = (Model) =>
     if (!user) {
       return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
     }
+    console.log(user);
 
     const doc = await Model.findOneAndUpdate({ _id: req.params.id }, req.body, {
       new: true,
       runValidators: true,
       context: { user },
     });
+    console.log(doc);
     if (!doc) {
       return next(new AppError("ไม่พบเอกสารที่ต้องการจะเเก้ไข", 404));
     }
@@ -115,6 +120,9 @@ exports.setDocno = (Model) =>
           break;
         case "Deliver":
           type = "DN";
+          break;
+        case "Ordercanpart":
+          type = "PC";
           break;
         default:
           // ถ้าไม่มี case ใดเข้ากันให้ส่ง error กลับไป

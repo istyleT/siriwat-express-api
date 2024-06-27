@@ -36,12 +36,18 @@ const paymentSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  remark: {
+    type: String,
+    default: null,
+  },
+  //ส่วนที่ยืนยันการรับเงิน
   confirmed_payment_date: {
     type: Date,
     default: null,
   },
-  remark: {
-    type: String,
+  confirmed_payment_user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     default: null,
   },
   //ส่วนที่ทำการสร้าง
@@ -64,14 +70,19 @@ const paymentSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  remark_canceled: {
+    type: String,
+    default: null,
+  },
 });
 
 paymentSchema.index({ order_no: 1 });
 
 // populate path
 const populateFields = [
-  { path: "user_created", select: "firstname" },
   { path: "user_canceled", select: "firstname" },
+  { path: "user_created", select: "firstname" },
+  { path: "confirmed_payment_user", select: "firstname" },
 ];
 paymentSchema.pre(/^find/, function (next) {
   populateFields.forEach((field) => {
@@ -92,7 +103,6 @@ paymentSchema.pre("save", function (next) {
 
 // Pre Middleware for findOneAndUpdate
 paymentSchema.pre("findOneAndUpdate", async function (next) {
-  // console.log("prefindOneAndUpdate");
   const doc = await this.model.findOne(this.getQuery());
   if (doc) {
     this._updateLog = doc; // Get the document before update
@@ -125,45 +135,6 @@ paymentSchema.post("findOneAndUpdate", async function (doc, next) {
     newData: doc,
   });
   await log.save();
-  next();
-});
-
-// Pre Middleware for findOneAndDelete
-paymentSchema.pre("findOneAndDelete", async function (next) {
-  const doc = await this.model.findOne(this.getQuery());
-  console.log("prefindOneAndDelete");
-  if (doc) {
-    this._deleteLog = doc;
-    try {
-      const paymentId = doc._id;
-      await Order.findOneAndUpdate(
-        { payment: paymentId },
-        {
-          $pull: { payment: paymentId },
-        },
-        { context: this.getOptions().context } // Pass context to findOneAndUpdate
-      );
-      next();
-    } catch (error) {
-      return next(error);
-    }
-  }
-  next();
-});
-
-// Post Middleware for findOneAndDelete
-paymentSchema.post("findOneAndDelete", async function (doc, next) {
-  if (doc) {
-    const log = new Log({
-      action: "delete",
-      collectionName: "Payment",
-      documentId: doc._id,
-      changedBy: doc.user_updated,
-      oldData: this._deleteLog,
-      newData: null,
-    });
-    await log.save();
-  }
   next();
 });
 

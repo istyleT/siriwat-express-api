@@ -4,15 +4,19 @@ const {
   getAllOrder,
   createOrder,
   updateOrder,
-  deleteOrder,
+  // deleteOrder,
   setOrderNo,
 } = require("../../controllers/appController/orderController");
 const { protect, restrictTo } = require("../../controllers/authController");
+const { cancelData } = require("../../controllers/handlerFactory");
+
 //Global
 router.use(protect);
 router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllOrder).post(setOrderNo, createOrder);
-router.route("/:id").put(updateOrder).delete(deleteOrder);
+router.route("/canceldoc/:id").patch(cancelData, updateOrder);
+router.route("/:id").put(updateOrder);
+//.delete(deleteOrder);
 
 module.exports = router;

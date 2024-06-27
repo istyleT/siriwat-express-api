@@ -13,7 +13,7 @@ exports.updateDeliver = factory.updateOne(Deliver);
 
 exports.createDeliver = catchAsync(async (req, res, next) => {
   const orderId = req.body.order_id;
-  // สร้าง payment ใหม่
+  // สร้าง deliver ใหม่
   const doc = await Deliver.create(req.body);
   // ค้นหา order โดยใช้ orderId
   const order = await Order.findById(orderId);

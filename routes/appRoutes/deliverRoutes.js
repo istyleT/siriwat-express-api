@@ -16,6 +16,7 @@ router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/invoice/:id").put(statusInvoice);
 router.route("/canceldoc/:id").patch(cancelData, updateDeliver);
+router.route("/addtrackingno/:id").patch(updateDeliver);
 router.route("/").get(getAllDeliver).post(setDeliverNo, createDeliver);
 router.route("/:id").put(updateDeliver).delete(deleteDeliver);
 

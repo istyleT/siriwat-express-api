@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   getAllPayment,
   updatePayment,
-  deletePayment,
+  // deletePayment,
   setPaymentNo,
   createPayment,
 } = require("../../controllers/appController/paymentController");
@@ -15,6 +15,7 @@ router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllPayment).post(setPaymentNo, createPayment);
 router.route("/canceldoc/:id").patch(cancelData, updatePayment);
-router.route("/:id").put(updatePayment).delete(deletePayment);
+router.route("/:id").put(updatePayment);
+// .delete(deletePayment);
 
 module.exports = router;

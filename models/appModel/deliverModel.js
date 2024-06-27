@@ -112,6 +112,10 @@ const deliverSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  remark_canceled: {
+    type: String,
+    default: null,
+  },
 });
 
 deliverSchema.index({ order_no: 1 });
@@ -133,9 +137,11 @@ deliverSchema.pre(/^find/, function (next) {
 // Pre Middleware for findOneAndUpdate
 deliverSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
-  if (!doc) {
+  if (doc) {
     this._updateLog = doc;
-    this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
+    this._updateUser = this.getOptions().context.user.username;
+    //ถ้ามีการ update แบบ cancel เข้ามา
+    this._isCanceledUpdate = this._update.user_canceled !== null;
   }
   next();
 });
@@ -149,128 +155,28 @@ deliverSchema.post("findOneAndUpdate", async function (doc, next) {
     return next(new Error("ไม่พบเอกสารเดิมสำหรับการอัปเดต"));
   }
 
-  // Find the related order
-  const order = await Order.findOne({ id: doc.order_no });
-  if (order) {
-    await order.checkSuccessCondition();
-  }
+  if (this._isCanceledUpdate) {
+    console.log("Document was canceled");
 
-  // Update the order partslist by adjusting the qty_deliver
-  original.deliverlist.forEach((originalItem) => {
-    const updatedItem = doc.deliverlist.find(
-      (item) => item.partnumber === originalItem.partnumber
-    );
-    if (updatedItem) {
-      const qtyDifference = updatedItem.qty_deliver - originalItem.qty_deliver;
-      const partItem = order.partslist.find(
-        (part) => part.partnumber === originalItem.partnumber
-      );
-      if (partItem) {
-        partItem.qty_deliver += qtyDifference;
-      }
-    } else {
-      // Item was removed from deliverlist
-      const partItem = order.partslist.find(
-        (part) => part.partnumber === originalItem.partnumber
-      );
-      if (partItem) {
-        partItem.qty_deliver -= originalItem.qty_deliver;
-      }
+    const order = await Order.findOne({ id: doc.order_no });
+    if (order) {
+      await order.cancelDeliverAndUpdateParts(doc.deliverlist);
+      await order.save();
     }
-  });
+  } else {
+    console.log("Regular update");
 
-  // Handle new items added to deliverlist
-  doc.deliverlist.forEach((updatedItem) => {
-    if (
-      !original.deliverlist.find(
-        (item) => item.partnumber === updatedItem.partnumber
-      )
-    ) {
-      const partItem = order.partslist.find(
-        (part) => part.partnumber === updatedItem.partnumber
-      );
-      if (partItem) {
-        partItem.qty_deliver += updatedItem.qty_deliver;
-      }
-    }
-  });
-
-  await order.save();
-
-  const log = new Log({
-    action: "update",
-    collectionName: "Deliver",
-    documentId: doc._id,
-    changedBy: this._updateUser,
-    oldData: this._updateLog,
-    newData: doc,
-  });
-  await log.save();
-
-  next();
-});
-
-// Pre Middleware for findOneAndDelete
-deliverSchema.pre("findOneAndDelete", async function (next) {
-  // ก่อนเอาจำนวนอะไหล่ที่จัดส่งไปคืนให้ order
-  console.log("findOneAndDelete Working");
-  const deliver = await this.model.findOne(this.getQuery());
-  if (!deliver) {
-    return next(new Error("ไม่พบเอกสารที่ต้องการจะลบ"));
-  }
-
-  // Find the related order
-  const order = await Order.findOne({ id: deliver.order_no });
-  if (!order) {
-    return next(new Error("ไม่พบคำสั่งซื้อที่เกี่ยวข้อง"));
-  }
-
-  // Update the order partslist by subtracting the qty_deliver
-  deliver.deliverlist.forEach((deliverItem) => {
-    const partItem = order.partslist.find(
-      (part) => part.partnumber === deliverItem.partnumber
-    );
-    if (partItem) {
-      partItem.qty_deliver -= deliverItem.qty_deliver;
-    }
-  });
-
-  await order.save();
-
-  // ดึงตัวเองออกจาก Array ของ Order
-  if (deliver) {
-    try {
-      const deliverId = deliver._id;
-      const order = await Order.findOneAndUpdate(
-        { deliver: deliverId },
-        { $pull: { deliver: deliverId } },
-        { context: this.getOptions().context } // Pass context to findOneAndUpdate
-      );
-      // ส่งไปตรวจสอบสถานะ
-      if (order) {
-        await order.checkSuccessCondition();
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  }
-  next();
-});
-
-// Post Middleware for findOneAndDelete
-deliverSchema.post("findOneAndDelete", async function (doc, next) {
-  if (doc) {
     const log = new Log({
-      action: "delete",
+      action: "update",
       collectionName: "Deliver",
       documentId: doc._id,
-      changedBy: doc.user_updated,
-      oldData: this._deleteLog,
-      newData: null,
+      changedBy: this._updateUser,
+      oldData: this._updateLog,
+      newData: doc,
     });
     await log.save();
   }
+
   next();
 });
 

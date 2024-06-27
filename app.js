@@ -12,14 +12,38 @@ var morgan = require("morgan");
 var cors = require("cors");
 const globalErrorHandler = require("./controllers/errorController");
 const usersRouter = require("./routes/userRoutes");
+
 //Routes ของ Application
 const priceRouter = require("./routes/appRoutes/pricelistRoutes");
 const quotationRouter = require("./routes/appRoutes/quotationRoutes");
 const orderRouter = require("./routes/appRoutes/orderRoutes");
 const paymentRouter = require("./routes/appRoutes/paymentRoutes");
 const deliverRouter = require("./routes/appRoutes/deliverRoutes");
+const ordercanpartRouter = require("./routes/appRoutes/ordercanpartRoutes");
 
 const app = express();
+//ส่วนการตั้งค่า cors origin
+// ตรวจสอบว่าอยู่ใน development mode หรือไม่
+const isDevelopment = process.env.NODE_ENV !== "production";
+
+const allowedOrigins = ["https://srwwebapp.netlify.app"];
+
+//ใน development mode เพิ่ม origin ของ localhost เข้าไป
+if (isDevelopment) {
+  allowedOrigins.push("http://localhost:5173");
+}
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Origin นี้ไม่ถูกอนุญาติให้เข้าถึง"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  optionsSuccessStatus: 204, //เป็นค่าเริ่มต้นอยู่แล้ว
+};
 
 // view engine setup
 app.set("view engine", "pug");
@@ -42,7 +66,7 @@ const limiter = rateLimit({
 app.use("/", limiter);
 
 // Set cors origin
-app.use(cors());
+app.use(cors(corsOptions));
 // Set file size limit
 app.use(express.json({ limit: "50kb" }));
 
@@ -83,6 +107,7 @@ app.use("/quotation", quotationRouter);
 app.use("/order", orderRouter);
 app.use("/payment", paymentRouter);
 app.use("/deliver", deliverRouter);
+app.use("/ordercanpart", ordercanpartRouter);
 
 // ค้นหา ROUTES ไม่พบ
 app.all("*", (req, res, next) => {
