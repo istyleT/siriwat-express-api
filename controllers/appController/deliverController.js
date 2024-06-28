@@ -31,7 +31,6 @@ exports.createDeliver = catchAsync(async (req, res, next) => {
 //ใช้ในการเปลี่ยนแปลงการออกใบกำกับ
 exports.statusInvoice = catchAsync(async (req, res, next) => {
   const deliverId = req.params.id;
-  console.log(deliverId);
   // อัปเดตและส่งคืนเอกสารที่อัปเดต
   const updatedDeliver = await Deliver.findByIdAndUpdate(deliverId, req.body, {
     new: true, // ส่งคืนเอกสารที่อัปเดตแล้ว
@@ -51,5 +50,32 @@ exports.statusInvoice = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     message: "เปลี่ยนแปลงสำเร็จ",
+  });
+});
+
+exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
+  // รูปแบบเป็น ?matchdate=YYYY-MM-DD
+  const date = req.query.matchdate;
+  if (!date) {
+    return next(new Error("กรุณาระบุวันที่ใน query string", 400));
+  }
+
+  const searchDate = new Date(date);
+  const nextDay = new Date(searchDate);
+  nextDay.setDate(searchDate.getDate() + 1);
+
+  const delivers = await Deliver.find({
+    $or: [
+      { deliver_date: { $gte: searchDate, $lt: nextDay } },
+      { confirmed_invoice_date: { $gte: searchDate, $lt: nextDay } },
+      { created_at: { $gte: searchDate, $lt: nextDay } },
+      { date_canceled: { $gte: searchDate, $lt: nextDay } },
+    ],
+  }).sort({ created_at: 1 });
+
+  res.status(200).json({
+    status: "success",
+    results: delivers.length,
+    data: delivers,
   });
 });
