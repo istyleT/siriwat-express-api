@@ -38,6 +38,10 @@ const deliverSchema = new mongoose.Schema({
     default: 0,
     min: [0, "ค่าจัดส่งต้องมากกว่า 0"],
   },
+  cust_contact: {
+    type: String,
+    default: null,
+  },
   address: {
     type: String,
     default: null,
