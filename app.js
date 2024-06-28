@@ -26,11 +26,14 @@ const app = express();
 // ตรวจสอบว่าอยู่ใน development mode หรือไม่
 const isDevelopment = process.env.NODE_ENV !== "production";
 
-const allowedOrigins = ["https://srwwebapp.netlify.app"];
+const allowedOrigins = [
+  "https://srwwebapp.netlify.app",
+  "http://localhost:4173", //กรณี test เเบบ mode production
+];
 
 //ใน development mode เพิ่ม origin ของ localhost เข้าไป
 if (isDevelopment) {
-  allowedOrigins.push("http://localhost:5173");
+  allowedOrigins.push("http://localhost:5173"); //เอาไว้ในกรณี development
 }
 
 const corsOptions = {
