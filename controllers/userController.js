@@ -17,15 +17,37 @@ exports.checkRoleUser = catchAsync(async (req, res, next) => {
 exports.getAllUser = factory.getAll(User);
 exports.updateUser = factory.updateOne(User);
 
-exports.deleteUser = catchAsync(async (req, res, next) => {
-  const user = await User.findByIdAndUpdate(req.params.id, { active: false });
+exports.disableUser = catchAsync(async (req, res, next) => {
+  req.body.active = false;
+  const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+    new: true, // เพื่อให้ได้เอกสารที่อัปเดตกลับมา
+    runValidators: true, // เพื่อให้ตรวจสอบความถูกต้องของข้อมูลก่อนบันทึก
+  });
+
   if (!user) {
-    res.status(404).json({
-      status: "fail",
-      message: "ไม่พบผู้ใช้งานที่ต้องการจะลบ",
-    });
-    return next(new AppError("ไม่ผู้ใช้งานที่ต้องการจะลบ", 404));
+    return next(new AppError("ไม่พบผู้ใช้งานที่จะปิดการใช้งาน", 404));
   }
+
+  res.status(204).json({
+    status: "success",
+    data: null,
+  });
+});
+
+exports.activeUser = catchAsync(async (req, res, next) => {
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { active: true },
+    {
+      new: true, // เพื่อให้ได้เอกสารที่อัปเดตกลับมา
+      runValidators: true, // เพื่อให้ตรวจสอบความถูกต้องของข้อมูลก่อนบันทึก
+    }
+  );
+
+  if (!user) {
+    return next(new AppError("ไม่พบผู้ใช้งานที่จะเปิดการใช้งาน", 404));
+  }
+
   res.status(204).json({
     status: "success",
     data: null,

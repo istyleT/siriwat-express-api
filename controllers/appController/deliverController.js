@@ -53,6 +53,44 @@ exports.statusInvoice = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.pushTrackingNumber = catchAsync(async (req, res, next) => {
+  const deliverId = req.params.id;
+  const { trackingno } = req.body;
+  const user = req.user;
+
+  if (!user) {
+    return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
+  }
+
+  if (!trackingno) {
+    return res.status(400).json({
+      status: "fail",
+      message: "กรุณาระบุหมายเลขพัสดุ",
+    });
+  }
+  // อัปเดตเอกสารการจัดส่งโดยการเพิ่มหมายเลขพัสดุใหม่เข้าไปในอาร์เรย์
+  const doc = await Deliver.findByIdAndUpdate(
+    deliverId,
+    { $push: { tracking_number: trackingno } },
+    {
+      new: true,
+      runValidators: true,
+      context: { user },
+    }
+  );
+
+  if (!doc) {
+    return next(new AppError("ไม่พบเอกสารที่ต้องการจะเเก้ไข", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      message: doc,
+    },
+  });
+});
+
 exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
   // รูปแบบเป็น ?matchdate=YYYY-MM-DD
   const date = req.query.matchdate;

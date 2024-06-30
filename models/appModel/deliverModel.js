@@ -26,8 +26,8 @@ const deliverSchema = new mongoose.Schema({
     required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
   },
   tracking_number: {
-    type: String,
-    default: null,
+    type: Array,
+    default: [],
   },
   deliver_date: {
     type: Date,

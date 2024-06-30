@@ -108,19 +108,7 @@ exports.defalutPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.signup = catchAsync(async (req, res, next) => {
-  const newUser = await User.create({
-    username: req.body.username,
-    firstname: req.body.firstname,
-    lastname: req.body.lastname,
-    password: req.body.password, //ได้จาก middleware defalutPassword
-    passwordConfirm: req.body.passwordConfirm, //ได้จาก middleware defalutPassword
-    department: req.body.department,
-    role: req.body.role,
-    team: req.body.team,
-    branch: req.body.branch,
-    email: req.body.email,
-    contact: req.body.contact,
-  });
+  const newUser = await User.create(req.body);
   createSendToken(newUser, 201, res);
 });
 
@@ -231,21 +219,26 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
-  //1) กำหนด user ที่ต้องการเปลี่ยนรหัสผ่าน
-  const user = await User.findById(req.user.id).select("+password");
-  //2) ตรวจสอบรหัสผ่านปัจจุบัน
-  if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
-    res.status(401).json({
-      status: "fail",
-      message: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
-    });
-    return next(new AppError("รหัสผ่านปัจจุบันไม่ถูกต้อง", 401));
+  // 1) หา user ที่ต้องการเปลี่ยนรหัสผ่าน
+  const user = await User.findById(req.params.id).select("+password");
+
+  if (!user) {
+    return next(new AppError("ไม่พบผู้ใช้งานที่ต้องการจะเปลี่ยนรหัสผ่าน", 404));
   }
-  //3) ถ้ารหัสผ่านถูกต้อง ให้เปลี่ยนรหัสผ่าน
+
+  // 2) ตรวจสอบว่ารหัสผ่านใหม่และการยืนยันรหัสผ่านตรงกันหรือไม่
+  if (req.body.password !== req.body.passwordConfirm) {
+    return next(new AppError("รหัสผ่านไม่ตรงกัน", 400));
+  }
+
+  // 3) อัปเดตรหัสผ่าน
   user.password = req.body.password;
   user.passwordConfirm = req.body.passwordConfirm;
+
+  // 4) บันทึกข้อมูล user
   await user.save();
-  //4) ส่ง token ใหม่ไปให้ user
+
+  // 5) สร้างและส่ง token ใหม่
   createSendToken(user, 200, res);
 });
 

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 
@@ -9,21 +10,30 @@ const userSchema = new mongoose.Schema({
     trim: true,
     required: [true, "ต้องระบุชื่อผู้ใช้งาน"],
     maxlength: 20,
-    minlegth: 3,
+    minlength: 3,
   },
-  firstname: { type: String, required: [true, "ต้องระบุชื่อจริง"] },
-  lastname: { type: String, required: [true, "ต้องระบุนามสกุล"] },
+  firstname: {
+    type: String,
+    trim: true,
+    required: [true, "ต้องระบุชื่อจริง"],
+  },
+  lastname: {
+    type: String,
+    trim: true,
+    required: [true, "ต้องระบุนามสกุล"],
+  },
   email: {
     unique: true,
     required: [true, "ต้องระบุ E-mail"],
     type: String,
     trim: true,
-    lowcase: true,
+    lowercase: true,
+    match: [/^\S+@\S+\.\S+$/, "กรุณาระบุรูปแบบ E-mail ให้ถูกต้อง"],
   },
   password: {
     type: String,
     required: [true, "ต้องระบุ รหัสผ่าน"],
-    minlegth: 8,
+    minlength: 8,
     select: false,
   },
   passwordConfirm: {
@@ -40,7 +50,7 @@ const userSchema = new mongoose.Schema({
   },
   department: {
     type: String,
-    required: [true, "ต้องระบุ แผนก"],
+    default: "Sell",
     enum: {
       values: [
         "Sell",
@@ -71,10 +81,9 @@ const userSchema = new mongoose.Schema({
       message: "ตำแหน่งไม่ถูกต้อง",
     },
   },
-  team: { type: String, default: null },
   branch: {
     type: String,
-    required: [true, "ต้องระบุ สาขา"],
+    default: "HQ",
     enum: {
       values: ["001", "002", "003", "HQ", "Online"],
       message: "สาขาไม่ถูกต้อง",
@@ -83,7 +92,7 @@ const userSchema = new mongoose.Schema({
   contact: {
     type: String,
     required: [true, "ต้องระบุ เบอร์โทรศัพท์"],
-    minlegth: 9,
+    minlength: 9,
     maxlength: 12,
     trim: true,
   },
@@ -94,6 +103,21 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: { type: Date, select: false },
   // เพิ่มทีละ 1 เมื่อpassword ผิดติดกัน 5 ครั้ง ระบบจะระงับการใช้งาน
   attemptlogin: { type: Number, default: 0 },
+  // เข้าใช้งานล่าสุดเมื่อบันทึกเวลาเข้าตามการ login
+  active_lasted_at: {
+    type: Date,
+    default: null,
+  },
+  //ส่วนที่ทำการสร้าง
+  created_at: {
+    type: Date,
+    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+  },
+  //ส่วนที่ทำการยกเลิก
+  date_canceled: {
+    type: Date,
+    default: null,
+  },
 });
 
 userSchema.pre("save", function (next) {
