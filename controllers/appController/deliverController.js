@@ -92,24 +92,22 @@ exports.pushTrackingNumber = catchAsync(async (req, res, next) => {
 });
 
 exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
-  // รูปแบบเป็น ?matchdate=YYYY-MM-DD
-  const date = req.query.matchdate;
-  if (!date) {
+  const startdate = req.query.startdate;
+  const enddate = req.query.enddate;
+  const typedate = req.query.typedate;
+
+  if (!startdate || !enddate || !typedate) {
     return next(new Error("กรุณาระบุวันที่ใน query string", 400));
   }
 
-  const searchDate = new Date(date);
-  const nextDay = new Date(searchDate);
-  nextDay.setDate(searchDate.getDate() + 1);
+  const startDate = new Date(startdate);
+  const endDate = new Date(enddate);
+  endDate.setDate(endDate.getDate() + 1); // เพิ่ม 1 วันให้ endDate เพื่อให้ครอบคลุมทั้งวัน
 
-  const delivers = await Deliver.find({
-    $or: [
-      { deliver_date: { $gte: searchDate, $lt: nextDay } },
-      { confirmed_invoice_date: { $gte: searchDate, $lt: nextDay } },
-      { created_at: { $gte: searchDate, $lt: nextDay } },
-      { date_canceled: { $gte: searchDate, $lt: nextDay } },
-    ],
-  }).sort({ created_at: 1 });
+  const query = {};
+  query[typedate] = { $gte: startDate, $lt: endDate };
+
+  const delivers = await Deliver.find(query).sort({ created_at: 1 });
 
   res.status(200).json({
     status: "success",
