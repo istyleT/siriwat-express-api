@@ -78,7 +78,15 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
   // 2) Verification token
-  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  let decoded;
+  try {
+    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return next(new AppError("Token has expired. Please log in again.", 401));
+    }
+    return next(new AppError("Token is invalid. Please log in again.", 401));
+  }
   // 3) Check if user still exists
   const freshUser = await User.findById(decoded.id);
   if (!freshUser) {

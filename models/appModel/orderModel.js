@@ -145,6 +145,15 @@ const orderSchema = new mongoose.Schema({
     trim: true,
     maxlength: [200, "ห้ามกรอกเกิน 100 ตัวอักษร"],
   },
+  //ส่วนที่ทำการบันทึกการเปลี่ยนแปลงล่าสุด
+  lastest_update: {
+    type: Date,
+    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+  },
+  lastest_action: {
+    type: String,
+    default: "สร้างบิล",
+  },
   //ส่วนที่ทำการสร้าง
   created_at: {
     type: Date,
@@ -191,8 +200,17 @@ orderSchema.pre(/^find/, function (next) {
   next();
 });
 
+//บันทึกการเปลี่ยนแปลงล่าสุดของ order
+orderSchema.methods.saveLastestUpdate = async function (action) {
+  // console.log("saveLastestUpdate working");
+  this.lastest_update = moment.tz(Date.now(), "Asia/Bangkok").toDate();
+  this.lastest_action = action;
+  await this.save();
+};
+
 //เพิ่มเลขที่ payment._id เข้าไปใน payment ของ order
 orderSchema.methods.addPayment = async function (paymentId) {
+  //บันทึกการ update ล่าสุด
   this.payment.push(paymentId);
   await this.save();
   //ตรวจสอบเงื่อนไข
@@ -344,27 +362,32 @@ orderSchema.pre("findOneAndUpdate", async function (next) {
   next();
 });
 
-// orderSchema.pre("findOneAndDelete", async function (next) {
-//   // ตรวจสอบก่อนลบ order จะต้องไม่มีการชำระเงินหรือจัดส่ง
-//   const order = await this.model.findOne(this.getQuery());
-//   if (order.payment.length > 0 || order.deliver.length > 0) {
-//     return next(new Error("มีการชำระเงินหรือการจัดส่งแล้ว"));
-//   }
-//   next();
-// });
-
 // Post Middleware
 orderSchema.post("findOneAndUpdate", async function (doc, next) {
-  const log = new Log({
-    action: "update",
-    collectionName: "Order",
-    documentId: doc._id,
-    changedBy: this._updateUser,
-    oldData: this._updateLog,
-    newData: doc,
-  });
-  await log.save();
-
+  if (doc.user_canceled) {
+    //ถ้ายกเลิก order ไม่ต้อง update ข้อมูลล่าสุดเพราะจะได้รู้ว่าก่อนยกเลิกทำอะไร
+    //บันทึก log
+    const log = new Log({
+      action: "canceled",
+      collectionName: "Order",
+      documentId: doc._id,
+      changedBy: this._updateUser,
+    });
+    await log.save();
+  } else {
+    //อัพเดทข้อมูลล่าสุดของ order
+    await doc.saveLastestUpdate("แก้ไขบิล");
+    //บันทึก log
+    const log = new Log({
+      action: "update",
+      collectionName: "Order",
+      documentId: doc._id,
+      changedBy: this._updateUser,
+      oldData: this._updateLog,
+      newData: doc,
+    });
+    await log.save();
+  }
   // เรียกใช้ method checkSuccessCondition หลังจากการอัปเดต
   await doc.checkSuccessCondition();
 

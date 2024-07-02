@@ -101,6 +101,16 @@ paymentSchema.pre("save", function (next) {
   next();
 });
 
+// Post Middleware for save
+paymentSchema.post("save", async function (doc, next) {
+  // console.log("Post save working");
+  const order = await Order.findOne({ id: doc.order_no });
+  if (order) {
+    await order.saveLastestUpdate(`เพิ่มชำระเงิน ${doc.id}`);
+  }
+  next();
+});
+
 // Pre Middleware for findOneAndUpdate
 paymentSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
@@ -115,26 +125,49 @@ paymentSchema.pre("findOneAndUpdate", async function (next) {
 
 // Post Middleware for findOneAndUpdate
 paymentSchema.post("findOneAndUpdate", async function (doc, next) {
+  // console.log("Post findOneAndUpdate working");
+  const order = await Order.findOne({ id: doc.order_no });
   if (doc && doc.amount !== this._previousAmount) {
-    const order = await Order.findOne({ id: doc.order_no });
     if (order) {
       await order.checkSuccessCondition();
     }
   }
+
+  //อัพเดทข้อมูลล่าสุดของ order
+  if (doc.user_canceled) {
+    // ถ้าเป็นการยกเลิกการชำระเงิน
+    // console.log("Cancelling payment");
+    await order.saveLastestUpdate(`ยกเลิกชำระเงิน ${doc.id}`);
+  } else {
+    // ถ้าเป็นการแก้ไขการชำระเงิน
+    // console.log("Updating payment");
+    await order.saveLastestUpdate(`แก้ไขชำระเงิน ${doc.id}`);
+  }
+
   // ตรวจสอบ method ก่อนและหลังการอัพเดต
   if (doc && this._previousMethod !== "COD" && doc.method === "COD") {
     doc.confirmed_payment_date = null;
     await doc.save();
   }
-  const log = new Log({
-    action: "update",
-    collectionName: "Payment",
-    documentId: doc._id,
-    changedBy: this._updateUser,
-    oldData: this._updateLog,
-    newData: doc,
-  });
-  await log.save();
+  if (doc.user_canceled) {
+    const log = new Log({
+      action: "canceled",
+      collectionName: "Payment",
+      documentId: doc._id,
+      changedBy: this._updateUser,
+    });
+    await log.save();
+  } else {
+    const log = new Log({
+      action: "update",
+      collectionName: "Payment",
+      documentId: doc._id,
+      changedBy: this._updateUser,
+      oldData: this._updateLog,
+      newData: doc,
+    });
+    await log.save();
+  }
   next();
 });
 

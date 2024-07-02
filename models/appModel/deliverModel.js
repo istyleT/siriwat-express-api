@@ -138,6 +138,16 @@ deliverSchema.pre(/^find/, function (next) {
   next();
 });
 
+// Post Middleware for save
+deliverSchema.post("save", async function (doc, next) {
+  // console.log("Post save working");
+  const order = await Order.findOne({ id: doc.order_no });
+  if (order) {
+    await order.saveLastestUpdate(`เพิ่มจัดส่ง ${doc.id}`);
+  }
+  next();
+});
+
 // Pre Middleware for findOneAndUpdate
 deliverSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
@@ -152,6 +162,7 @@ deliverSchema.pre("findOneAndUpdate", async function (next) {
 
 // Post Middleware for findOneAndUpdate
 deliverSchema.post("findOneAndUpdate", async function (doc, next) {
+  // console.log("Post findOneAndUpdate working");
   // เก็บ Log เเละ ตรวจสอบการเปลี่ยนแปลงของ deliverlist ไป update order
   const original = this._updateLog;
 
@@ -159,17 +170,25 @@ deliverSchema.post("findOneAndUpdate", async function (doc, next) {
     return next(new Error("ไม่พบเอกสารเดิมสำหรับการอัปเดต"));
   }
 
-  if (this._isCanceledUpdate) {
-    console.log("Document was canceled");
+  const order = await Order.findOne({ id: doc.order_no });
 
-    const order = await Order.findOne({ id: doc.order_no });
+  if (this._isCanceledUpdate) {
+    // console.log("Document was canceled");
     if (order) {
       await order.cancelDeliverAndUpdateParts(doc.deliverlist);
       await order.save();
     }
+    await order.saveLastestUpdate(`ยกเลิกจัดส่ง ${doc.id}`);
+    const log = new Log({
+      action: "canceled",
+      collectionName: "Deliver",
+      documentId: doc._id,
+      changedBy: this._updateUser,
+    });
+    await log.save();
   } else {
-    console.log("Regular update");
-
+    // console.log("Regular update");
+    await order.saveLastestUpdate(`แก้ไขจัดส่ง ${doc.id}`);
     const log = new Log({
       action: "update",
       collectionName: "Deliver",
