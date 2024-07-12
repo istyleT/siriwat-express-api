@@ -26,15 +26,10 @@ const ordercanpartSchema = new mongoose.Schema({
           type: String,
           required: [true, "กรุณาระบุรหัสสินค้า"],
         },
-        price: {
+        price_after_discount: {
           type: Number,
           required: [true, "กรุณาระบุราคาสินค้า"],
           min: [0, "ราคาต้องมากกว่า 0"],
-        },
-        qty_order: {
-          type: Number,
-          required: [true, "กรุณาระบุจำนวนสินค้า"],
-          min: [0, "จำนวนต้องมากกว่า 0"],
         },
         qty_canceled: {
           type: Number,

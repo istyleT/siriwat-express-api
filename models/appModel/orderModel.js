@@ -73,6 +73,11 @@ const orderSchema = new mongoose.Schema({
           type: String,
           required: [true, "กรุณาระบุ id สินค้า"],
         },
+        qty: {
+          type: Number,
+          required: [true, "กรุณาระบุจำนวนสินค้า"],
+          min: [0, "จำนวนต้องมากกว่า 0"],
+        },
         partnumber: {
           type: String,
           required: [true, "กรุณาระบุรหัสสินค้า"],
@@ -81,12 +86,23 @@ const orderSchema = new mongoose.Schema({
           type: String,
           default: null,
         },
-        price: {
+        discount_percent: {
+          type: Number,
+          default: 0,
+          min: [0, "ส่วนลดต้องมากกว่าหรือเท่ากับ 0"],
+          max: [100, "ส่วนลดต้องน้อยกว่าหรือเท่ากับ 100"],
+        },
+        priceperunit: {
           type: Number,
           required: [true, "กรุณาระบุราคาสินค้า"],
           min: [0, "ราคาต้องมากกว่า 0"],
         },
-        qty: {
+        net_price: {
+          type: Number,
+          required: [true, "กรุณาระบุราคาสินค้า"],
+          min: [0, "ราคาต้องมากกว่า 0"],
+        },
+        qty_order: {
           type: Number,
           required: [true, "กรุณาระบุจำนวนสินค้า"],
           min: [0, "จำนวนต้องมากกว่า 0"],
@@ -96,6 +112,10 @@ const orderSchema = new mongoose.Schema({
           default: 0,
         },
         qty_canceled: {
+          type: Number,
+          default: 0,
+        },
+        qty_add: {
           type: Number,
           default: 0,
         },
@@ -114,11 +134,6 @@ const orderSchema = new mongoose.Schema({
   deliver: {
     type: [{ type: mongoose.Schema.ObjectId, ref: "Deliver" }],
     default: [],
-  },
-  user_created: {
-    type: mongoose.Schema.ObjectId,
-    ref: "User",
-    required: [true, "กรุณาระบุผู้สร้างใบเสนอราคา"],
   },
   status_bill: {
     type: String,
@@ -148,7 +163,7 @@ const orderSchema = new mongoose.Schema({
   //ส่วนที่ทำการบันทึกการเปลี่ยนแปลงล่าสุด
   lastest_update: {
     type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+    default: () => moment().tz("Asia/Bangkok").toDate(),
   },
   lastest_action: {
     type: String,
@@ -157,7 +172,7 @@ const orderSchema = new mongoose.Schema({
   //ส่วนที่ทำการสร้าง
   created_at: {
     type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+    default: () => moment().tz("Asia/Bangkok").toDate(),
   },
   user_created: {
     type: mongoose.Schema.Types.ObjectId,
@@ -202,18 +217,15 @@ orderSchema.pre(/^find/, function (next) {
 
 //บันทึกการเปลี่ยนแปลงล่าสุดของ order
 orderSchema.methods.saveLastestUpdate = async function (action) {
-  // console.log("saveLastestUpdate working");
-  this.lastest_update = moment.tz(Date.now(), "Asia/Bangkok").toDate();
+  this.lastest_update = moment().tz("Asia/Bangkok").toDate();
   this.lastest_action = action;
   await this.save();
 };
 
 //เพิ่มเลขที่ payment._id เข้าไปใน payment ของ order
 orderSchema.methods.addPayment = async function (paymentId) {
-  //บันทึกการ update ล่าสุด
   this.payment.push(paymentId);
   await this.save();
-  //ตรวจสอบเงื่อนไข
   await this.checkSuccessCondition();
   return this;
 };
@@ -224,7 +236,6 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
   deliverList
 ) {
   this.deliver.push(deliverId);
-  //ต้อง confirm ว่าใน 1 order จะต้องไม่มี partnumber ซ้ำกัน
   deliverList.forEach(({ partnumber, qty_deliver }) => {
     const part = this.partslist.find((item) => item.partnumber === partnumber);
     if (part) {
@@ -232,14 +243,12 @@ orderSchema.methods.addDeliverAndUpdateParts = async function (
     }
   });
   await this.save();
-  //ตรวจสอบเงื่อนไข
   await this.checkSuccessCondition();
   return this;
 };
 
 //method ตอนที่ทำการยกเลิก deliver ต้องทำการลด qty_deliver ลงให้เท่ากับที่อยู่ใน deliver นั้นๆ
 orderSchema.methods.cancelDeliverAndUpdateParts = async function (deliverList) {
-  //ต้อง confirm ว่าใน 1 order จะต้องไม่มี partnumber ซ้ำกัน
   deliverList.forEach(({ partnumber, qty_deliver }) => {
     const part = this.partslist.find((item) => item.partnumber === partnumber);
     if (part) {
@@ -247,49 +256,36 @@ orderSchema.methods.cancelDeliverAndUpdateParts = async function (deliverList) {
     }
   });
   await this.save();
-  //ตรวจสอบเงื่อนไข
   await this.checkSuccessCondition();
   return this;
 };
 
 orderSchema.methods.addPartcancel = async function (partcancelId) {
-  //เพิ่ม partcancel
   this.partcancel.push(partcancelId);
   await this.save();
-
-  //ตรวจสอบเงื่อนไข
   await this.checkSuccessCondition();
   return this;
 };
 
 orderSchema.methods.checkSuccessCondition = async function () {
-  // ใช้ query เพื่อ populate ข้อมูล
-  const populatedOrder = await this.constructor
-    .findById(this._id)
-    .populate("payment")
-    .populate("deliver")
-    .populate("partcancel")
-    .exec();
+  const populatedOrder = await this.populate(
+    "payment deliver partcancel"
+  ).execPopulate();
 
-  // ถ้า order ถูกยกเลิก status_bill จะต้องเป็น "ยกเลิกแล้ว"
   if (populatedOrder.user_canceled) {
     populatedOrder.status_bill = "ยกเลิกแล้ว";
   } else {
-    // เอาเฉพาะ payment ที่ยังไม่ยกเลิก
     const validPayments = populatedOrder.payment.filter(
-      (payment) => payment.user_canceled === null
+      (payment) => !payment.user_canceled
     );
-    // เอาเฉพาะ deliver ที่ยังไม่ยกเลิก
     const validDelivers = populatedOrder.deliver.filter(
-      (deliver) => deliver.user_canceled === null
+      (deliver) => !deliver.user_canceled
     );
 
-    // จำนวนเงินที่จ่ายจริงใน payment
     const totalPaymentAmount = validPayments.reduce(
       (total, payment) => total + payment.amount,
       0
     );
-    // จำนวนของที่ส่งจริงใน deliver
     const totalQtyDeliver = validDelivers.reduce(
       (total, deliver) =>
         total +
@@ -299,7 +295,6 @@ orderSchema.methods.checkSuccessCondition = async function () {
         ),
       0
     );
-    // จำนวนของที่ยกเลิก partcancel
     const totalPartsCancelQty = populatedOrder.partcancel.reduce(
       (total, cancelpart) =>
         total +
@@ -310,27 +305,22 @@ orderSchema.methods.checkSuccessCondition = async function () {
       0
     );
 
-    // จำนวนของที่สั่งทั้งหมด
     const totalPartsQty = populatedOrder.partslist.reduce(
       (total, part) => total + part.qty,
       0
     );
 
-    // จำนวนเงินค่าใช้จ่ายอื่นๆในบิล
     const totalAnotherCost = populatedOrder.anothercost.reduce(
       (total, cost) => total + cost.price,
       0
     );
-    // จำนวนเงินค่าอะไหล่ในบิล
     const totalPartsPrice = populatedOrder.partslist.reduce(
-      (total, part) => total + Number(part.price * part.qty),
+      (total, part) => total + part.price * part.qty,
       0
     );
 
-    // จำนวนเงินที่ต้องชำระทั้งหมดในบิล
-    const totalMustPay = Number(totalAnotherCost) + Number(totalPartsPrice);
-    const totalMustDeliver =
-      Number(totalPartsQty) - Number(totalPartsCancelQty);
+    const totalMustPay = totalAnotherCost + totalPartsPrice;
+    const totalMustDeliver = totalPartsQty - totalPartsCancelQty;
 
     if (
       totalPaymentAmount === totalMustPay ||
@@ -356,17 +346,14 @@ orderSchema.methods.checkSuccessCondition = async function () {
 
 // Pre Middleware
 orderSchema.pre("findOneAndUpdate", async function (next) {
-  //เก็บข้อมูลไว้ทำ log
-  this._updateLog = await this.model.findOne(this.getQuery()); // Get the document before update
-  this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
+  this._updateLog = await this.model.findOne(this.getQuery()).lean();
+  this._updateUser = this.getOptions().context.user.username;
   next();
 });
 
 // Post Middleware
 orderSchema.post("findOneAndUpdate", async function (doc, next) {
   if (doc.user_canceled) {
-    //ถ้ายกเลิก order ไม่ต้อง update ข้อมูลล่าสุดเพราะจะได้รู้ว่าก่อนยกเลิกทำอะไร
-    //บันทึก log
     const log = new Log({
       action: "canceled",
       collectionName: "Order",
@@ -375,9 +362,7 @@ orderSchema.post("findOneAndUpdate", async function (doc, next) {
     });
     await log.save();
   } else {
-    //อัพเดทข้อมูลล่าสุดของ order
     await doc.saveLastestUpdate("แก้ไขบิล");
-    //บันทึก log
     const log = new Log({
       action: "update",
       collectionName: "Order",
@@ -388,7 +373,6 @@ orderSchema.post("findOneAndUpdate", async function (doc, next) {
     });
     await log.save();
   }
-  // เรียกใช้ method checkSuccessCondition หลังจากการอัปเดต
   await doc.checkSuccessCondition();
 
   next();

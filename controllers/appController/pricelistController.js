@@ -14,10 +14,8 @@ exports.getPartsSugesst = catchAsync(async (req, res, next) => {
   // เพิ่มการส่งกลับ response
   res.status(200).json({
     status: "success",
-    results: partlists.length,
-    data: {
-      partlists,
-    },
+    // results: partlists.length,
+    data: partlists,
   });
 });
 

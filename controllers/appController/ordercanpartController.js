@@ -8,7 +8,9 @@ exports.setOrdercanpartNo = factory.setDocno(Ordercanpart);
 
 // Method
 exports.getAllOrdercanpart = factory.getAll(Ordercanpart);
+
 exports.createOrdercanpart = catchAsync(async (req, res, next) => {
+  // console.log(req.body);
   const orderId = req.body.order_id;
   // สร้าง part cancel ใหม่
   const doc = await Ordercanpart.create(req.body);
@@ -22,5 +24,30 @@ exports.createOrdercanpart = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: "success",
     message: "ยกเลิกรายการสำเร็จ",
+  });
+});
+
+exports.getDailyCancelPartMove = catchAsync(async (req, res, next) => {
+  const startdate = req.query.startdate;
+  const enddate = req.query.enddate;
+  const typedate = req.query.typedate;
+
+  if (!startdate || !enddate || !typedate) {
+    return next(new Error("กรุณาระบุวันที่ใน query string", 400));
+  }
+
+  const startDate = new Date(startdate);
+  const endDate = new Date(enddate);
+  endDate.setDate(endDate.getDate() + 1); // เพิ่ม 1 วันให้ endDate เพื่อให้ครอบคลุมทั้งวัน
+
+  const query = {};
+  query[typedate] = { $gte: startDate, $lt: endDate };
+
+  const cancelparts = await Ordercanpart.find(query).sort({ created_at: 1 });
+
+  res.status(200).json({
+    status: "success",
+    results: cancelparts.length,
+    data: cancelparts,
   });
 });

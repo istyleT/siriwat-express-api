@@ -76,6 +76,11 @@ const quotationSchema = new mongoose.Schema({
           type: String,
           required: [true, "กรุณาระบุ id สินค้า"],
         },
+        qty: {
+          type: Number,
+          required: [true, "กรุณาระบุจำนวนสินค้า"],
+          min: [0, "จำนวนต้องมากกว่า 0"],
+        },
         partnumber: {
           type: String,
           required: [true, "กรุณาระบุรหัสสินค้า"],
@@ -84,15 +89,21 @@ const quotationSchema = new mongoose.Schema({
           type: String,
           default: null,
         },
-        price: {
+        discount_percent: {
+          type: Number,
+          default: 0,
+          min: [0, "ส่วนลดต้องมากกว่าหรือเท่ากับ 0"],
+          max: [100, "ส่วนลดต้องน้อยกว่าหรือเท่ากับ 100"],
+        },
+        priceperunit: {
           type: Number,
           required: [true, "กรุณาระบุราคาสินค้า"],
           min: [0, "ราคาต้องมากกว่า 0"],
         },
-        qty: {
+        net_price: {
           type: Number,
-          required: [true, "กรุณาระบุจำนวนสินค้า"],
-          min: [0, "จำนวนต้องมากกว่า 0"],
+          required: [true, "กรุณาระบุราคาสินค้า"],
+          min: [0, "ราคาต้องมากกว่า 0"],
         },
       },
     ],

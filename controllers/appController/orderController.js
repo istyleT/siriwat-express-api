@@ -2,6 +2,7 @@ const Order = require("../../models/appModel/orderModel");
 const Quotation = require("../../models/appModel/quotationModel");
 const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
+const { createOrdercanpart } = require("./ordercanpartController");
 
 //Middleware
 exports.setOrderNo = factory.setDocno(Order);
@@ -26,6 +27,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
   });
 });
 
+//การดึง daily report
 exports.getDailyOrderMove = catchAsync(async (req, res, next) => {
   const startdate = req.query.startdate;
   const enddate = req.query.enddate;
