@@ -10,7 +10,6 @@ exports.setOrdercanpartNo = factory.setDocno(Ordercanpart);
 exports.getAllOrdercanpart = factory.getAll(Ordercanpart);
 
 exports.createOrdercanpart = catchAsync(async (req, res, next) => {
-  // console.log(req.body);
   const orderId = req.body.order_id;
   // สร้าง part cancel ใหม่
   const doc = await Ordercanpart.create(req.body);

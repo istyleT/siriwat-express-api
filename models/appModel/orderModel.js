@@ -73,11 +73,6 @@ const orderSchema = new mongoose.Schema({
           type: String,
           required: [true, "กรุณาระบุ id สินค้า"],
         },
-        qty: {
-          type: Number,
-          required: [true, "กรุณาระบุจำนวนสินค้า"],
-          min: [0, "จำนวนต้องมากกว่า 0"],
-        },
         partnumber: {
           type: String,
           required: [true, "กรุณาระบุรหัสสินค้า"],
@@ -102,19 +97,29 @@ const orderSchema = new mongoose.Schema({
           required: [true, "กรุณาระบุราคาสินค้า"],
           min: [0, "ราคาต้องมากกว่า 0"],
         },
-        qty_order: {
+        //จำนวนที่ต้องการ
+        qty: {
           type: Number,
           required: [true, "กรุณาระบุจำนวนสินค้า"],
           min: [0, "จำนวนต้องมากกว่า 0"],
         },
+        //จำนวนเริ่มต้น
+        qty_init: {
+          type: Number,
+          required: [true, "กรุณาระบุจำนวนสินค้า"],
+          min: [0, "จำนวนต้องมากกว่า 0"],
+        },
+        //จำนวนที่ส่ง
         qty_deliver: {
           type: Number,
           default: 0,
         },
+        //จำนวนที่ยกเลิก
         qty_canceled: {
           type: Number,
           default: 0,
         },
+        //จำนวนที่เพิ่ม
         qty_add: {
           type: Number,
           default: 0,
@@ -268,9 +273,12 @@ orderSchema.methods.addPartcancel = async function (partcancelId) {
 };
 
 orderSchema.methods.checkSuccessCondition = async function () {
-  const populatedOrder = await this.populate(
-    "payment deliver partcancel"
-  ).execPopulate();
+  const populatedOrder = await this.model("Order")
+    .findById(this._id)
+    .populate("payment")
+    .populate("deliver")
+    .populate("partcancel")
+    .exec();
 
   if (populatedOrder.user_canceled) {
     populatedOrder.status_bill = "ยกเลิกแล้ว";
@@ -353,28 +361,32 @@ orderSchema.pre("findOneAndUpdate", async function (next) {
 
 // Post Middleware
 orderSchema.post("findOneAndUpdate", async function (doc, next) {
-  if (doc.user_canceled) {
-    const log = new Log({
-      action: "canceled",
-      collectionName: "Order",
-      documentId: doc._id,
-      changedBy: this._updateUser,
-    });
-    await log.save();
-  } else {
-    await doc.saveLastestUpdate("แก้ไขบิล");
-    const log = new Log({
-      action: "update",
-      collectionName: "Order",
-      documentId: doc._id,
-      changedBy: this._updateUser,
-      oldData: this._updateLog,
-      newData: doc,
-    });
-    await log.save();
+  try {
+    if (doc.user_canceled) {
+      const log = new Log({
+        action: "canceled",
+        collectionName: "Order",
+        documentId: doc._id,
+        changedBy: this._updateUser,
+      });
+      await log.save();
+    } else {
+      await doc.saveLastestUpdate("แก้ไขบิล");
+      const log = new Log({
+        action: "update",
+        collectionName: "Order",
+        documentId: doc._id,
+        changedBy: this._updateUser,
+        oldData: this._updateLog,
+        newData: doc,
+      });
+      await log.save();
+    }
+    await doc.checkSuccessCondition();
+  } catch (error) {
+    console.error("Error in post findOneAndUpdate middleware:", error);
+    next(error);
   }
-  await doc.checkSuccessCondition();
-
   next();
 });
 
