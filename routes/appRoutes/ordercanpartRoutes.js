@@ -4,6 +4,7 @@ const {
   getAllOrdercanpart,
   createOrdercanpart,
   setOrdercanpartNo,
+  getDailyCancelPartMove,
 } = require("../../controllers/appController/ordercanpartController");
 const { protect, restrictTo } = require("../../controllers/authController");
 //Global
@@ -14,5 +15,6 @@ router
   .route("/")
   .get(getAllOrdercanpart)
   .post(setOrdercanpartNo, createOrdercanpart);
+router.route("/dailyreport").get(getDailyCancelPartMove);
 
 module.exports = router;
