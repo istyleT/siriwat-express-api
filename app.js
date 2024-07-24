@@ -2,7 +2,6 @@ var express = require("express");
 var path = require("path");
 var bodyParser = require("body-parser");
 var path = require("path");
-var cookieParser = require("cookie-parser");
 var rateLimit = require("express-rate-limit");
 var helmet = require("helmet");
 var mongoSanitize = require("express-mongo-sanitize");
@@ -20,6 +19,9 @@ const orderRouter = require("./routes/appRoutes/orderRoutes");
 const paymentRouter = require("./routes/appRoutes/paymentRoutes");
 const deliverRouter = require("./routes/appRoutes/deliverRoutes");
 const ordercanpartRouter = require("./routes/appRoutes/ordercanpartRoutes");
+const provinceRouter = require("./routes/basedataRoutes/provinceRoutes");
+const amphureRouter = require("./routes/basedataRoutes/amphureRoutes");
+const tambonRouter = require("./routes/basedataRoutes/tambonRoutes");
 
 const app = express();
 //ส่วนการตั้งค่า cors origin
@@ -111,6 +113,9 @@ app.use("/order", orderRouter);
 app.use("/payment", paymentRouter);
 app.use("/deliver", deliverRouter);
 app.use("/ordercanpart", ordercanpartRouter);
+app.use("/province", provinceRouter);
+app.use("/amphure", amphureRouter);
+app.use("/tambon", tambonRouter);
 
 // ค้นหา ROUTES ไม่พบ
 app.all("*", (req, res, next) => {

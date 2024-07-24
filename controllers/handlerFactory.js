@@ -28,6 +28,18 @@ exports.cancelData = (req, res, next) => {
   }
 };
 
+exports.getOne = (Model) =>
+  catchAsync(async (req, res, next) => {
+    const doc = await Model.findById(req.params.id);
+    if (!doc) {
+      return next(new AppError("ไม่พบเอกสารที่ต้องการ", 404));
+    }
+    res.status(200).json({
+      status: "success",
+      data: doc,
+    });
+  });
+
 exports.getAll = (Model) =>
   catchAsync(async (req, res, next) => {
     let filter = {};
@@ -39,6 +51,7 @@ exports.getAll = (Model) =>
     const doc = await features.query.sort({ created_at: -1 });
     res.status(200).json({
       status: "success",
+      length: doc.length,
       data: doc,
     });
   });

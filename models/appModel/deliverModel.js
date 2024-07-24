@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const Log = require("../logModel");
 const Order = require("./orderModel");
+const Province = require("../basedataModel/provinceModel");
+const Amphure = require("../basedataModel/amphureModel");
+const Tambon = require("../basedataModel/tambonModel");
+const { Schema } = mongoose;
 
 const deliverSchema = new mongoose.Schema({
   id: {
@@ -44,6 +48,21 @@ const deliverSchema = new mongoose.Schema({
   },
   address: {
     type: String,
+    default: null,
+  },
+  province: {
+    type: Schema.ObjectId,
+    ref: "Province",
+    default: null,
+  },
+  amphure: {
+    type: Schema.ObjectId,
+    ref: "Amphure",
+    default: null,
+  },
+  tambon: {
+    type: Schema.ObjectId,
+    ref: "Tambon",
     default: null,
   },
   deliverlist: {
@@ -129,12 +148,16 @@ const populateFields = [
   { path: "user_created", select: "firstname" },
   { path: "confirmed_invoice_user", select: "firstname" },
   { path: "user_canceled", select: "firstname" },
+  { path: "province", select: "name_th" },
+  { path: "amphure", select: "name_th" },
+  { path: "tambon", select: "name_th zip_code" },
 ];
 
-deliverSchema.pre(/^find/, function (next) {
-  populateFields.forEach((field) => {
+deliverSchema.pre(/^find/, async function (next) {
+  for (const field of populateFields) {
     this.populate({ ...field, options: { lean: true } });
-  });
+  }
+
   next();
 });
 

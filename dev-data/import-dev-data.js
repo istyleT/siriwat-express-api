@@ -2,6 +2,9 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const Pricelist = require("../models/appModel/pricelistModel");
+const Province = require("../models/basedataModel/provinceModel");
+const Amphure = require("../models/basedataModel/amphureModel");
+const Tambon = require("../models/basedataModel/tambonModel");
 
 dotenv.config({ path: "./config.env" });
 
@@ -20,6 +23,15 @@ mongoose
 // READ JSON FILE
 const pricelists = JSON.parse(
   fs.readFileSync(`${__dirname}/data/Pricelist2024.json`, "utf-8")
+);
+const provincelists = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/thai_provinces.json`, "utf-8")
+);
+const amphurelists = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/thai_amphures.json`, "utf-8")
+);
+const tambonlists = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/thai_tambons.json`, "utf-8")
 );
 
 // UPDATE DATA INTO DB
@@ -52,11 +64,65 @@ const importDataPricelists = async () => {
   }
   process.exit();
 };
+const importDataProvinces = async () => {
+  try {
+    await Province.create(provincelists);
+    console.log("Data provincelists successfully loaded!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
+const importDataAmphures = async () => {
+  try {
+    await Amphure.create(amphurelists);
+    console.log("Data amphurelists successfully loaded!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
+const importDataTambons = async () => {
+  try {
+    await Tambon.create(tambonlists);
+    console.log("Data tambonlists successfully loaded!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
 
 // DELETE ALL DATA FROM DB
 const deleteDataPricelists = async () => {
   try {
     await Pricelist.deleteMany();
+    console.log("Data successfully deleted!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
+const deleteDataProvincelists = async () => {
+  try {
+    await Province.deleteMany();
+    console.log("Data successfully deleted!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
+const deleteDataAmphurelists = async () => {
+  try {
+    await Amphure.deleteMany();
+    console.log("Data successfully deleted!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
+const deleteDataTambonlists = async () => {
+  try {
+    await Tambon.deleteMany();
     console.log("Data successfully deleted!");
   } catch (err) {
     console.log(err);
@@ -69,6 +135,18 @@ if (process.argv[2] === "--importpricelists") {
   // console.log(process.argv);
   importDataPricelists();
 }
+if (process.argv[2] === "--importprovinces") {
+  // console.log(process.argv);
+  importDataProvinces();
+}
+if (process.argv[2] === "--importamphures") {
+  // console.log(process.argv);
+  importDataAmphures();
+}
+if (process.argv[2] === "--importtambons") {
+  // console.log(process.argv);
+  importDataTambons();
+}
 
 //updatedata
 if (process.argv[2] === "--updatepricelists") {
@@ -78,6 +156,15 @@ if (process.argv[2] === "--updatepricelists") {
 //deletedata
 if (process.argv[2] === "--deletepricelists") {
   deleteDataPricelists();
+}
+if (process.argv[2] === "--deleteprovincelists") {
+  deleteDataProvincelists();
+}
+if (process.argv[2] === "--deleteamphurelists") {
+  deleteDataAmphurelists();
+}
+if (process.argv[2] === "--deletetambonlists") {
+  deleteDataTambonlists();
 }
 
 //command in terminal
