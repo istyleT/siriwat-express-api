@@ -283,51 +283,58 @@ orderSchema.methods.checkSuccessCondition = async function () {
   if (populatedOrder.user_canceled) {
     populatedOrder.status_bill = "ยกเลิกแล้ว";
   } else {
+    //เอา payment ที่ยกเลิกออก
     const validPayments = populatedOrder.payment.filter(
       (payment) => !payment.user_canceled
     );
+    //เอา deliver ที่ยกเลิกออก
     const validDelivers = populatedOrder.deliver.filter(
       (deliver) => !deliver.user_canceled
     );
-
+    //รวมยอดเงินที่จ่ายจริง
     const totalPaymentAmount = validPayments.reduce(
-      (total, payment) => total + payment.amount,
+      (total, payment) => total + Number(payment.amount),
       0
     );
+    //รวมจำนวนที่ส่งจริง
     const totalQtyDeliver = validDelivers.reduce(
       (total, deliver) =>
         total +
         deliver.deliverlist.reduce(
-          (subTotal, item) => subTotal + item.qty_deliver,
+          (subTotal, item) => subTotal + Number(item.qty_deliver),
           0
         ),
       0
     );
+    //รวมจำนวนที่ยกเลิก
     const totalPartsCancelQty = populatedOrder.partcancel.reduce(
       (total, cancelpart) =>
         total +
         cancelpart.partscancellist.reduce(
-          (subTotal, item) => subTotal + item.qty_canceled,
+          (subTotal, item) => subTotal + Number(item.qty_canceled),
           0
         ),
       0
     );
 
     const totalPartsQty = populatedOrder.partslist.reduce(
-      (total, part) => total + part.qty,
+      (total, part) => total + Number(part.qty),
       0
     );
-
+    //รวมราคาค่าใช้จ่ายอื่นๆ
     const totalAnotherCost = populatedOrder.anothercost.reduce(
-      (total, cost) => total + cost.price,
+      (total, cost) => total + Number(cost.price),
       0
     );
+    //รวมราคาสินค้าทั้งหมด
     const totalPartsPrice = populatedOrder.partslist.reduce(
-      (total, part) => total + part.price * part.qty,
+      (total, part) =>
+        total + Number(Number(part.net_price) * Number(part.qty)),
       0
     );
-
+    //รวมยอดเงินที่ลูกค้าจะต้องจ่ายทั้งหมด
     const totalMustPay = totalAnotherCost + totalPartsPrice;
+    //รวมจำนวนที่ต้องส่งทั้งหมด
     const totalMustDeliver = totalPartsQty - totalPartsCancelQty;
 
     if (
