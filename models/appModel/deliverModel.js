@@ -2,9 +2,6 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const Log = require("../logModel");
 const Order = require("./orderModel");
-const Province = require("../basedataModel/provinceModel");
-const Amphure = require("../basedataModel/amphureModel");
-const Tambon = require("../basedataModel/tambonModel");
 const { Schema } = mongoose;
 
 const deliverSchema = new mongoose.Schema({

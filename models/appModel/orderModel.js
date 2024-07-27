@@ -307,16 +307,17 @@ orderSchema.methods.checkSuccessCondition = async function () {
       0
     );
     //รวมจำนวนที่ยกเลิก
-    const totalPartsCancelQty = populatedOrder.partcancel.reduce(
-      (total, cancelpart) =>
-        total +
-        cancelpart.partscancellist.reduce(
-          (subTotal, item) => subTotal + Number(item.qty_canceled),
-          0
-        ),
-      0
-    );
+    // const totalPartsCancelQty = populatedOrder.partcancel.reduce(
+    //   (total, cancelpart) =>
+    //     total +
+    //     cancelpart.partscancellist.reduce(
+    //       (subTotal, item) => subTotal + Number(item.qty_canceled),
+    //       0
+    //     ),
+    //   0
+    // );
 
+    //จำนวนที่ลูกค้ายังต้องการในตอนปัจจุบัน
     const totalPartsQty = populatedOrder.partslist.reduce(
       (total, part) => total + Number(part.qty),
       0
@@ -333,20 +334,26 @@ orderSchema.methods.checkSuccessCondition = async function () {
       0
     );
     //รวมยอดเงินที่ลูกค้าจะต้องจ่ายทั้งหมด
-    const totalMustPay = totalAnotherCost + totalPartsPrice;
+    const totalMustPay = Number(totalAnotherCost) + Number(totalPartsPrice);
     //รวมจำนวนที่ต้องส่งทั้งหมด
-    const totalMustDeliver = totalPartsQty - totalPartsCancelQty;
+    const totalMustDeliver = Number(totalPartsQty);
+
+    //ตรวจสอบค่าหลังจากการคำนวณ
+    // console.log("totalPaymentAmount", totalPaymentAmount);
+    // console.log("totalMustPay", totalMustPay);
+    // console.log("totalQtyDeliver", totalQtyDeliver);
+    // console.log("totalMustDeliver", totalMustDeliver);
 
     if (
-      totalPaymentAmount === totalMustPay ||
-      totalQtyDeliver === totalMustDeliver
+      Number(totalPaymentAmount) === Number(totalMustPay) ||
+      Number(totalQtyDeliver) === Number(totalMustDeliver)
     ) {
       if (
-        totalPaymentAmount === totalMustPay &&
-        totalQtyDeliver === totalMustDeliver
+        Number(totalPaymentAmount) === Number(totalMustPay) &&
+        Number(totalQtyDeliver) === Number(totalMustDeliver)
       ) {
         populatedOrder.status_bill = "เสร็จสิ้น";
-      } else if (totalPaymentAmount === totalMustPay) {
+      } else if (Number(totalPaymentAmount) === Number(totalMustPay)) {
         populatedOrder.status_bill = "จ่ายครบ";
       } else {
         populatedOrder.status_bill = "ส่งครบ";
