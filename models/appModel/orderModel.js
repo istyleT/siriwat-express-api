@@ -161,7 +161,7 @@ const orderSchema = new mongoose.Schema({
   },
   remark: {
     type: String,
-    default: null,
+    default: "",
     trim: true,
     maxlength: [200, "ห้ามกรอกเกิน 100 ตัวอักษร"],
   },
