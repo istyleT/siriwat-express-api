@@ -13,6 +13,10 @@ const paymentSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
+  customer_name: {
+    type: String,
+    required: [true, "กรุณาระบุชื่อผู้ชำระเงิน"],
+  },
   order_no: {
     type: String,
     required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
@@ -80,9 +84,9 @@ paymentSchema.index({ order_no: 1 });
 
 // populate path
 const populateFields = [
-  { path: "user_canceled", select: "firstname" },
-  { path: "user_created", select: "firstname" },
-  { path: "confirmed_payment_user", select: "firstname" },
+  { path: "user_canceled", select: "firstname -_id" },
+  { path: "user_created", select: "firstname -_id" },
+  { path: "confirmed_payment_user", select: "firstname -_id" },
 ];
 paymentSchema.pre(/^find/, function (next) {
   populateFields.forEach((field) => {

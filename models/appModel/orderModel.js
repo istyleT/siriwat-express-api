@@ -206,12 +206,12 @@ orderSchema.index({ custname: 1 });
 orderSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
-    select: "firstname",
+    select: "firstname -_id",
     options: { lean: true },
   })
     .populate({
       path: "user_canceled",
-      select: "firstname",
+      select: "firstname -_id",
       options: { lean: true },
     })
     .populate("payment")

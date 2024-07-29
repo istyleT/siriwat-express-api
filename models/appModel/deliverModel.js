@@ -1,150 +1,158 @@
+//deliverModel.js
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const Log = require("../logModel");
 const Order = require("./orderModel");
 const { Schema } = mongoose;
 
-const deliverSchema = new mongoose.Schema({
-  id: {
-    type: String,
-    unique: true,
-    required: [true, "กรุณาระบุเลขที่ใบส่งสินค้า"],
-  },
-  docCount: {
-    type: Number,
-    default: 1,
-  },
-  deliver_channel: {
-    type: String,
-    required: [true, "กรุณาระบุช่องทางการจัดส่งสินค้า"],
-    enum: {
-      values: ["มารับเอง", "ไปรษณีย์", "Kerry", "J&T", "Flash", "อื่นๆ"],
-      message: "ช่องทางการจัดส่งไม่ถูกต้อง",
+const deliverSchema = new mongoose.Schema(
+  {
+    id: {
+      type: String,
+      unique: true,
+      required: [true, "กรุณาระบุเลขที่ใบส่งสินค้า"],
     },
-  },
-  order_no: {
-    type: String,
-    required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
-  },
-  tracking_number: {
-    type: Array,
-    default: [],
-  },
-  deliver_date: {
-    type: Date,
-    required: [true, "กรุณาระบุวันที่จัดส่งสินค้า"],
-  },
-  deliver_cost: {
-    type: Number,
-    default: 0,
-    min: [0, "ค่าจัดส่งต้องมากกว่า 0"],
-  },
-  cust_contact: {
-    type: String,
-    default: null,
-  },
-  address: {
-    type: String,
-    default: null,
-  },
-  province: {
-    type: Schema.ObjectId,
-    ref: "Province",
-    default: null,
-  },
-  amphure: {
-    type: Schema.ObjectId,
-    ref: "Amphure",
-    default: null,
-  },
-  tambon: {
-    type: Schema.ObjectId,
-    ref: "Tambon",
-    default: null,
-  },
-  deliverlist: {
-    type: [
-      {
-        id: {
-          type: String,
-          required: [true, "กรุณาระบุ id สินค้า"],
-        },
-        partnumber: {
-          type: String,
-          required: [true, "กรุณาระบุรหัสสินค้า"],
-        },
-        description: {
-          type: String,
-          default: null,
-        },
-        qty_order: {
-          type: Number,
-          required: [true, "กรุณาระบุจำนวนสินค้า"],
-          min: [0, "จำนวนต้องมากกว่า 0"],
-        },
-        qty_deliver: {
-          type: Number,
-          default: 0,
-        },
+    docCount: {
+      type: Number,
+      default: 1,
+    },
+    deliver_channel: {
+      type: String,
+      required: [true, "กรุณาระบุช่องทางการจัดส่งสินค้า"],
+      enum: {
+        values: ["มารับเอง", "ไปรษณีย์", "Kerry", "J&T", "Flash", "อื่นๆ"],
+        message: "ช่องทางการจัดส่งไม่ถูกต้อง",
       },
-    ],
-    default: [],
-  },
-  confirmed_invoice_date: {
-    type: Date,
-    default: null,
-  },
-  confirmed_invoice_user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null,
-  },
-  cod: {
-    type: "Boolean",
-    default: false,
-  },
-  cod_amount: {
-    type: "Number",
-    default: 0,
-    min: [0, "ค่า COD ต้องมากกว่า 0"],
-  },
-  remark: {
-    type: String,
-    default: null,
-  },
-  //ส่วนที่ทำการสร้าง
-  created_at: {
-    type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
-  },
-  user_created: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: [true, "กรุณาระบุผู้ทำรายการ"],
-  },
-  //ส่วนที่ทำการยกเลิก
-  user_canceled: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null,
-  },
-  date_canceled: {
-    type: Date,
-    default: null,
-  },
-  remark_canceled: {
-    type: String,
-    default: null,
-  },
-});
+    },
+    order_no: {
+      type: String,
+      required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
+    },
+    receiver: {
+      type: String,
+      required: [true, "กรุณาระบุผู้รับสินค้า"],
+    },
+    tracking_number: {
+      type: Array,
+      default: [],
+    },
+    deliver_date: {
+      type: Date,
+      required: [true, "กรุณาระบุวันที่จัดส่งสินค้า"],
+    },
+    deliver_cost: {
+      type: Number,
+      default: 0,
+      min: [0, "ค่าจัดส่งต้องมากกว่า 0"],
+    },
+    cust_contact: {
+      type: String,
+      default: null,
+    },
+    address: {
+      type: String,
+      default: null,
+    },
+    province: {
+      type: Schema.ObjectId,
+      ref: "Province",
+      default: null,
+    },
+    amphure: {
+      type: Schema.ObjectId,
+      ref: "Amphure",
+      default: null,
+    },
+    tambon: {
+      type: Schema.ObjectId,
+      ref: "Tambon",
+      default: null,
+    },
+    deliverlist: {
+      type: [
+        {
+          id: {
+            type: String,
+            required: [true, "กรุณาระบุ id สินค้า"],
+          },
+          partnumber: {
+            type: String,
+            required: [true, "กรุณาระบุรหัสสินค้า"],
+          },
+          description: {
+            type: String,
+            default: null,
+          },
+          qty_order: {
+            type: Number,
+            required: [true, "กรุณาระบุจำนวนสินค้า"],
+            min: [0, "จำนวนต้องมากกว่า 0"],
+          },
+          qty_deliver: {
+            type: Number,
+            default: 0,
+          },
+        },
+      ],
+      default: [],
+    },
+    confirmed_invoice_date: {
+      type: Date,
+      default: null,
+    },
+    confirmed_invoice_user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    cod: {
+      type: "Boolean",
+      default: false,
+    },
+    cod_amount: {
+      type: "Number",
+      default: 0,
+      min: [0, "ค่า COD ต้องมากกว่า 0"],
+    },
+    remark: {
+      type: String,
+      default: null,
+    },
+    //ส่วนที่ทำการสร้าง
+    created_at: {
+      type: Date,
+      default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+    },
+    user_created: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "กรุณาระบุผู้ทำรายการ"],
+    },
+    //ส่วนที่ทำการยกเลิก
+    user_canceled: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    date_canceled: {
+      type: Date,
+      default: null,
+    },
+    remark_canceled: {
+      type: String,
+      default: null,
+    },
+  }
+  // { toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
 
 deliverSchema.index({ order_no: 1 });
 
 // populate path
 const populateFields = [
-  { path: "user_created", select: "firstname" },
-  { path: "confirmed_invoice_user", select: "firstname" },
-  { path: "user_canceled", select: "firstname" },
+  { path: "user_created", select: "firstname -_id" },
+  { path: "confirmed_invoice_user", select: "firstname -_id" },
+  { path: "user_canceled", select: "firstname -_id" },
   { path: "province", select: "name_th" },
   { path: "amphure", select: "name_th" },
   { path: "tambon", select: "name_th zip_code" },
