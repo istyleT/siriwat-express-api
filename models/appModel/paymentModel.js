@@ -1,3 +1,4 @@
+//paymentModel.js
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const Log = require("../logModel");
@@ -64,6 +65,16 @@ const paymentSchema = new mongoose.Schema({
     ref: "User",
     required: [true, "กรุณาระบุผู้ทำรายการ"],
   },
+  //ส่วนที่ทำการแก้ไข
+  updated_at: {
+    type: Date,
+    default: null,
+  },
+  user_updated: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
   //ส่วนที่ทำการยกเลิก
   user_canceled: {
     type: mongoose.Schema.Types.ObjectId,
@@ -84,9 +95,10 @@ paymentSchema.index({ order_no: 1 });
 
 // populate path
 const populateFields = [
-  { path: "user_canceled", select: "firstname -_id" },
-  { path: "user_created", select: "firstname -_id" },
-  { path: "confirmed_payment_user", select: "firstname -_id" },
+  { path: "user_canceled", select: "firstname" },
+  { path: "user_created", select: "firstname" },
+  { path: "user_updated", select: "firstname" },
+  { path: "confirmed_payment_user", select: "firstname" },
 ];
 paymentSchema.pre(/^find/, function (next) {
   populateFields.forEach((field) => {
@@ -95,7 +107,7 @@ paymentSchema.pre(/^find/, function (next) {
   next();
 });
 
-// Pre Middleware for save
+//Pre Middleware for save
 paymentSchema.pre("save", function (next) {
   if (this.method !== "COD") {
     this.confirmed_payment_date = moment
@@ -115,7 +127,7 @@ paymentSchema.post("save", async function (doc, next) {
   next();
 });
 
-// Pre Middleware for findOneAndUpdate
+//Pre Middleware for findOneAndUpdate
 paymentSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
   if (doc) {
@@ -129,7 +141,7 @@ paymentSchema.pre("findOneAndUpdate", async function (next) {
 
 // Post Middleware for findOneAndUpdate
 paymentSchema.post("findOneAndUpdate", async function (doc, next) {
-  // console.log("Post findOneAndUpdate working");
+  // console.log("Post findOneAndUpdate: ", doc);
   const order = await Order.findOne({ id: doc.order_no });
   if (doc && doc.amount !== this._previousAmount) {
     if (order) {

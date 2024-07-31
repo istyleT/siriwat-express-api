@@ -1,3 +1,4 @@
+//handleFactory.js
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const APIFeatures = require("../utils/apiFeatures");
@@ -78,11 +79,26 @@ exports.updateOne = (Model) =>
       return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
     }
 
-    const doc = await Model.findOneAndUpdate({ _id: req.params.id }, req.body, {
-      new: true,
-      runValidators: true,
-      context: { user },
-    });
+    if (!req.body) {
+      return next(new AppError("กรุณากรอกข้อมูลให้ครบถ้วน", 400));
+    }
+
+    const updateFields = {
+      ...req.body,
+      user_updated: user._id,
+      updated_at: moment.tz(new Date(), "Asia/Bangkok").toDate(),
+    };
+
+    const doc = await Model.findOneAndUpdate(
+      { _id: req.params.id },
+      updateFields,
+      {
+        new: true,
+        runValidators: true,
+        context: { user },
+      }
+    );
+
     if (!doc) {
       return next(new AppError("ไม่พบเอกสารที่ต้องการจะเเก้ไข", 404));
     }

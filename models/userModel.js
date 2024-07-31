@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
     required: [true, "ต้องระบุนามสกุล"],
+    select: false,
   },
   email: {
     unique: true,
@@ -29,6 +30,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
     match: [/^\S+@\S+\.\S+$/, "กรุณาระบุรูปแบบ E-mail ให้ถูกต้อง"],
+    select: false,
   },
   password: {
     type: String,
@@ -65,6 +67,7 @@ const userSchema = new mongoose.Schema({
       message: "แผนกไม่ถูกต้อง",
     },
   },
+
   role: {
     type: String,
     required: [true, "ต้องระบุ ตำแหน่ง"],
@@ -88,6 +91,7 @@ const userSchema = new mongoose.Schema({
       values: ["001", "002", "003", "HQ", "Online"],
       message: "สาขาไม่ถูกต้อง",
     },
+    select: false,
   },
   contact: {
     type: String,
@@ -95,6 +99,7 @@ const userSchema = new mongoose.Schema({
     minlength: 9,
     maxlength: 12,
     trim: true,
+    select: false,
   },
   active: {
     type: Boolean,
@@ -107,11 +112,13 @@ const userSchema = new mongoose.Schema({
   active_lasted_at: {
     type: Date,
     default: null,
+    select: false,
   },
   //ส่วนที่ทำการสร้าง
   created_at: {
     type: Date,
     default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+    select: false,
   },
   //ส่วนที่ทำการยกเลิก
   date_canceled: {

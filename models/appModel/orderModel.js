@@ -184,6 +184,16 @@ const orderSchema = new mongoose.Schema({
     ref: "User",
     required: [true, "กรุณาระบุผู้ทำรายการ"],
   },
+  //ส่วนที่ทำการแก้ไข
+  updated_at: {
+    type: Date,
+    default: null,
+  },
+  user_updated: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
   //ส่วนที่ทำการยกเลิก
   user_canceled: {
     type: mongoose.Schema.Types.ObjectId,
@@ -206,12 +216,17 @@ orderSchema.index({ custname: 1 });
 orderSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
-    select: "firstname -_id",
+    select: "firstname",
     options: { lean: true },
   })
     .populate({
       path: "user_canceled",
-      select: "firstname -_id",
+      select: "firstname",
+      options: { lean: true },
+    })
+    .populate({
+      path: "user_updated",
+      select: "firstname",
       options: { lean: true },
     })
     .populate("payment")
@@ -273,6 +288,7 @@ orderSchema.methods.addPartcancel = async function (partcancelId) {
 };
 
 orderSchema.methods.checkSuccessCondition = async function () {
+  // console.log("checkSuccessCondition Working");
   const populatedOrder = await this.model("Order")
     .findById(this._id)
     .populate("payment")
@@ -398,7 +414,7 @@ orderSchema.post("findOneAndUpdate", async function (doc, next) {
     }
     await doc.checkSuccessCondition();
   } catch (error) {
-    console.error("Error in post findOneAndUpdate middleware:", error);
+    // console.error("Error in post findOneAndUpdate middleware:", error);
     next(error);
   }
   next();
