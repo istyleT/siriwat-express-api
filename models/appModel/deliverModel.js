@@ -68,6 +68,10 @@ const deliverSchema = new mongoose.Schema(
       ref: "Tambon",
       default: null,
     },
+    zip_code: {
+      type: String,
+      default: null,
+    },
     deliverlist: {
       type: [
         {

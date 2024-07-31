@@ -3,3 +3,4 @@ const factory = require("../handlerFactory");
 
 // Method
 exports.getAllProvince = factory.getAll(Province);
+exports.getOneProvince = factory.getOne(Province);
