@@ -14,10 +14,6 @@ const paymentSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  customer_name: {
-    type: String,
-    required: [true, "กรุณาระบุชื่อผู้ชำระเงิน"],
-  },
   order_no: {
     type: String,
     required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
@@ -29,6 +25,7 @@ const paymentSchema = new mongoose.Schema({
   amount: {
     type: Number,
     required: [true, "กรุณาระบุจำนวนเงิน"],
+    min: [1, "จำนวนเงินต้องมากกว่า 0"],
   },
   method: {
     type: String,

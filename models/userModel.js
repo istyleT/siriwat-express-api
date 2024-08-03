@@ -95,9 +95,7 @@ const userSchema = new mongoose.Schema({
   },
   contact: {
     type: String,
-    required: [true, "ต้องระบุ เบอร์โทรศัพท์"],
-    minlength: 9,
-    maxlength: 12,
+    default: null,
     trim: true,
     select: false,
   },
