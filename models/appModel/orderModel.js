@@ -295,8 +295,11 @@ orderSchema.methods.checkSuccessCondition = async function () {
     .populate("deliver")
     .populate("partcancel")
     .exec();
-
-  if (populatedOrder.user_canceled) {
+  if ((populatedOrder.status_bill = "รอแก้ไข")) {
+    // console.log("status_bill is รอแก้ไข");
+    return;
+  } else if (populatedOrder.user_canceled) {
+    // console.log("status_bill is ยกเลิกแล้ว");
     populatedOrder.status_bill = "ยกเลิกแล้ว";
   } else {
     //เอา payment ที่ยกเลิกออก
@@ -412,9 +415,12 @@ orderSchema.post("findOneAndUpdate", async function (doc, next) {
       });
       await log.save();
     }
-    await doc.checkSuccessCondition();
+
+    //ถ้าไม่ใช่การแก้ไขสถานะรอแก้ไข ให้ทำการตรวจสอบเงื่อนไขการเสร็จสิ้น
+    if (doc.status_bill !== "รอแก้ไข") {
+      await doc.checkSuccessCondition();
+    }
   } catch (error) {
-    // console.error("Error in post findOneAndUpdate middleware:", error);
     next(error);
   }
   next();
