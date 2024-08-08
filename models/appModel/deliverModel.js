@@ -86,6 +86,11 @@ const deliverSchema = new mongoose.Schema({
           type: String,
           default: null,
         },
+        net_price: {
+          type: Number,
+          required: [true, "กรุณาระบุราคาสินค้า"],
+          min: [0, "ราคาต้องมากกว่า 0"],
+        },
         qty_order: {
           type: Number,
           required: [true, "กรุณาระบุจำนวนสินค้า"],

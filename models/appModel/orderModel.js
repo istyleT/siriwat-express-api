@@ -295,7 +295,7 @@ orderSchema.methods.checkSuccessCondition = async function () {
     .populate("deliver")
     .populate("partcancel")
     .exec();
-  if ((populatedOrder.status_bill = "รอแก้ไข")) {
+  if (populatedOrder.status_bill === "รอแก้ไข") {
     // console.log("status_bill is รอแก้ไข");
     return;
   } else if (populatedOrder.user_canceled) {
