@@ -2,6 +2,8 @@ class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
     this.queryString = queryString;
+    this.totalPages = 0;
+    this.totalDocuments = 0;
   }
   //การ filter ข้อมูล
   filter() {
@@ -9,9 +11,20 @@ class APIFeatures {
     const excludedFields = ["page", "sort", "limit", "fields"];
     excludedFields.forEach((el) => delete queryObj[el]);
     // การรองรับ `$ne` operator
+    // แปลง query string ให้เป็น JSON string
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(ne)\b/g, (match) => `$${match}`);
-    this.query = this.query.find(JSON.parse(queryStr));
+    // แปลง JSON string กลับเป็น object
+    const parsedQueryObj = JSON.parse(queryStr);
+
+    // นับจำนวนเอกสารที่ตรงกับ query ที่กรองแล้ว
+    this.totalDocumentsPromise = this.query.model.countDocuments(
+      parsedQueryObj
+    );
+
+    // กรองข้อมูล
+    this.query = this.query.find(parsedQueryObj);
+
     return this;
   }
   //การเรียงข้อมูล
@@ -20,7 +33,7 @@ class APIFeatures {
       const sortBy = this.queryString.sort.split(",").join(" ");
       this.query = this.query.sort(sortBy);
     } else {
-      this.query = this.query.sort("-createdAt");
+      this.query = this.query.sort("-created_at");
     }
     return this;
   }
@@ -35,12 +48,19 @@ class APIFeatures {
     return this;
   }
   //การเเบ่งหน้า
-  paginate() {
+  async paginate() {
     const page = this.queryString.page * 1 || 1;
     const limit = this.queryString.limit * 1 || 300;
     const skip = (page - 1) * limit;
 
     this.query = this.query.skip(skip).limit(limit);
+
+    // รอให้การนับจำนวนเอกสารเสร็จสิ้น
+    this.totalDocuments = await this.totalDocumentsPromise;
+
+    // คำนวณจำนวนหน้าทั้งหมด
+    this.totalPages = Math.ceil(this.totalDocuments / limit);
+
     return this;
   }
 }

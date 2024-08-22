@@ -9,6 +9,7 @@ var xss = require("xss-clean");
 var hpp = require("hpp");
 var morgan = require("morgan");
 var cors = require("cors");
+const cron = require("node-cron");
 const globalErrorHandler = require("./controllers/errorController");
 const usersRouter = require("./routes/userRoutes");
 
@@ -22,6 +23,9 @@ const ordercanpartRouter = require("./routes/appRoutes/ordercanpartRoutes");
 const provinceRouter = require("./routes/basedataRoutes/provinceRoutes");
 const amphureRouter = require("./routes/basedataRoutes/amphureRoutes");
 const tambonRouter = require("./routes/basedataRoutes/tambonRoutes");
+
+//Controller
+const quotationController = require("./controllers/appController/quotationController");
 
 const app = express();
 //ส่วนการตั้งค่า cors origin
@@ -95,6 +99,12 @@ app.use((req, res, next) => {
   console.log(x);
   // console.log(req.headers);
   next();
+});
+
+//การภตั้งค่า function จาก Controller ที่จะทำงานเป็น cron job
+//ลบเอกสารใบเสนอราคาที่เกิน 45 วัน
+cron.schedule("0 0 * * *", () => {
+  quotationController.deleteQuotationOld();
 });
 
 // ROUTES Pages Pug

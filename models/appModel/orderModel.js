@@ -208,6 +208,39 @@ const orderSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  //ข้อมูลช่วยเหลือในการจัดส่ง
+  receiver_name: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  address: {
+    type: String,
+    default: null,
+  },
+  tambon: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Tambon",
+    default: null,
+  },
+  zip_code: {
+    type: String,
+    default: null,
+  },
+  tel_number: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  cod: {
+    type: Boolean,
+    default: false,
+  },
+  cod_amount: {
+    type: Number,
+    default: 0,
+    min: [0, "ค่า COD ต้องมากกว่า 0"],
+  },
 });
 
 orderSchema.index({ custname: 1 });
@@ -229,6 +262,7 @@ orderSchema.pre(/^find/, function (next) {
       select: "firstname",
       options: { lean: true },
     })
+    .populate("tambon")
     .populate("payment")
     .populate("deliver")
     .populate("partcancel");

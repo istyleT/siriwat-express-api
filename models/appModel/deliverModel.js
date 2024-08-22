@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const Log = require("../logModel");
 const Order = require("./orderModel");
+const Payment = require("./paymentModel");
+const factory = require("../../controllers/handlerFactory");
 const { Schema } = mongoose;
 
 const deliverSchema = new mongoose.Schema({
@@ -50,16 +52,6 @@ const deliverSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    default: null,
-  },
-  province: {
-    type: Schema.ObjectId,
-    ref: "Province",
-    default: null,
-  },
-  amphure: {
-    type: Schema.ObjectId,
-    ref: "Amphure",
     default: null,
   },
   tambon: {
@@ -114,11 +106,11 @@ const deliverSchema = new mongoose.Schema({
     default: null,
   },
   cod: {
-    type: "Boolean",
+    type: Boolean,
     default: false,
   },
   cod_amount: {
-    type: "Number",
+    type: Number,
     default: 0,
     min: [0, "ค่า COD ต้องมากกว่า 0"],
   },
@@ -170,9 +162,7 @@ const populateFields = [
   { path: "confirmed_invoice_user", select: "firstname" },
   { path: "user_canceled", select: "firstname" },
   { path: "user_updated", select: "firstname" },
-  { path: "province", select: "name_th" },
-  { path: "amphure", select: "name_th" },
-  { path: "tambon", select: "name_th" },
+  { path: "tambon", select: "name_th amphure_id province_id" },
 ];
 
 deliverSchema.pre(/^find/, async function (next) {
@@ -189,6 +179,33 @@ deliverSchema.post("save", async function (doc, next) {
   const order = await Order.findOne({ id: doc.order_no });
   if (order) {
     await order.saveLastestUpdate(`เพิ่มจัดส่ง ${doc.id}`);
+  }
+  // ตรวจสอบว่า COD เป็น true หรือไม่ ถ้าเป็นจะสร้าง Payment ใหม่
+  if (doc.cod && doc.cod_amount > 0) {
+    const req = { body: {} }; // จำลอง req object เพื่อใช้ใน setDocno function
+    const res = {}; // จำลอง res object
+
+    // ห่อ setDocno ด้วย Promise เพื่อให้แน่ใจว่าทำงานเสร็จก่อน
+    await new Promise((resolve, reject) => {
+      factory.setDocno(Payment)(req, res, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+
+    //เช็คว่า req.body.id ถูกสร้างขึ้นทัน newPayment หรือไม่
+    // console.log(req.body.id);
+
+    const newPayment = new Payment({
+      id: req.body.id, // ใช้เลขที่เอกสารที่สร้างจาก setDocno
+      order_no: doc.order_no,
+      payment_date: doc.deliver_date,
+      amount: doc.cod_amount,
+      method: "COD",
+      user_created: doc.user_created,
+    });
+
+    await newPayment.save();
   }
   next();
 });

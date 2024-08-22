@@ -47,13 +47,19 @@ exports.getAll = (Model) =>
     const features = new APIFeatures(Model.find(filter), req.query)
       .filter()
       .sort()
-      .limitFields()
-      .paginate();
-    const doc = await features.query.sort({ created_at: -1 });
+      .limitFields();
+
+    // ตรวจสอบว่ามีการใช้ pagination หรือไม่
+    if (req.query.page || req.query.limit) {
+      await features.paginate(); // รอให้ paginate ทำงานเสร็จเพื่อคำนวณ totalPages
+    }
+
+    const doc = await features.query;
     res.status(200).json({
       status: "success",
       length: doc.length,
       data: doc,
+      totalPages: features.totalPages || undefined,
     });
   });
 
@@ -182,6 +188,10 @@ exports.setDocno = (Model) =>
       }
       //กำหนดค่าเพื่อส่งต่อไป
       req.body.id = frontdocno + docnum;
+
+      //ตรวจสอบค่าที่สร้างขึ้น
+      // console.log(req.body.id);
+
       next();
     } catch (err) {
       res.status(500).json({
