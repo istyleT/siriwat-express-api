@@ -205,8 +205,15 @@ deliverSchema.post("save", async function (doc, next) {
       user_created: doc.user_created,
     });
 
+    //สร้าง Payment ใหม่
     await newPayment.save();
+
+    // เพิ่มการชำระเงินไปที่ Order
+    if (order) {
+      await order.addPayment(newPayment._id);
+    }
   }
+
   next();
 });
 
