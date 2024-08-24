@@ -151,6 +151,8 @@ paymentSchema.post("findOneAndUpdate", async function (doc, next) {
     // ถ้าเป็นการยกเลิกการชำระเงิน
     // console.log("Cancelling payment");
     await order.saveLastestUpdate(`ยกเลิกชำระเงิน ${doc.id}`);
+    //ตรวจสอบว่ายกเลิกการชำระเงินแล้ว order จะเป็นสถานะอะไร
+    await order.checkSuccessCondition();
   } else {
     // ถ้าเป็นการแก้ไขการชำระเงิน
     // console.log("Updating payment");
