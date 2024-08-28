@@ -10,10 +10,17 @@ class APIFeatures {
     const queryObj = { ...this.queryString };
     const excludedFields = ["page", "sort", "limit", "fields"];
     excludedFields.forEach((el) => delete queryObj[el]);
-    // การรองรับ `$ne` operator
+    // การรองรับ `$ne` และ `$nin` operator
     // แปลง query string ให้เป็น JSON string
     let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(ne)\b/g, (match) => `$${match}`);
+    queryStr = queryStr.replace(/\b(ne|nin)\b/g, (match) => `$${match}`);
+
+    // ตรวจสอบและแปลงค่าของ $nin ให้เป็น array
+    queryStr = queryStr.replace(
+      /"(\$nin)":\s?"([^"]+)"/g,
+      (_, p1, p2) => `"${p1}":["${p2.split(",").join('","')}"]`
+    );
+
     // แปลง JSON string กลับเป็น object
     const parsedQueryObj = JSON.parse(queryStr);
 
