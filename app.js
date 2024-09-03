@@ -33,7 +33,7 @@ const app = express();
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 const allowedOrigins = [
-  "https://srwwebapp.netlify.app",
+  "https://rmbkk.netlify.app",
   "http://localhost:4173", //กรณี test เเบบ mode production
 ];
 

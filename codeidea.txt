@@ -1,0 +1,11 @@
+//คำสั่งลบ order ที่โดนยกเลิก
+db.orders.deleteMany({
+  user_canceled: { $ne: null }
+});
+
+//ลบเอกสารที่เกี่ยวข้อง เงือนไขคือ ค่า order_no ไม่พบใน id ของ order
+db.collection_name.deleteMany({
+  order_no: { 
+    $nin: db.orders.distinct("id") //ดึง id ทั้งหมดจาก collection orders เป็น array
+  }
+});
