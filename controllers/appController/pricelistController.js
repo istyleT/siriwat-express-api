@@ -22,6 +22,8 @@ exports.getPartsSugesst = catchAsync(async (req, res, next) => {
 //หาข้อมูลอะไหล่
 exports.getPartDetail = catchAsync(async (req, res, next) => {
   const partnumber = req.query.partnumber;
+
+  // console.log(partnumber);
   //ตัวแปรเก็บค่าเปลี่ยนอะไหล่
   let change_part = "N";
   //ข้อมูลตามเบอร์อะไหล่ ถ้าเบอร์อะไหล่ที่ได้มามี change_partnumber ให้หาเบอร์อะไหล่ที่เปลี่ยนมาไปเรื่อยๆ
