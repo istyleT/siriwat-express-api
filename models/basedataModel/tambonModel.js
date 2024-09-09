@@ -5,7 +5,7 @@ const tambonSchema = new Schema({
   id: { type: Number, required: true, unique: true, select: false },
   zip_code: { type: String, required: true },
   name_th: { type: String, required: true },
-  name_en: { type: String, required: true, select: false },
+  name_en: { type: String, select: false },
   amphure_id: {
     type: Schema.Types.ObjectId,
     ref: "Amphure",
