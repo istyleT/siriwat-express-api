@@ -201,3 +201,72 @@ exports.setDocno = (Model) =>
       });
     }
   });
+
+exports.setSwDocno = (Model) =>
+  catchAsync(async (req, res, next) => {
+    try {
+      let docnum = "";
+      let type = "";
+      switch (Model.modelName) {
+        case "Swquotation":
+          type = "QT";
+          break;
+        case "Sworder":
+          type = "RT";
+          break;
+        case "Swpayment":
+          type = "PM";
+          break;
+        case "Swdeliver":
+          type = "DN";
+          break;
+        case "Ordercanpart":
+          type = "PC";
+          break;
+        default:
+          // ถ้าไม่มี case ใดเข้ากันให้ส่ง error กลับไป
+          return next(new AppError("ไม่พบเงื่อนไขที่ต้องการ", 404));
+      }
+      const parsedDate = moment.tz(new Date(), "Asia/Bangkok");
+      // ดึงข้อมูลเวลาที่ต้องการ
+      const year = parsedDate.format("YY");
+      const month = parsedDate.format("MM");
+      const day = parsedDate.format("DD");
+      const frontdocno = `${type}${year}${month}${day}`;
+
+      // ตรวจสอบว่ามีเลขที่เอกสารที่ตรงกับเงื่อนไขหรือไม่
+      const existingDoc = await Model.findOne({
+        id: { $regex: frontdocno, $options: "i" },
+      });
+
+      if (existingDoc) {
+        // ใช้ updateOne เพื่ออัปเดต docCount
+        const updateResult = await Model.updateOne(
+          { id: { $regex: frontdocno, $options: "i" } },
+          { $inc: { docCount: 1 } }
+        );
+
+        // ค้นหาเอกสารที่อัปเดตเพื่อรับค่า docCount ใหม่
+        const updatedDoc = await Model.findOne({
+          id: { $regex: frontdocno, $options: "i" },
+        });
+
+        docnum = ("000" + updatedDoc.docCount).slice(-4);
+      } else {
+        docnum = "0001";
+      }
+      //กำหนดค่าเพื่อส่งต่อไป
+      req.body.id = frontdocno + docnum;
+
+      //ตรวจสอบค่าที่สร้างขึ้น
+      // console.log(req.body.id);
+
+      next();
+    } catch (err) {
+      res.status(500).json({
+        status: "error",
+        message: "เกิดข้อผิดพลาดในการสร้างเลขที่เอกสาร",
+        error: err.message,
+      });
+    }
+  });

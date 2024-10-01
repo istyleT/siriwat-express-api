@@ -109,6 +109,11 @@ const quotationSchema = new mongoose.Schema({
     ],
     default: [],
   },
+  //การเอาทศนิยมมาคำนวณที่ partslist
+  decimal: {
+    type: Boolean,
+    default: false,
+  },
   remark: {
     type: String,
     default: null,

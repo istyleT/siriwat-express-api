@@ -131,7 +131,7 @@ app.use("/amphure", amphureRouter);
 app.use("/tambon", tambonRouter);
 
 // siriwat routes
-app.get("/sw/customer", swcustomerRouter);
+app.use("/sw/customer", swcustomerRouter);
 
 // ค้นหา ROUTES ไม่พบ
 app.all("*", (req, res, next) => {

@@ -5,6 +5,7 @@ const Pricelist = require("../models/appModel/pricelistModel");
 const Province = require("../models/basedataModel/provinceModel");
 const Amphure = require("../models/basedataModel/amphureModel");
 const Tambon = require("../models/basedataModel/tambonModel");
+const Swcustomer = require("../models/siriwatModel/swcustomerModel");
 
 dotenv.config({ path: "./config.env" });
 
@@ -32,6 +33,9 @@ const amphurelists = JSON.parse(
 );
 const tambonlists = JSON.parse(
   fs.readFileSync(`${__dirname}/data/thai_tambons.json`, "utf-8")
+);
+const swcustomerlists = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/initcustomer.json`, "utf-8")
 );
 
 // UPDATE DATA INTO DB
@@ -91,6 +95,15 @@ const importDataTambons = async () => {
   }
   process.exit();
 };
+const importDataCustomers = async () => {
+  try {
+    await Swcustomer.create(swcustomerlists);
+    console.log("Data swcustomerlists successfully loaded!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
 
 // DELETE ALL DATA FROM DB
 const deleteDataPricelists = async () => {
@@ -129,6 +142,15 @@ const deleteDataTambonlists = async () => {
   }
   process.exit();
 };
+const deleteDataCustomerlists = async () => {
+  try {
+    await Swcustomer.deleteMany();
+    console.log("Data successfully deleted!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
 
 // importdata
 if (process.argv[2] === "--importpricelists") {
@@ -146,6 +168,10 @@ if (process.argv[2] === "--importamphures") {
 if (process.argv[2] === "--importtambons") {
   // console.log(process.argv);
   importDataTambons();
+}
+if (process.argv[2] === "--importcustomer") {
+  // console.log(process.argv);
+  importDataCustomers();
 }
 
 //updatedata
@@ -165,6 +191,9 @@ if (process.argv[2] === "--deleteamphurelists") {
 }
 if (process.argv[2] === "--deletetambonlists") {
   deleteDataTambonlists();
+}
+if (process.argv[2] === "--deletecustomerlists") {
+  deleteDataCustomerlists();
 }
 
 //command in terminal

@@ -1,3 +1,4 @@
+//swcustomerModel.js
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
@@ -7,7 +8,7 @@ const swcustomerSchema = new mongoose.Schema({
     trim: true,
     required: [true, "กรุณาระบุชื่อลูกค้า"],
   },
-  invoice_data: {
+  cust_invoice_data: {
     type: {
       tax_name: {
         type: String,
@@ -27,10 +28,13 @@ const swcustomerSchema = new mongoose.Schema({
       },
     },
   },
-  level: {
+  cust_level: {
     type: String,
-    trim: true,
-    default: null,
+    default: "ปกติ",
+    enum: {
+      values: ["ปกติ", "ประจำ"],
+      message: "ระดับลูกค้าไม่ถูกต้อง",
+    },
   },
   address: {
     type: String,
