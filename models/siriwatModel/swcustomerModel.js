@@ -27,6 +27,7 @@ const swcustomerSchema = new mongoose.Schema({
         default: null,
       },
     },
+    default: null,
   },
   cust_level: {
     type: String,

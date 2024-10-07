@@ -217,6 +217,9 @@ exports.setSwDocno = (Model) =>
         case "Swpayment":
           type = "PM";
           break;
+        case "Swestimateprice":
+          type = "EP";
+          break;
         case "Swdeliver":
           type = "DN";
           break;

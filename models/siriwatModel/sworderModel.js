@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
-const Log = require("../logModel");
 
 const sworderSchema = new mongoose.Schema({
   id: {
@@ -12,7 +11,11 @@ const sworderSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  channel: {
+  cust_type: {
+    type: String,
+    required: [true, "กรุณาระบุประเภทลูกค้า"],
+  },
+  cust_channel: {
     type: String,
     required: [true, "กรุณาระบุช่องทาง"],
     enum: {
@@ -20,35 +23,72 @@ const sworderSchema = new mongoose.Schema({
       message: "ช่องทางไม่ถูกต้อง",
     },
   },
-  // ใช้ custname กับ plate_no เป็น index ในการค้นหา
-  custname: {
-    type: String,
-    trim: true,
-    required: [true, "กรุณาระบุชื่อลูกค้า"],
+  // ข้อมูลลูกค้า
+  customer: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Customer",
+    default: null,
   },
-  plate_no: {
-    type: String,
-    required: [true, "กรุณาระบุเลขทะเบียน"],
+  customer_data: {
+    type: {
+      cust_data_name: {
+        type: String,
+        default: null,
+      },
+      cust_data_tel: {
+        type: String,
+        default: null,
+      },
+    },
+    default: null,
   },
   //ข้อมูลรถยนต์
-  vehicle_detail: {
+  vehicle: {
+    type: {
+      vin: {
+        type: String,
+        default: null,
+      },
+      distance: {
+        type: Number,
+        default: 0,
+      },
+      plate_no: {
+        type: String,
+        required: [true, "กรุณาระบุเลขทะเบียน"],
+      },
+      model: {
+        type: String,
+        default: null,
+      },
+      color: {
+        type: String,
+        default: null,
+      },
+    },
+    required: [true, "กรุณาระบุข้อมูลรถยนต์"],
+  },
+  //ค่ารายค่าเเรง
+  service_cost: {
     type: [
       {
-        vin: {
+        id: {
           type: String,
-          default: null,
+          required: [true, "กรุณาระบุ id ค่าแรง"],
         },
-        distance: {
+        service_desc: {
+          type: String,
+          required: [true, "กรุณาระบุรายละเอียดค่าแรง"],
+        },
+        qty: {
           type: Number,
-          default: 0,
+          default: 1,
+          min: [0, "จำนวนต้องมากกว่า 0"],
         },
-        model: {
-          type: String,
-          default: null,
-        },
-        color: {
-          type: String,
-          default: null,
+        price: {
+          type: Number,
+          required: [true, "กรุณาระบุราคาค่าแรง"],
+          min: [0, "ราคาต้องมากกว่า 0"],
         },
       },
     ],
@@ -112,11 +152,15 @@ const sworderSchema = new mongoose.Schema({
     default: [],
   },
   payment: {
-    type: [{ type: mongoose.Schema.ObjectId, ref: "Payment" }],
+    type: [{ type: mongoose.Schema.ObjectId, ref: "Swpayment" }],
+    default: [],
+  },
+  partcancel: {
+    type: [{ type: mongoose.Schema.ObjectId, ref: "Swordercanpart" }],
     default: [],
   },
   deliver: {
-    type: [{ type: mongoose.Schema.ObjectId, ref: "Deliver" }],
+    type: [{ type: mongoose.Schema.ObjectId, ref: "Swdeliver" }],
     default: [],
   },
   status_bill: {
@@ -190,7 +234,10 @@ const sworderSchema = new mongoose.Schema({
 });
 
 //create index
-sworderSchema.index({ plate_no: 1, custname: 1 });
+sworderSchema.index({
+  "vehicle.plate_no": 1,
+  customer: 1,
+});
 
 // populate path
 sworderSchema.pre(/^find/, function (next) {
@@ -261,7 +308,7 @@ sworderSchema.methods.cancelDeliverAndUpdateParts = async function (
   await this.checkSuccessCondition();
   return this;
 };
-
+//เพิ่มเลขที่ payment._id เข้าไปใน payment ของ order
 sworderSchema.methods.addPartcancel = async function (partcancelId) {
   this.partcancel.push(partcancelId);
   await this.save();
@@ -377,25 +424,8 @@ sworderSchema.pre("findOneAndUpdate", async function (next) {
 // Post Middleware
 sworderSchema.post("findOneAndUpdate", async function (doc, next) {
   try {
-    if (doc.user_canceled) {
-      const log = new Log({
-        action: "canceled",
-        collectionName: "Order",
-        documentId: doc._id,
-        changedBy: this._updateUser,
-      });
-      await log.save();
-    } else {
+    if (!doc.user_canceled) {
       await doc.saveLastestUpdate("แก้ไขบิล");
-      const log = new Log({
-        action: "update",
-        collectionName: "Order",
-        documentId: doc._id,
-        changedBy: this._updateUser,
-        oldData: this._updateLog,
-        newData: doc,
-      });
-      await log.save();
     }
 
     //ถ้าไม่ใช่การแก้ไขสถานะรอแก้ไข ให้ทำการตรวจสอบเงื่อนไขการเสร็จสิ้น

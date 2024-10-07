@@ -26,6 +26,12 @@ const tambonRouter = require("./routes/basedataRoutes/tambonRoutes");
 
 //Routes ของ Siriwat
 const swcustomerRouter = require("./routes/siriwatRoutes/swcustomerRoutes");
+const swestimatepriceRouter = require("./routes/siriwatRoutes/swestimatepriceRoutes");
+const swquotationRouter = require("./routes/siriwatRoutes/swquotationRoutes");
+const sworderRouter = require("./routes/siriwatRoutes/sworderRoutes");
+const swpaymentRouter = require("./routes/siriwatRoutes/swpaymentRoutes");
+const swdeliverRouter = require("./routes/siriwatRoutes/swdeliverRoutes");
+const swordercanpartRouter = require("./routes/siriwatRoutes/swordercanpartRoutes");
 
 //Controller
 const quotationController = require("./controllers/appController/quotationController");
@@ -132,6 +138,12 @@ app.use("/tambon", tambonRouter);
 
 // siriwat routes
 app.use("/sw/customer", swcustomerRouter);
+app.use("/sw/estimateprice", swestimatepriceRouter);
+app.use("/sw/quotation", swquotationRouter);
+app.use("/sw/order", sworderRouter);
+app.use("/sw/payment", swpaymentRouter);
+app.use("/sw/deliver", swdeliverRouter);
+app.use("/sw/ordercanpart", swordercanpartRouter);
 
 // ค้นหา ROUTES ไม่พบ
 app.all("*", (req, res, next) => {

@@ -4,14 +4,18 @@ const moment = require("moment-timezone");
 const swquotationSchema = new mongoose.Schema({
   id: {
     type: String,
-    unique: true,
+    unique: true, //รับจาก Middleware
     required: [true, "กรุณาระบุเลขที่ใบเสนอราคา"],
   },
   docCount: {
     type: Number,
     default: 1,
   },
-  channel: {
+  cust_type: {
+    type: String,
+    required: [true, "กรุณาระบุประเภทลูกค้า"],
+  },
+  cust_channel: {
     type: String,
     required: [true, "กรุณาระบุช่องทาง"],
     enum: {
@@ -19,43 +23,50 @@ const swquotationSchema = new mongoose.Schema({
       message: "ช่องทางไม่ถูกต้อง",
     },
   },
-  // ใช้ custname กับ plate_no เป็น index ในการค้นหา
-  custname: {
-    type: String,
-    trim: true,
-    required: [true, "กรุณาระบุชื่อลูกค้า"],
+  // ข้อมูลลูกค้า
+  customer: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Customer",
+    default: null,
   },
-  plate_no: {
-    type: String,
-    required: [true, "กรุณาระบุเลขทะเบียน"],
+  customer_data: {
+    type: {
+      cust_data_name: {
+        type: String,
+        default: null,
+      },
+      cust_data_tel: {
+        type: String,
+        default: null,
+      },
+    },
+    default: null,
   },
   //ข้อมูลรถยนต์
-  vehicle_detail: {
-    type: [
-      {
-        vin: {
-          type: String,
-          default: null,
-        },
-        distance: {
-          type: Number,
-          default: 0,
-        },
-        model: {
-          type: String,
-          default: null,
-        },
-        color: {
-          type: String,
-          default: null,
-        },
+  vehicle: {
+    type: {
+      vin: {
+        type: String,
+        default: null,
       },
-    ],
-    default: [],
-  },
-  created_at: {
-    type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+      distance: {
+        type: Number,
+        default: 0,
+      },
+      plate_no: {
+        type: String,
+        required: [true, "กรุณาระบุเลขทะเบียน"],
+      },
+      model: {
+        type: String,
+        default: null,
+      },
+      color: {
+        type: String,
+        default: null,
+      },
+    },
+    required: [true, "กรุณาระบุข้อมูลรถยนต์"],
   },
   //ค่ารายค่าเเรง
   service_cost: {
@@ -65,7 +76,7 @@ const swquotationSchema = new mongoose.Schema({
           type: String,
           required: [true, "กรุณาระบุ id ค่าแรง"],
         },
-        description: {
+        service_desc: {
           type: String,
           required: [true, "กรุณาระบุรายละเอียดค่าแรง"],
         },
@@ -74,7 +85,7 @@ const swquotationSchema = new mongoose.Schema({
           default: 1,
           min: [0, "จำนวนต้องมากกว่า 0"],
         },
-        priceperunit: {
+        price: {
           type: Number,
           required: [true, "กรุณาระบุราคาค่าแรง"],
           min: [0, "ราคาต้องมากกว่า 0"],
@@ -119,11 +130,16 @@ const swquotationSchema = new mongoose.Schema({
     ],
     default: [],
   },
+
   remark: {
     type: String,
     default: null,
     trim: true,
     maxlength: [200, "ห้ามกรอกเกิน 200 ตัวอักษร"],
+  },
+  created_at: {
+    type: Date,
+    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
   },
   user_created: {
     type: mongoose.Schema.ObjectId,
@@ -133,13 +149,20 @@ const swquotationSchema = new mongoose.Schema({
 });
 
 //create index
-swquotationSchema.index({ plate_no: 1, custname: 1 });
+swquotationSchema.index({
+  "vehicle.plate_no": 1,
+  customer: 1,
+});
 
-//populate user_create
+//populate path
 swquotationSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
     select: "firstname",
+    options: { lean: true },
+  }).populate({
+    path: "customer",
+    select: "address custname cust_invoice_data cust_level tel",
     options: { lean: true },
   });
   next();
