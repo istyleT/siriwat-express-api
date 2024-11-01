@@ -23,6 +23,12 @@ const swquotationSchema = new mongoose.Schema({
       message: "ช่องทางไม่ถูกต้อง",
     },
   },
+  // ช่างผู้รับผิดชอบ
+  mechanic: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Swmechanical",
+    default: null,
+  },
   // ข้อมูลลูกค้า
   customer: {
     type: mongoose.Schema.ObjectId,
@@ -58,8 +64,8 @@ const swquotationSchema = new mongoose.Schema({
         required: [true, "กรุณาระบุเลขทะเบียน"],
       },
       model: {
-        type: String,
-        default: null,
+        type: mongoose.Schema.ObjectId,
+        ref: "Swvehicle",
       },
       color: {
         type: String,
@@ -130,7 +136,6 @@ const swquotationSchema = new mongoose.Schema({
     ],
     default: [],
   },
-
   remark: {
     type: String,
     default: null,
@@ -160,11 +165,17 @@ swquotationSchema.pre(/^find/, function (next) {
     path: "user_created",
     select: "firstname",
     options: { lean: true },
-  }).populate({
-    path: "customer",
-    select: "address custname cust_invoice_data cust_level tel",
-    options: { lean: true },
-  });
+  })
+    .populate({
+      path: "customer",
+      select: "address custname cust_invoice_data cust_level tel",
+      options: { lean: true },
+    })
+    .populate({
+      path: "mechanic",
+      select: "mechanic_name",
+      options: { lean: true },
+    });
   next();
 });
 

@@ -23,6 +23,12 @@ const sworderSchema = new mongoose.Schema({
       message: "ช่องทางไม่ถูกต้อง",
     },
   },
+  // ช่างผู้รับผิดชอบ
+  mechanic: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Swmechanical",
+    default: null,
+  },
   // ข้อมูลลูกค้า
   customer: {
     type: mongoose.Schema.ObjectId,
@@ -58,8 +64,8 @@ const sworderSchema = new mongoose.Schema({
         required: [true, "กรุณาระบุเลขทะเบียน"],
       },
       model: {
-        type: String,
-        default: null,
+        type: mongoose.Schema.ObjectId,
+        ref: "Swvehicle",
       },
       color: {
         type: String,
@@ -254,6 +260,11 @@ sworderSchema.pre(/^find/, function (next) {
     .populate({
       path: "user_updated",
       select: "firstname",
+      options: { lean: true },
+    })
+    .populate({
+      path: "mechanic",
+      select: "mechanic_name",
       options: { lean: true },
     })
     .populate("payment")

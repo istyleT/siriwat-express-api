@@ -2,7 +2,6 @@ const { promisify } = require("util");
 const User = require("../models/userModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-// const sendEmail = require("../utils/email");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
@@ -11,23 +10,26 @@ const signToken = (id) => {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
+
 const createSendToken = async (user, statusCode, res) => {
-  //reset attemptlogin
+  //reset attemptlogin ให้กลายเป็น 0 หลังจาก login สำเร็จ
   await User.findOneAndUpdate(user._id, { attemptlogin: 0 });
-  // 1.create token
+
+  // 1.สร้าง token
   const token = signToken(user._id);
-  // 2.set cookie
-  const cookieOptions = {
+  // 2. ตั้งค่า cookie ให้กับ token
+  const accessTokenOptions = {
     expiresIn: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    // secure: true, only production
-    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
   };
-  res.cookie("jwt", token, cookieOptions);
-  // 3.remove password form output
+  // 4. ตั้งค่า cookie ให้กับ token ต่างๆ
+  res.cookie("srwJwt", token, accessTokenOptions);
+  // 5.เอา password ออกจาก response
   user.password = undefined;
-  // 4.send response
+  // 6.ส่ง response กลับไป
   res.status(statusCode).json({
     status: "success",
     token,
@@ -36,6 +38,48 @@ const createSendToken = async (user, statusCode, res) => {
     },
   });
 };
+
+exports.protect = catchAsync(async (req, res, next) => {
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (!token) {
+    return res.status(403).json({
+      message: "กรุณา login เพื่อเข้าสู่ระบบ",
+      status: "fail",
+    });
+  }
+
+  let decoded;
+  try {
+    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({
+        message: "Token หมดอายุ กรุณา Login อีกครั้ง",
+        status: "fail",
+      });
+    }
+    return next(new AppError("Token ไม่ถูกต้อง กรุณา Login เข้าสู่ระบบ", 401));
+  }
+
+  const freshUser = await User.findById(decoded.id);
+  if (!freshUser) {
+    return next(new AppError("ผู้ใช้งานนี้ไม่มีในระบบแล้ว", 401));
+  }
+
+  if (freshUser.changedPasswordAfter(decoded.iat)) {
+    return next(new AppError("รหัสผ่านถูกเปลี่ยน กรุณา Login อีกครั้ง", 401));
+  }
+
+  req.user = freshUser;
+  next();
+});
 
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
@@ -63,52 +107,6 @@ exports.restrictDepart = (...departments) => {
   };
 };
 
-exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Getting token and check of it's there
-  let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token = req.headers.authorization.split(" ")[1];
-  }
-  if (!token) {
-    return next(
-      new AppError("You are not logged in! Please log in to get access.", 401)
-    );
-  }
-  // 2) Verification token
-  let decoded;
-  try {
-    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-  } catch (err) {
-    if (err.name === "TokenExpiredError") {
-      return next(new AppError("Token has expired. Please log in again.", 401));
-    }
-    return next(new AppError("Token is invalid. Please log in again.", 401));
-  }
-  // 3) Check if user still exists
-  const freshUser = await User.findById(decoded.id);
-  if (!freshUser) {
-    return next(
-      new AppError(
-        "The user belonging to this token does no longer exist.",
-        401
-      )
-    );
-  }
-  // 4) Check if user changed password after the token was issued
-  if (freshUser.changedPasswordAfter(decoded.iat)) {
-    return next(
-      new AppError("User recently changed password! Please log in again.", 401)
-    );
-  }
-
-  // GRANT ACCESS TO PROTECTED ROUTE
-  req.user = freshUser;
-  next();
-});
-
 exports.defalutPassword = catchAsync(async (req, res, next) => {
   req.body.password = "rmbkk1234";
   req.body.passwordConfirm = "rmbkk1234";
@@ -122,7 +120,7 @@ exports.signup = catchAsync(async (req, res, next) => {
 
 //check Token ว่ายังใช้งานได้หรือไม่
 exports.checkToken = catchAsync(async (req, res, next) => {
-  // 1) Getting token and check if it's there
+  // 1) เก็บ token จาก header
   let token;
   if (
     req.headers.authorization &&
@@ -130,6 +128,8 @@ exports.checkToken = catchAsync(async (req, res, next) => {
   ) {
     token = req.headers.authorization.split(" ")[1];
   }
+
+  //ถ้าไม่มี token ให้ return error
   if (!token) {
     return res.status(403).json({
       message: "กรุณา login เพื่อเข้าสู่ระบบ",
@@ -137,7 +137,7 @@ exports.checkToken = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 2) Verifying token
+  // 2) ตรวจสอบ token ว่ายังใช้งานได้หรือไม่
   let decoded;
   try {
     decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
@@ -151,15 +151,18 @@ exports.checkToken = catchAsync(async (req, res, next) => {
     return next(new AppError("Token ไม่ถูกต้อง กรุณา Login เข้าสู่ระบบ", 401));
   }
 
-  // 3) Check if user still exists
+  // 3) หา user จาก token ที่ decode ได้
   const freshUser = await User.findById(decoded.id);
   if (!freshUser) {
-    return next(
-      new AppError(
-        "The user belonging to this token does no longer exist.",
-        401
-      )
-    );
+    return next(new AppError("ผู้ใช้งานนี้ไม่มีในระบบแล้ว", 401));
+  }
+
+  //ถ้ารหัสผ่านถูกเเต่ user ถูกระงับการใช้งาน
+  if (!freshUser.active) {
+    return res.status(401).json({
+      status: "fail",
+      message: "บัญชีถูกระงับการใช้งาน",
+    });
   }
 
   // 4) Check if user changed password after the token was issued
@@ -169,8 +172,28 @@ exports.checkToken = catchAsync(async (req, res, next) => {
     );
   }
 
-  // GRANT ACCESS TO PROTECTED ROUTE
-  req.user = freshUser;
+  //ตรวจสอบว่า token ใกล้หมดอายุหรือไม่
+  const tokenExpiration = decoded.exp * 1000;
+  //อายุที่เหลืออยู่ของ token
+  const timeRemaining = tokenExpiration - Date.now();
+  // console.log(timeRemaining / 1000);
+  //กำหนดเวลาที่ต้องการให้ token ต่ออายุให้
+  const threshold = process.env.JWT_REFRESH_EXPIRES_IN * 24 * 60 * 60 * 1000;
+  if (timeRemaining < threshold) {
+    console.log("Refreshing Token...");
+    const newToken = signToken(freshUser._id);
+
+    // ตั้งค่า cookie ใหม่ด้วย token ใหม่ที่ต่ออายุ
+    const cookieOptions = {
+      expiresIn: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      secure: process.env.NODE_ENV === "production", // เปิด secure เฉพาะใน production จะส่งเฉพาะ https
+      sameSite: "Lax", // ส่ง cookie ข้ามโดเมนได้ในบางกรณีจะไม่ส่งในกรณีที่เป็น request แบบ third-party
+    };
+    res.cookie("srwJwt", newToken, cookieOptions);
+  }
+
   res.status(200).json({
     status: "success",
     data: {

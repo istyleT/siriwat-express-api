@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -88,10 +87,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "HQ",
     enum: {
-      values: ["001", "002", "003", "HQ", "Online"],
+      values: ["All", "HQ", "Online"],
       message: "สาขาไม่ถูกต้อง",
     },
-    select: false,
   },
   contact: {
     type: String,

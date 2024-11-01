@@ -12,6 +12,7 @@ var cors = require("cors");
 const cron = require("node-cron");
 const globalErrorHandler = require("./controllers/errorController");
 const usersRouter = require("./routes/userRoutes");
+const cookieParser = require("cookie-parser");
 
 //Routes ของ Application
 const priceRouter = require("./routes/appRoutes/pricelistRoutes");
@@ -32,6 +33,9 @@ const sworderRouter = require("./routes/siriwatRoutes/sworderRoutes");
 const swpaymentRouter = require("./routes/siriwatRoutes/swpaymentRoutes");
 const swdeliverRouter = require("./routes/siriwatRoutes/swdeliverRoutes");
 const swordercanpartRouter = require("./routes/siriwatRoutes/swordercanpartRoutes");
+const swmechanicalRouter = require("./routes/siriwatRoutes/swmechanicalRoutes");
+const swpartkitRouter = require("./routes/siriwatRoutes/swpartkitRoutes");
+const swvehicleRouter = require("./routes/siriwatRoutes/swvehicleRoutes");
 
 //Controller
 const quotationController = require("./controllers/appController/quotationController");
@@ -62,6 +66,7 @@ const corsOptions = {
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   optionsSuccessStatus: 204, //เป็นค่าเริ่มต้นอยู่แล้ว
+  credentials: true, // อนุญาตการส่ง credentials เช่น cookie
 };
 
 // view engine setup
@@ -75,6 +80,9 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.static(path.join(__dirname, "public")));
 // Set secure HTTP headers
 app.use(helmet());
+
+//ตั้งค่าให้อ่านค่าจาก cookie ได้
+app.use(cookieParser());
 
 // ป้องกัน Bot Attack ขอ requset จนเว็บล่ม
 const limiter = rateLimit({
@@ -112,7 +120,7 @@ app.use((req, res, next) => {
 });
 
 //การภตั้งค่า function จาก Controller ที่จะทำงานเป็น cron job
-//ลบเอกสารใบเสนอราคาที่เกิน 45 วัน
+//ลบเอกสารใบเสนอราคาที่เกิน 45 วันใน App ของ RMBKK
 cron.schedule("0 0 * * *", () => {
   quotationController.deleteQuotationOld();
 });
@@ -145,6 +153,9 @@ app.use("/sw/order", sworderRouter);
 app.use("/sw/payment", swpaymentRouter);
 app.use("/sw/deliver", swdeliverRouter);
 app.use("/sw/ordercanpart", swordercanpartRouter);
+app.use("/sw/mechanical", swmechanicalRouter);
+app.use("/sw/partkit", swpartkitRouter);
+app.use("/sw/vehicle", swvehicleRouter);
 
 // ค้นหา ROUTES ไม่พบ
 app.all("*", (req, res, next) => {
