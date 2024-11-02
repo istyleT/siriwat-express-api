@@ -22,9 +22,8 @@ const createSendToken = async (user, statusCode, res) => {
     expiresIn: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    // secure: process.env.NODE_ENV === "production",
-    secure: false,
-    sameSite: "Lax",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "None",
   };
   // 4. ตั้งค่า cookie ให้กับ token ต่างๆ
   res.cookie("srwJwt", token, accessTokenOptions);
@@ -189,9 +188,8 @@ exports.checkToken = catchAsync(async (req, res, next) => {
       expiresIn: new Date(
         Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
       ),
-      // secure: process.env.NODE_ENV === "production",
-      secure: false,
-      sameSite: "Lax", // ส่ง cookie ข้ามโดเมนได้ในบางกรณีจะไม่ส่งในกรณีที่เป็น request แบบ third-party
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "None",
     };
     res.cookie("srwJwt", newToken, cookieOptions);
   }
