@@ -19,13 +19,13 @@ const createSendToken = async (user, statusCode, res) => {
   const token = signToken(user._id);
   // 2. ตั้งค่า cookie ให้กับ token
   const accessTokenOptions = {
-    expiresIn: new Date(
+    expires: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
     secure: process.env.NODE_ENV === "production",
     sameSite: "None",
   };
-  // 4. ตั้งค่า cookie ให้กับ token ต่างๆ
+  // 4. ตั้งค่า cookie ให้กับ token
   res.cookie("srwJwt", token, accessTokenOptions);
   // 5.เอา password ออกจาก response
   user.password = undefined;
@@ -185,7 +185,7 @@ exports.checkToken = catchAsync(async (req, res, next) => {
 
     // ตั้งค่า cookie ใหม่ด้วย token ใหม่ที่ต่ออายุ
     const cookieOptions = {
-      expiresIn: new Date(
+      expires: new Date(
         Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
       ),
       secure: process.env.NODE_ENV === "production",
