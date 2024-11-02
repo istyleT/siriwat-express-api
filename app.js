@@ -106,8 +106,6 @@ app.use(hpp());
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// app.use(cookieParser());
-
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
