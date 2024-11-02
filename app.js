@@ -45,6 +45,8 @@ const app = express();
 // ตรวจสอบว่าอยู่ใน development mode หรือไม่
 const isDevelopment = process.env.NODE_ENV !== "production";
 
+console.log(process.env.NODE_ENV);
+
 const allowedOrigins = [
   "https://rmbkk.netlify.app",
   "https://ssmwebapp.netlify.app",
