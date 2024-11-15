@@ -122,6 +122,8 @@ exports.signup = catchAsync(async (req, res, next) => {
 exports.checkToken = catchAsync(async (req, res, next) => {
   // 1) เก็บ token จาก header
   let token;
+  let newToken;
+
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
@@ -179,24 +181,20 @@ exports.checkToken = catchAsync(async (req, res, next) => {
   // console.log(timeRemaining / 1000);
   //กำหนดเวลาที่ต้องการให้ token ต่ออายุให้
   const threshold = process.env.JWT_REFRESH_EXPIRES_IN * 24 * 60 * 60 * 1000;
+
+  //ทดสอบเวลาที่ token ต่ออายุก่อนหมดอายุ 1 นาที
+  // const threshold = 60 * 1000;
+
+  //สร้าง Token ใหม่
   if (timeRemaining < threshold) {
     console.log("Refreshing Token...");
-    const newToken = signToken(freshUser._id);
-
-    // ตั้งค่า cookie ใหม่ด้วย token ใหม่ที่ต่ออายุ
-    const cookieOptions = {
-      expires: new Date(
-        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
-      ),
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "None",
-    };
-    res.cookie("srwJwt", newToken, cookieOptions);
+    newToken = signToken(freshUser._id);
   }
 
   res.status(200).json({
     status: "success",
     data: {
+      newaccessToken: newToken,
       data: freshUser,
     },
   });
