@@ -1,23 +1,22 @@
 const express = require("express");
 const router = express.Router();
 const {
-  getAllEstimateprice,
-  createEstimateprice,
-  updateEstimateprice,
-  setEstimatepriceNo,
+  setSwestimatepriceNo,
+  getAllSwestimateprice,
+  getOneSwestimateprice,
+  createSwestimateprice,
+  updateSwestimateprice,
 } = require("../../controllers/siriwatController/swestimatepriceController");
-const { protect, restrictTo } = require("../../controllers/authController");
 const { cancelData } = require("../../controllers/handlerFactory");
+const { protect } = require("../../controllers/authController");
 //Global
 router.use(protect);
 //Routes
 router
   .route("/")
-  .get(getAllEstimateprice)
-  .post(setEstimatepriceNo, createEstimateprice);
-router
-  .route("/canceldoc/:id")
-  .patch(restrictTo("Owner"), cancelData, updateEstimateprice);
-router.route("/:id").put(updateEstimateprice);
+  .get(getAllSwestimateprice)
+  .post(setSwestimatepriceNo, createSwestimateprice);
+router.route("/cancel/:id").patch(cancelData, updateSwestimateprice);
+router.route("/:id").get(getOneSwestimateprice).patch(updateSwestimateprice);
 
 module.exports = router;

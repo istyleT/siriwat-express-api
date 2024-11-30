@@ -11,11 +11,8 @@ const swestimatepriceSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  cust_type: {
-    type: String,
-    required: [true, "กรุณาระบุประเภทลูกค้า"],
-  },
-  cust_channel: {
+  // ข้อมูลลูกค้า
+  cust_source: {
     type: String,
     required: [true, "กรุณาระบุช่องทาง"],
     enum: {
@@ -23,25 +20,42 @@ const swestimatepriceSchema = new mongoose.Schema({
       message: "ช่องทางไม่ถูกต้อง",
     },
   },
-  // ช่างผู้รับผิดชอบ
-  mechanic: {
-    type: mongoose.Schema.ObjectId,
-    ref: "Swmechanical",
-    default: null,
-  },
-  // ข้อมูลลูกค้า
   customer: {
-    type: mongoose.Schema.ObjectId,
-    ref: "Customer",
-    default: null,
-  },
-  customer_data: {
     type: {
-      cust_data_name: {
-        type: String,
+      _id: {
+        type: mongoose.Schema.ObjectId,
         default: null,
       },
-      cust_data_tel: {
+      custname: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      cust_invoice_data: {
+        type: Object,
+        default: null,
+      },
+      address: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      tel: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+    },
+    required: [true, "กรุณาระบุลูกค้า"],
+  },
+  // ช่างผู้รับผิดชอบ
+  mechanic: {
+    type: {
+      _id: {
+        type: mongoose.Schema.ObjectId,
+        default: null,
+      },
+      mechanic_name: {
         type: String,
         default: null,
       },
@@ -49,30 +63,34 @@ const swestimatepriceSchema = new mongoose.Schema({
     default: null,
   },
   //ข้อมูลรถยนต์
-  vehicle: {
+  vehicle_vin: {
+    type: String,
+    default: null,
+  },
+  vehicle_distance: {
+    type: Number,
+    default: 0,
+  },
+  vehicle_plate_no: {
+    type: String,
+    required: [true, "กรุณาระบุเลขทะเบียน"],
+  },
+  vehicle_color: {
+    type: String,
+    default: null,
+  },
+  vehicle_model: {
     type: {
-      vin: {
-        type: String,
+      _id: {
+        type: mongoose.Schema.ObjectId,
         default: null,
       },
-      distance: {
-        type: Number,
-        default: 0,
-      },
-      plate_no: {
-        type: String,
-        required: [true, "กรุณาระบุเลขทะเบียน"],
-      },
-      model: {
-        type: mongoose.Schema.ObjectId,
-        ref: "Swvehicle",
-      },
-      color: {
+      vehicle_name: {
         type: String,
         default: null,
       },
     },
-    required: [true, "กรุณาระบุข้อมูลรถยนต์"],
+    default: null,
   },
   //ค่ารายค่าเเรง
   service_cost: {
@@ -151,15 +169,11 @@ const swestimatepriceSchema = new mongoose.Schema({
     default: null,
   },
   //ส่วนที่ทำการบันทึกการเปลี่ยนแปลงล่าสุด
-  lastest_update: {
-    type: Date,
-    default: () => moment().tz("Asia/Bangkok").toDate(),
-  },
   lastest_action: {
     type: String,
-    default: "สร้างบิล",
+    default: "สร้างใบประเมินราคา",
   },
-  //ส่วนที่ทำการสร้าง
+  //field พื้นฐาน
   created_at: {
     type: Date,
     default: () => moment().tz("Asia/Bangkok").toDate(),
@@ -169,7 +183,6 @@ const swestimatepriceSchema = new mongoose.Schema({
     ref: "User",
     required: [true, "กรุณาระบุผู้ทำรายการ"],
   },
-  //ส่วนที่ทำการแก้ไข
   updated_at: {
     type: Date,
     default: null,
@@ -179,14 +192,13 @@ const swestimatepriceSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
-  //ส่วนที่ทำการยกเลิก
+  canceled_at: {
+    type: Date,
+    default: null,
+  },
   user_canceled: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    default: null,
-  },
-  date_canceled: {
-    type: Date,
     default: null,
   },
   remark_canceled: {
@@ -215,16 +227,6 @@ swestimatepriceSchema.pre(/^find/, function (next) {
     .populate({
       path: "user_updated",
       select: "firstname",
-      options: { lean: true },
-    })
-    .populate({
-      path: "customer",
-      select: "address custname cust_invoice_data cust_level tel",
-      options: { lean: true },
-    })
-    .populate({
-      path: "mechanic",
-      select: "mechanic_name",
       options: { lean: true },
     })
     .populate("payment");

@@ -2,10 +2,10 @@ const Swestimateprice = require("../../models/siriwatModel/swestimatepriceModel"
 const factory = require("../handlerFactory");
 
 //Middleware
-exports.setEstimatepriceNo = factory.setSwDocno(Swestimateprice);
+exports.setSwestimatepriceNo = factory.setSwDocno(Swestimateprice);
 
 // Method
-exports.getAllEstimateprice = factory.getAll(Swestimateprice);
-exports.deleteEstimateprice = factory.deleteOne(Swestimateprice);
-exports.createEstimateprice = factory.createOne(Swestimateprice);
-exports.updateEstimateprice = factory.updateOne(Swestimateprice);
+exports.getAllSwestimateprice = factory.getAll(Swestimateprice);
+exports.getOneSwestimateprice = factory.getOne(Swestimateprice);
+exports.createSwestimateprice = factory.createOne(Swestimateprice);
+exports.updateSwestimateprice = factory.updateOne(Swestimateprice);

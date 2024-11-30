@@ -1,6 +1,5 @@
 //swcustomerModel.js
 const mongoose = require("mongoose");
-const moment = require("moment-timezone");
 
 const swcustomerSchema = new mongoose.Schema({
   custname: {
@@ -29,14 +28,6 @@ const swcustomerSchema = new mongoose.Schema({
     },
     default: null,
   },
-  cust_level: {
-    type: String,
-    default: "ปกติ",
-    enum: {
-      values: ["ปกติ", "ประจำ"],
-      message: "ระดับลูกค้าไม่ถูกต้อง",
-    },
-  },
   address: {
     type: String,
     trim: true,
@@ -52,14 +43,42 @@ const swcustomerSchema = new mongoose.Schema({
     trim: true,
     default: null,
   },
-  created_at: {
-    type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
-  },
+  //field พื้นฐาน
   updated_at: {
     type: Date,
     default: null,
   },
+  user_updated: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  canceled_at: {
+    type: Date,
+    default: null,
+  },
+  user_canceled: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+});
+
+//สร้าง index ให้กับ field
+swcustomerSchema.index({ custname: 1 });
+
+// populate path
+swcustomerSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "user_updated",
+    select: "firstname",
+    options: { lean: true },
+  }).populate({
+    path: "user_canceled",
+    select: "firstname",
+    options: { lean: true },
+  });
+  next();
 });
 
 const Swcustomer = mongoose.model("Swcustomer", swcustomerSchema);

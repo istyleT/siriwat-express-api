@@ -1,20 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const {
-  getAllOrder,
-  createOrder,
-  updateOrder,
-  setOrderNo,
+  setSworderNo,
+  getAllSworder,
+  getOneSworder,
+  updateSworder,
+  createSworder,
 } = require("../../controllers/siriwatController/sworderController");
-const { protect, restrictTo } = require("../../controllers/authController");
 const { cancelData } = require("../../controllers/handlerFactory");
-
+const { protect } = require("../../controllers/authController");
 //Global
 router.use(protect);
-router.use(restrictTo("Owner", "Sale"));
 //Routes
-router.route("/").get(getAllOrder).post(setOrderNo, createOrder);
-router.route("/canceldoc/:id").patch(cancelData, updateOrder);
-router.route("/:id").put(updateOrder);
+router.route("/").get(getAllSworder).post(setSworderNo, createSworder);
+router.route("/cancel/:id").patch(cancelData, updateSworder);
+router.route("/:id").get(getOneSworder).patch(updateSworder);
 
 module.exports = router;

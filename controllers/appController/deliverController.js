@@ -109,9 +109,40 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
 
   const delivers = await Deliver.find(query).sort({ created_at: 1 });
 
+  // ถ้าหาไม่เจอให้ส่งกลับ response ว่าง
+  if (!delivers || delivers.length === 0) {
+    return res.status(200).json({
+      status: "success",
+      results: 0,
+      data: [],
+    });
+  }
+
+  // ดึง order_no ทั้งหมดเพื่อใช้เทียบกับ Model Order
+  const orderNos = delivers.map((deliver) => deliver.order_no);
+
+  // หา Orders ที่มี id ตรงกับ order_no
+  const orders = await Order.find({ id: { $in: orderNos } }).select(
+    "id status_bill"
+  );
+
+  // สร้าง mapping ระหว่าง id และ status_bill เพื่อให้เข้าถึงข้อมูลได้เร็ว
+  const orderMap = orders.reduce((map, order) => {
+    map[order.id] = order.status_bill;
+    return map;
+  }, {});
+
+  // เพิ่ม field status_bill เข้าไปในแต่ละ object ของ delivers
+  const updatedDelivers = delivers.map((deliver) => {
+    return {
+      ...deliver.toObject(),
+      status_bill: orderMap[deliver.order_no] || null, // ถ้าไม่เจอให้ใส่ null
+    };
+  });
+
   res.status(200).json({
     status: "success",
-    results: delivers.length,
-    data: delivers,
+    results: updatedDelivers.length,
+    data: updatedDelivers,
   });
 });

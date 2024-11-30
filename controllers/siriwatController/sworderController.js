@@ -4,18 +4,19 @@ const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
 
 //Middleware
-exports.setOrderNo = factory.setSwDocno(Sworder);
+exports.setSworderNo = factory.setSwDocno(Sworder);
 
 // Method
-exports.getAllOrder = factory.getAll(Sworder);
-exports.deleteOrder = factory.deleteOne(Sworder);
-exports.updateOrder = factory.updateOne(Sworder);
-exports.createOrder = catchAsync(async (req, res, next) => {
+exports.getAllSworder = factory.getAll(Sworder);
+exports.getOneSworder = factory.getOne(Sworder);
+exports.updateSworder = factory.updateOne(Sworder);
+exports.reviveSworder = factory.reviveOne(Sworder);
+exports.createSworder = catchAsync(async (req, res, next) => {
   if (!req.body) {
     return next(new Error("กรุณากรอกข้อมูลให้ครบถ้วน", 400));
   }
   const doc = await Sworder.create(req.body);
-  if (doc) {
+  if (doc && req.body.quotation_id) {
     // ลบใบเสนอราคาที่ถูกสร้างเป็นใบสั่งซื้อ
     await Swquotation.findByIdAndDelete(req.body.quotation_id);
   }

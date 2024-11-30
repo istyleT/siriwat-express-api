@@ -3,6 +3,7 @@ const factory = require("../handlerFactory");
 
 //Method
 exports.getAllSwcustomer = factory.getAll(Swcustomer);
+exports.getOneSwcustomer = factory.getOne(Swcustomer);
 exports.createSwcustomer = factory.createOne(Swcustomer);
 exports.updateSwcustomer = factory.updateOne(Swcustomer);
-exports.deleteSwcustomer = factory.deleteOne(Swcustomer);
+exports.reviveSwcustomer = factory.reviveOne(Swcustomer);

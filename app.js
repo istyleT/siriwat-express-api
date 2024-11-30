@@ -39,6 +39,7 @@ const swvehicleRouter = require("./routes/siriwatRoutes/swvehicleRoutes");
 
 //Controller
 const quotationController = require("./controllers/appController/quotationController");
+const swquotationController = require("./controllers/siriwatController/swquotationController");
 
 const app = express();
 //ส่วนการตั้งค่า cors origin
@@ -124,6 +125,10 @@ app.use((req, res, next) => {
 cron.schedule("0 0 * * *", () => {
   quotationController.deleteQuotationOld();
 });
+//ลบเอกสารใบเสนอราคาที่เกิน 45 วันใน App ของ SSMapp
+cron.schedule("0 0 * * *", () => {
+  swquotationController.deleteSwquotationOld();
+});
 
 // ROUTES Pages Pug
 app.get("/", (req, res) => {
@@ -146,16 +151,16 @@ app.use("/amphure", amphureRouter);
 app.use("/tambon", tambonRouter);
 
 // siriwat routes
-app.use("/sw/customer", swcustomerRouter);
-app.use("/sw/estimateprice", swestimatepriceRouter);
-app.use("/sw/quotation", swquotationRouter);
-app.use("/sw/order", sworderRouter);
-app.use("/sw/payment", swpaymentRouter);
-app.use("/sw/deliver", swdeliverRouter);
-app.use("/sw/ordercanpart", swordercanpartRouter);
-app.use("/sw/mechanical", swmechanicalRouter);
-app.use("/sw/partkit", swpartkitRouter);
-app.use("/sw/vehicle", swvehicleRouter);
+app.use("/sw/customers", swcustomerRouter);
+app.use("/sw/estimateprices", swestimatepriceRouter);
+app.use("/sw/quotations", swquotationRouter);
+app.use("/sw/orders", sworderRouter);
+app.use("/sw/payments", swpaymentRouter);
+app.use("/sw/delivers", swdeliverRouter);
+app.use("/sw/ordercanparts", swordercanpartRouter);
+app.use("/sw/mechanicals", swmechanicalRouter);
+app.use("/sw/partkits", swpartkitRouter);
+app.use("/sw/vehicles", swvehicleRouter);
 
 // ค้นหา ROUTES ไม่พบ
 app.all("*", (req, res, next) => {

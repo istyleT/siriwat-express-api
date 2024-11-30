@@ -4,13 +4,17 @@ const {
   getAllSwcustomer,
   createSwcustomer,
   updateSwcustomer,
-  deleteSwcustomer,
+  reviveSwcustomer,
+  getOneSwcustomer,
 } = require("../../controllers/siriwatController/swcustomerController");
+const { cancelData } = require("../../controllers/handlerFactory");
 const { protect } = require("../../controllers/authController");
 //Global
 router.use(protect);
 //Routes
 router.route("/").get(getAllSwcustomer).post(createSwcustomer);
-router.route("/:id").put(updateSwcustomer).delete(deleteSwcustomer);
+router.route("/cancel/:id").patch(cancelData, updateSwcustomer);
+router.route("/revive/:id").patch(reviveSwcustomer);
+router.route("/:id").get(getOneSwcustomer).patch(updateSwcustomer);
 
 module.exports = router;

@@ -8,24 +8,17 @@ const swvehicleSchema = new mongoose.Schema({
     unique: true,
     required: [true, "กรุณาระบุชื่อรุ่นรถ"],
   },
-  vehicle_color: {
-    type: Array,
-    default: [],
-  },
-  active: {
-    type: Boolean,
-    default: true,
-  },
-  remark: {
-    type: String,
-    trim: true,
-    default: "",
-  },
-  created_at: {
-    type: Date,
-    default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
-  },
+  //field พื้นฐาน
   updated_at: {
+    type: Date,
+    default: null,
+  },
+  user_updated: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  canceled_at: {
     type: Date,
     default: null,
   },
@@ -34,6 +27,16 @@ const swvehicleSchema = new mongoose.Schema({
 //create index
 swvehicleSchema.index({
   vehicle_name: 1,
+});
+
+// populate path
+swvehicleSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "user_updated",
+    select: "firstname",
+    options: { lean: true },
+  });
+  next();
 });
 
 const Swvehicle = mongoose.model("Swvehicle", swvehicleSchema);
