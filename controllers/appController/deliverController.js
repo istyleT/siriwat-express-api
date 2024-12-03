@@ -123,26 +123,41 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
 
   // หา Orders ที่มี id ตรงกับ order_no
   const orders = await Order.find({ id: { $in: orderNos } }).select(
-    "id status_bill"
+    "id status_bill cust_tier"
   );
 
-  // สร้าง mapping ระหว่าง id และ status_bill เพื่อให้เข้าถึงข้อมูลได้เร็ว
+  // สร้าง mapping ระหว่าง id และ status_bill, cust_tier เพื่อให้เข้าถึงข้อมูลได้เร็ว
   const orderMap = orders.reduce((map, order) => {
-    map[order.id] = order.status_bill;
+    map[order.id] = {
+      status_bill: order.status_bill,
+      cust_tier: order.cust_tier,
+    };
     return map;
   }, {});
 
-  // เพิ่ม field status_bill เข้าไปในแต่ละ object ของ delivers
+  // เพิ่ม field status_bill และ cust_tier เข้าไปในแต่ละ object ของ delivers
   const updatedDelivers = delivers.map((deliver) => {
+    const orderData = orderMap[deliver.order_no] || {};
     return {
       ...deliver.toObject(),
-      status_bill: orderMap[deliver.order_no] || null, // ถ้าไม่เจอให้ใส่ null
+      status_bill: orderData.status_bill || null,
+      cust_tier: orderData.cust_tier || null,
     };
+  });
+
+  // กรอง deliverlist ในแต่ละ object ของ updatedDelivers
+  const filteredDelivers = updatedDelivers.map((deliver) => {
+    if (deliver.deliverlist && Array.isArray(deliver.deliverlist)) {
+      deliver.deliverlist = deliver.deliverlist.filter(
+        (item) => item.qty_deliver !== 0
+      );
+    }
+    return deliver;
   });
 
   res.status(200).json({
     status: "success",
-    results: updatedDelivers.length,
-    data: updatedDelivers,
+    results: filteredDelivers.length,
+    data: filteredDelivers,
   });
 });
