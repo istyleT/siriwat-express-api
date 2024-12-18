@@ -11,9 +11,9 @@ const swordercanpartSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  order_no: {
+  document_no: {
     type: String,
-    required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
+    required: [true, "กรุณาระบุเลขที่เอกสารอ้างอิง"],
   },
   partscancellist: {
     type: [
@@ -43,7 +43,7 @@ const swordercanpartSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-  //ส่วนที่ทำการสร้าง
+  //field พื้นฐาน
   created_at: {
     type: Date,
     default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
@@ -55,7 +55,7 @@ const swordercanpartSchema = new mongoose.Schema({
   },
 });
 
-swordercanpartSchema.index({ order_no: 1 });
+swordercanpartSchema.index({ document_no: 1 });
 
 // populate path
 const populateFields = [{ path: "user_created", select: "firstname" }];

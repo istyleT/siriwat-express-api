@@ -66,7 +66,6 @@ const userSchema = new mongoose.Schema({
       message: "แผนกไม่ถูกต้อง",
     },
   },
-
   role: {
     type: String,
     required: [true, "ต้องระบุ ตำแหน่ง"],

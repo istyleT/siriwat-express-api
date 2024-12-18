@@ -7,6 +7,7 @@ exports.setSwquotationNo = factory.setSwDocno(Swquotation);
 
 // Method
 exports.getAllSwquotation = factory.getAll(Swquotation);
+exports.getSuggestSwquotation = factory.getSuggest(Swquotation);
 exports.getOneSwquotation = factory.getOne(Swquotation);
 exports.createSwquotation = factory.createOne(Swquotation);
 exports.deleteSwquotation = factory.deleteOne(Swquotation);

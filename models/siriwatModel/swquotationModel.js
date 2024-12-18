@@ -23,7 +23,7 @@ const swquotationSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.ObjectId,
     ref: "Swcustomer",
-    default: null,
+    required: [true, "กรุณาระบุลูกค้า"],
   },
   // ช่างผู้รับผิดชอบ
   mechanic: {
@@ -42,7 +42,7 @@ const swquotationSchema = new mongoose.Schema({
   },
   vehicle_plate_no: {
     type: String,
-    required: [true, "กรุณาระบุเลขทะเบียน"],
+    default: null,
   },
   vehicle_color: {
     type: String,

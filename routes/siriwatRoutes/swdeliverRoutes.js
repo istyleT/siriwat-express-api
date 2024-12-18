@@ -1,13 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const {
-  getAllDeliver,
-  createDeliver,
-  updateDeliver,
-  setDeliverNo,
+  getAllSwdeliver,
+  createSwdeliver,
+  updateSwdeliver,
+  setSwdeliverNo,
   statusInvoice,
   pushTrackingNumber,
-  getDailyDeliverMove,
+  getDailySwdeliverMove,
+  getSuggestSwdeliver,
 } = require("../../controllers/siriwatController/swdeliverController");
 const { protect } = require("../../controllers/authController");
 const { cancelData } = require("../../controllers/handlerFactory");
@@ -15,10 +16,11 @@ const { cancelData } = require("../../controllers/handlerFactory");
 router.use(protect);
 //Routes
 router.route("/invoice/:id").put(statusInvoice);
-router.route("/canceldoc/:id").patch(cancelData, updateDeliver);
+router.route("/canceldoc/:id").patch(cancelData, updateSwdeliver);
 router.route("/addtrackingno/:id").patch(pushTrackingNumber);
-router.route("/").get(getAllDeliver).post(setDeliverNo, createDeliver);
-router.route("/dailyreport").get(getDailyDeliverMove);
-router.route("/:id").put(updateDeliver);
+router.route("/suggest").get(getSuggestSwdeliver);
+router.route("/").get(getAllSwdeliver).post(setSwdeliverNo, createSwdeliver);
+router.route("/dailyreport").get(getDailySwdeliverMove);
+router.route("/:id").put(updateSwdeliver);
 
 module.exports = router;

@@ -56,7 +56,8 @@ const allowedOrigins = [
 
 //ใน development mode เพิ่ม origin ของ localhost เข้าไป
 if (isDevelopment) {
-  allowedOrigins.push("http://localhost:5173"); //เอาไว้ในกรณี development
+  allowedOrigins.push("http://localhost:5174");
+  allowedOrigins.push("http://localhost:5173");
 }
 
 const corsOptions = {

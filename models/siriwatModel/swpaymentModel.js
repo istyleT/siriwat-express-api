@@ -13,9 +13,9 @@ const swpaymentSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
-  order_no: {
+  document_no: {
     type: String,
-    required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
+    required: [true, "กรุณาระบุเอกสารอ้างอิง"],
   },
   payment_date: {
     type: Date,
@@ -47,7 +47,7 @@ const swpaymentSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
-  //ส่วนที่ทำการสร้าง
+  // field พื้นฐาน
   created_at: {
     type: Date,
     default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
@@ -57,7 +57,6 @@ const swpaymentSchema = new mongoose.Schema({
     ref: "User",
     required: [true, "กรุณาระบุผู้ทำรายการ"],
   },
-  //ส่วนที่ทำการแก้ไข
   updated_at: {
     type: Date,
     default: null,
@@ -67,14 +66,13 @@ const swpaymentSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
-  //ส่วนที่ทำการยกเลิก
+  canceled_at: {
+    type: Date,
+    default: null,
+  },
   user_canceled: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    default: null,
-  },
-  date_canceled: {
-    type: Date,
     default: null,
   },
   remark_canceled: {
@@ -83,7 +81,7 @@ const swpaymentSchema = new mongoose.Schema({
   },
 });
 
-swpaymentSchema.index({ order_no: 1 });
+swpaymentSchema.index({ document_no: 1 });
 
 // populate path
 const populateFields = [
@@ -99,17 +97,8 @@ swpaymentSchema.pre(/^find/, function (next) {
   next();
 });
 
-//Pre Middleware for save
-swpaymentSchema.pre("save", function (next) {
-  if (this.method !== "COD") {
-    this.confirmed_payment_date = moment
-      .tz(Date.now(), "Asia/Bangkok")
-      .toDate();
-  }
-  next();
-});
+// Middleware
 
-// Post Middleware for save
 swpaymentSchema.post("save", async function (doc, next) {
   // console.log("Post save working");
   const order = await Sworder.findOne({ id: doc.order_no });

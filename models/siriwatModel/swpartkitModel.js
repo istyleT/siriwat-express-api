@@ -2,26 +2,29 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
 const swpartkitSchema = new mongoose.Schema({
-  partkit_code: {
+  code: {
     type: String,
     unique: true,
     required: [true, "กรุณาระบุรหัสชุด Kit"],
   },
-  partkit_description: {
+  description: {
     type: String,
     unique: true,
     required: [true, "กรุณาระบุชื่อชุด Kit"],
   },
-  partkit_partitem: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Pricelist",
-    },
-  ],
-  active: {
-    type: Boolean,
-    default: true,
+  items: {
+    type: [
+      {
+        part: { type: mongoose.Schema.Types.ObjectId, ref: "Pricelist" },
+        qty: {
+          type: Number,
+          default: 1,
+        },
+      },
+    ],
+    default: [],
   },
+  //field พื้นฐาน
   created_at: {
     type: Date,
     default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
@@ -30,18 +33,21 @@ const swpartkitSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  canceled_at: {
+    type: Date,
+    default: null,
+  },
 });
 
 //create index
-swpartkitSchema.index({
-  partkit_code: 1,
-  partkit_description: 1,
-});
+swpartkitSchema.index({ code: 1 });
+swpartkitSchema.index({ description: 1 });
 
 swpartkitSchema.pre(/^find/, function (next) {
   this.populate({
-    path: "partkit_partitem",
+    path: "items.part",
     model: "Pricelist",
+    select: "partnumber name_thai price_1 price_2 price_3 change_partnumber",
   });
   next();
 });

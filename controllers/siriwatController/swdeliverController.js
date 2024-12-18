@@ -4,14 +4,15 @@ const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
 
 //Middleware
-exports.setDeliverNo = factory.setDocno(Swdeliver);
+exports.setSwdeliverNo = factory.setDocno(Swdeliver);
 
 // Method
-exports.getAllDeliver = factory.getAll(Swdeliver);
-exports.deleteDeliver = factory.deleteOne(Swdeliver);
-exports.updateDeliver = factory.updateOne(Swdeliver);
+exports.getAllSwdeliver = factory.getAll(Swdeliver);
+exports.getSuggestSwdeliver = factory.getSuggest(Swdeliver);
+exports.deleteSwdeliver = factory.deleteOne(Swdeliver);
+exports.updateSwdeliver = factory.updateOne(Swdeliver);
 
-exports.createDeliver = catchAsync(async (req, res, next) => {
+exports.createSwdeliver = catchAsync(async (req, res, next) => {
   const orderId = req.body.order_id;
   // สร้าง deliver ใหม่
   const doc = await Swdeliver.create(req.body);
@@ -95,7 +96,7 @@ exports.pushTrackingNumber = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
+exports.getDailySwdeliverMove = catchAsync(async (req, res, next) => {
   const startdate = req.query.startdate;
   const enddate = req.query.enddate;
   const typedate = req.query.typedate;

@@ -5,12 +5,14 @@ const {
   createSwvehicle,
   updateSwvehicle,
   deleteSwvehicle,
+  getSuggestSwvehicle,
 } = require("../../controllers/siriwatController/swvehicleController");
 const { protect } = require("../../controllers/authController");
 //Global
 router.use(protect);
 //Routes
 router.route("/").get(getAllSwvehicle).post(createSwvehicle);
-router.route("/:id").put(updateSwvehicle).delete(deleteSwvehicle);
+router.route("/suggest").get(getSuggestSwvehicle);
+router.route("/:id").patch(updateSwvehicle).delete(deleteSwvehicle);
 
 module.exports = router;

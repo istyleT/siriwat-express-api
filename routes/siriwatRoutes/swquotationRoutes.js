@@ -7,6 +7,7 @@ const {
   createSwquotation,
   deleteSwquotation,
   updateSwquotation,
+  getSuggestSwquotation,
 } = require("../../controllers/siriwatController/swquotationController");
 const { protect } = require("../../controllers/authController");
 //Global
@@ -16,6 +17,7 @@ router
   .route("/")
   .get(getAllSwquotation)
   .post(setSwquotationNo, createSwquotation);
+router.route("/suggest").get(getSuggestSwquotation);
 router
   .route("/:id")
   .get(getOneSwquotation)

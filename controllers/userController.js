@@ -15,6 +15,8 @@ exports.checkRoleUser = catchAsync(async (req, res, next) => {
 
 //Methods
 exports.getAllUser = factory.getAll(User);
+exports.getUser = factory.getOne(User);
+exports.getSuggestUser = factory.getSuggest(User);
 exports.updateUser = factory.updateOne(User);
 
 exports.disableUser = catchAsync(async (req, res, next) => {

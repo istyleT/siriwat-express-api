@@ -48,6 +48,8 @@ exports.getPartDetail = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPricelist = factory.getAll(Pricelist);
+exports.getPricelist = factory.getOne(Pricelist);
+exports.getSuggestPricelist = factory.getSuggest(Pricelist);
 exports.deletePricelist = factory.deleteOne(Pricelist);
 exports.createPricelist = factory.createOne(Pricelist);
 exports.updatePricelist = factory.updateOne(Pricelist);

@@ -5,6 +5,7 @@ const {
   createSwmechanical,
   updateSwmechanical,
   deleteSwmechanical,
+  getSuggestSwmechanical,
 } = require("../../controllers/siriwatController/swmechanicalController");
 const { protect, restrictTo } = require("../../controllers/authController");
 //Global
@@ -14,7 +15,7 @@ router
   .route("/")
   .get(getAllSwmechanical)
   .post(restrictTo("Owner"), createSwmechanical);
-
+router.route("/suggest").get(getSuggestSwmechanical);
 router.use(restrictTo("Owner"));
 router.route("/:id").put(updateSwmechanical).delete(deleteSwmechanical);
 

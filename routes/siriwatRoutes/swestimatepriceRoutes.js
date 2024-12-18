@@ -6,6 +6,7 @@ const {
   getOneSwestimateprice,
   createSwestimateprice,
   updateSwestimateprice,
+  getSuggestSwestimateprice,
 } = require("../../controllers/siriwatController/swestimatepriceController");
 const { cancelData } = require("../../controllers/handlerFactory");
 const { protect } = require("../../controllers/authController");
@@ -16,6 +17,7 @@ router
   .route("/")
   .get(getAllSwestimateprice)
   .post(setSwestimatepriceNo, createSwestimateprice);
+router.route("/suggest").get(getSuggestSwestimateprice);
 router.route("/cancel/:id").patch(cancelData, updateSwestimateprice);
 router.route("/:id").get(getOneSwestimateprice).patch(updateSwestimateprice);
 

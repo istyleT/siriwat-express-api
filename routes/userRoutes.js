@@ -5,6 +5,7 @@ const {
   updateUser,
   disableUser,
   activeUser,
+  getSuggestUser,
 } = require("../controllers/userController");
 const {
   signup,
@@ -25,6 +26,7 @@ router.route("/checktoken").get(checkToken);
 //Middleware Router After Authentication
 router.use(protect);
 router.route("/").get(restrictTo("GM", "Owner"), getAllUser);
+router.route("/suggest").get(getSuggestUser);
 //ตั้งค่า password ใหม่ของ user
 router
   .route("/updatepassword/:id")

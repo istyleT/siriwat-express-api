@@ -244,7 +244,6 @@ swestimatepriceSchema.methods.saveLastestUpdate = async function (action) {
 swestimatepriceSchema.methods.addPayment = async function (paymentId) {
   this.payment.push(paymentId);
   await this.save();
-  await this.checkSuccessCondition();
   return this;
 };
 

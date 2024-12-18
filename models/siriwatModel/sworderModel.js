@@ -60,7 +60,7 @@ const sworderSchema = new mongoose.Schema({
         default: null,
       },
     },
-    default: null,
+    required: [true, "กรุณาระบุช่างผู้รับผิดชอบ"],
   },
   //ข้อมูลรถยนต์
   vehicle_vin: {
@@ -90,7 +90,7 @@ const sworderSchema = new mongoose.Schema({
         default: null,
       },
     },
-    default: null,
+    required: [true, "กรุณาระบุรุ่นรถยนต์"],
   },
   //ค่ารายค่าเเรง
   service_cost: {
@@ -285,8 +285,9 @@ sworderSchema.pre(/^find/, function (next) {
 });
 
 //บันทึกการเปลี่ยนแปลงล่าสุดของ order
-sworderSchema.methods.saveLastestUpdate = async function (action) {
-  this.lastest_update = moment().tz("Asia/Bangkok").toDate();
+sworderSchema.methods.saveLastestUpdate = async function (action, userId) {
+  this.updated_at = moment().tz("Asia/Bangkok").toDate();
+  this.user_updated = userId;
   this.lastest_action = action;
   await this.save();
 };
