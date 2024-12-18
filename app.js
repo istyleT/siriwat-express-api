@@ -50,7 +50,7 @@ console.log(process.env.NODE_ENV);
 
 const allowedOrigins = [
   "https://rmbkk.netlify.app",
-  "https://ssmwebapp.netlify.app",
+  "https://ssmapp.netlify.app",
   "http://localhost:4173", //กรณี test เเบบ mode production
 ];
 
