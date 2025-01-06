@@ -11,7 +11,6 @@ moment.tz.setDefault("Asia/Bangkok");
 exports.setSkipResNext = (skip) =>
   catchAsync(async (req, res, next) => {
     req.skipResNext = skip;
-    console.log("pass skip");
     next();
   });
 
@@ -161,7 +160,7 @@ exports.setSwDocno = (Model) =>
       req.body.id = frontdocno + docnum;
 
       //ตรวจสอบค่าที่สร้างขึ้น
-      console.log(req.body.id);
+      // console.log(req.body.id);
 
       next();
     } catch (err) {
@@ -416,7 +415,6 @@ exports.updateOne = (Model) =>
       return next(new AppError("กรุณากรอกข้อมูลให้ครบถ้วน", 400));
     }
 
-    console.log("updateOne");
     const updateFields = {
       ...req.body,
       user_updated: user._id,
