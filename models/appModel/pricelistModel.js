@@ -30,6 +30,10 @@ const pricelistSchema = new mongoose.Schema({
     type: Number,
     min: [0, "ราคาต้องมากกว่า 0"],
   },
+  price_RM: {
+    type: Number,
+    default: 0,
+  },
   group: {
     type: String,
     default: null,
@@ -45,6 +49,10 @@ const pricelistSchema = new mongoose.Schema({
   },
   //field พื้นฐาน
   update_at: {
+    type: Date,
+    default: null,
+  },
+  canceled_at: {
     type: Date,
     default: null,
   },

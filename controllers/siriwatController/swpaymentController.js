@@ -5,7 +5,7 @@ const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
 
 //Middleware
-exports.setSwpaymentNo = factory.setDocno(Swpayment);
+exports.setSwpaymentNo = factory.setSwDocno(Swpayment);
 
 // Method
 exports.getAllSwpayment = factory.getAll(Swpayment);
@@ -21,7 +21,7 @@ exports.pushPaymentToDoc = catchAsync(async (req, res, next) => {
   const payment_id = req.createdDoc._id;
   const payment_no = req.createdDoc.id;
 
-  if (document_type === "OR") {
+  if (document_type === "RT") {
     const order = await Sworder.findOne({ id: document_no });
     if (order) {
       await order.addPayment(payment_id);

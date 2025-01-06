@@ -3,13 +3,15 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const APIFeatures = require("../utils/apiFeatures");
 const moment = require("moment-timezone");
+const { getFieldType } = require("./anotherFunction");
 
 moment.tz.setDefault("Asia/Bangkok");
 
 //Middleware
-exports.setSkipResNext = (skip = true) =>
+exports.setSkipResNext = (skip) =>
   catchAsync(async (req, res, next) => {
     req.skipResNext = skip;
+    console.log("pass skip");
     next();
   });
 
@@ -53,7 +55,7 @@ exports.setDocno = (Model) =>
           break;
         default:
           // ถ้าไม่มี case ใดเข้ากันให้ส่ง error กลับไป
-          return next(new AppError("ไม่พบเงื่อนไขที่ต้องการ", 404));
+          return next(new AppError("ไม่พบเงื่อนไขที่การตั้งเลขที่เอกสาร", 404));
       }
       const parsedDate = moment.tz(new Date(), "Asia/Bangkok");
       // ดึงข้อมูลเวลาที่ต้องการ
@@ -105,6 +107,9 @@ exports.setSwDocno = (Model) =>
       let docnum = "";
       let type = "";
       switch (Model.modelName) {
+        case "Swestimateprice":
+          type = "ES";
+          break;
         case "Swquotation":
           type = "QT";
           break;
@@ -114,18 +119,15 @@ exports.setSwDocno = (Model) =>
         case "Swpayment":
           type = "PM";
           break;
-        case "Swestimateprice":
-          type = "EP";
-          break;
         case "Swdeliver":
           type = "DN";
           break;
-        case "Ordercanpart":
+        case "Swordercanpart":
           type = "PC";
           break;
         default:
           // ถ้าไม่มี case ใดเข้ากันให้ส่ง error กลับไป
-          return next(new AppError("ไม่พบเงื่อนไขที่ต้องการ", 404));
+          return next(new AppError("ไม่พบเงื่อนไขที่การตั้งเลขที่เอกสาร", 404));
       }
       const parsedDate = moment.tz(new Date(), "Asia/Bangkok");
       // ดึงข้อมูลเวลาที่ต้องการ
@@ -159,7 +161,7 @@ exports.setSwDocno = (Model) =>
       req.body.id = frontdocno + docnum;
 
       //ตรวจสอบค่าที่สร้างขึ้น
-      // console.log(req.body.id);
+      console.log(req.body.id);
 
       next();
     } catch (err) {
@@ -171,7 +173,7 @@ exports.setSwDocno = (Model) =>
     }
   });
 
-// method ต่างๆ สำหรับการจัดการข้อมูล
+//Method
 exports.getSuggest = (Model) =>
   catchAsync(async (req, res, next) => {
     try {
@@ -182,10 +184,21 @@ exports.getSuggest = (Model) =>
       const page = parseInt(req.query.page) || 1;
       const sort = req.query.sort || "-_id";
 
+      let filter = { ...req.query };
+      const excludedFields = [
+        "search_field",
+        "search_text",
+        "page",
+        "sort",
+        "limit",
+        "fields",
+      ];
+      excludedFields.forEach((el) => delete filter[el]);
+
       if (!field || !value || value.trim() === "") {
         delete req.query.search_field;
         delete req.query.search_text;
-        let filter = {};
+        filter = {};
         const features = new APIFeatures(Model.find(filter), req.query)
           .filter()
           .sort()
@@ -205,25 +218,46 @@ exports.getSuggest = (Model) =>
         });
       }
 
-      const schemaFields = Model.schema.paths;
-      if (!schemaFields[field]) {
-        return next(new AppError(`ฟิลด์ '${field}' ไม่ถูกต้อง`, 400));
+      let queryStr = JSON.stringify(filter);
+      queryStr = queryStr.replace(
+        /\b(gt|gte|lt|lte|ne|in|nin|or|and)\b/g,
+        (match) => `$${match}`
+      );
+
+      let parsedQueryObj = JSON.parse(queryStr);
+
+      Object.keys(parsedQueryObj).forEach((key) => {
+        if (
+          parsedQueryObj[key]?.$in &&
+          typeof parsedQueryObj[key].$in === "string"
+        ) {
+          parsedQueryObj[key].$in = parsedQueryObj[key].$in.split(",");
+        }
+        if (
+          parsedQueryObj[key]?.$nin &&
+          typeof parsedQueryObj[key].$nin === "string"
+        ) {
+          parsedQueryObj[key].$nin = parsedQueryObj[key].$nin.split(",");
+        }
+      });
+
+      // Handle specific null value (e.g., canceled_at[ne]=null)
+      if (parsedQueryObj.canceled_at && parsedQueryObj.canceled_at.$ne) {
+        parsedQueryObj.canceled_at.$ne = null;
       }
 
-      const fieldType = schemaFields[field].instance;
+      filter = { ...parsedQueryObj };
+
+      const fieldType = getFieldType(Model.schema.paths, field);
       if (fieldType !== "String") {
         return next(
-          new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท '${fieldType}'`, 400)
+          new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท ${fieldType}`, 400)
         );
       }
 
-      const regex = new RegExp(value, "i");
+      filter[field] = { $regex: new RegExp(value, "i") };
 
-      const totalRecords =
-        (await Model.countDocuments({
-          [field]: { $regex: regex },
-        })) || 1;
-
+      const totalRecords = (await Model.countDocuments(filter)) || 1;
       const totalPages = Math.ceil(totalRecords / limit);
 
       if (page > totalPages) {
@@ -235,9 +269,7 @@ exports.getSuggest = (Model) =>
         );
       }
 
-      let query = Model.find({
-        [field]: { $regex: regex },
-      });
+      let query = Model.find(filter);
 
       if (fields) {
         const selectedFields = fields.split(",").join(" ");
@@ -384,6 +416,7 @@ exports.updateOne = (Model) =>
       return next(new AppError("กรุณากรอกข้อมูลให้ครบถ้วน", 400));
     }
 
+    console.log("updateOne");
     const updateFields = {
       ...req.body,
       user_updated: user._id,

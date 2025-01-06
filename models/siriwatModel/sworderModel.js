@@ -11,6 +11,31 @@ const sworderSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
+  //แยกประเภทบิล
+  type_document: {
+    type: String,
+    required: [true, "กรุณาระบุประเภทบิล"],
+    enum: {
+      values: ["บิลบริการ", "บิลขายปลีก", "บิลขายส่ง"],
+      message: "ประเภทบิลไม่ถูกต้อง",
+    },
+  },
+  sub_type: {
+    type: String,
+    default: "ปกติ",
+    enum: {
+      values: ["ปกติ", "สั่งด่วน", "สั่งสต็อค"],
+      message: "ชนิดบิลไม่ถูกต้อง",
+    },
+  },
+  price_condition: {
+    type: String,
+    default: "1",
+    enum: {
+      values: ["1", "2", "3", "RM"],
+      message: "เงื่อนไขราคาไม่ถูกต้อง",
+    },
+  },
   // ข้อมูลลูกค้า
   cust_source: {
     type: String,
@@ -32,7 +57,23 @@ const sworderSchema = new mongoose.Schema({
         default: null,
       },
       cust_invoice_data: {
-        type: Object,
+        type: {
+          tax_name: {
+            type: String,
+            trim: true,
+            default: null,
+          },
+          tax_no: {
+            type: String,
+            trim: true,
+            default: null,
+          },
+          tax_address: {
+            type: String,
+            trim: true,
+            default: null,
+          },
+        },
         default: null,
       },
       address: {
@@ -60,7 +101,7 @@ const sworderSchema = new mongoose.Schema({
         default: null,
       },
     },
-    required: [true, "กรุณาระบุช่างผู้รับผิดชอบ"],
+    default: null,
   },
   //ข้อมูลรถยนต์
   vehicle_vin: {
@@ -73,7 +114,7 @@ const sworderSchema = new mongoose.Schema({
   },
   vehicle_plate_no: {
     type: String,
-    required: [true, "กรุณาระบุเลขทะเบียน"],
+    default: null,
   },
   vehicle_color: {
     type: String,
@@ -90,17 +131,17 @@ const sworderSchema = new mongoose.Schema({
         default: null,
       },
     },
-    required: [true, "กรุณาระบุรุ่นรถยนต์"],
+    default: null,
   },
-  //ค่ารายค่าเเรง
-  service_cost: {
+  //ค่าใช้จ่ายอื่นๆ
+  another_cost: {
     type: [
       {
         id: {
           type: String,
-          required: [true, "กรุณาระบุ id ค่าแรง"],
+          required: [true, "กรุณาระบุ id"],
         },
-        service_desc: {
+        another_desc: {
           type: String,
           required: [true, "กรุณาระบุรายละเอียดค่าแรง"],
         },
@@ -175,17 +216,14 @@ const sworderSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  // รายการจ่ายเงิน
   payment: {
     type: [{ type: mongoose.Schema.ObjectId, ref: "Swpayment" }],
     default: [],
   },
-  // รายการยกเลิกอะไหล่
   partcancel: {
     type: [{ type: mongoose.Schema.ObjectId, ref: "Swordercanpart" }],
     default: [],
   },
-  // รายการส่งมอบ/จัดส่ง
   deliver: {
     type: [{ type: mongoose.Schema.ObjectId, ref: "Swdeliver" }],
     default: [],
@@ -341,12 +379,14 @@ sworderSchema.methods.addPartcancel = async function (partcancelId) {
 
 sworderSchema.methods.checkSuccessCondition = async function () {
   // console.log("checkSuccessCondition Working");
-  const populatedOrder = await this.model("Order")
+
+  const populatedOrder = await this.model("Sworder")
     .findById(this._id)
     .populate("payment")
     .populate("deliver")
     .populate("partcancel")
     .exec();
+
   if (populatedOrder.status_bill === "รอแก้ไข") {
     // console.log("status_bill is รอแก้ไข");
     return;
@@ -394,8 +434,8 @@ sworderSchema.methods.checkSuccessCondition = async function () {
       0
     );
     //รวมราคาค่าใช้จ่ายอื่นๆ
-    const totalAnotherCost = populatedOrder.anothercost.reduce(
-      (total, cost) => total + Number(cost.price),
+    const totalAnotherCost = populatedOrder.another_cost.reduce(
+      (total, cost) => total + Number(cost.price * cost.qty),
       0
     );
     //รวมราคาสินค้าทั้งหมด
@@ -444,14 +484,15 @@ sworderSchema.pre("findOneAndUpdate", async function (next) {
   next();
 });
 
-// Post Middleware
+//Post Middleware
 sworderSchema.post("findOneAndUpdate", async function (doc, next) {
   try {
-    if (!doc.user_canceled) {
+    if (!doc.canceled_at) {
       await doc.saveLastestUpdate("แก้ไขบิล");
     }
 
     //ถ้าไม่ใช่การแก้ไขสถานะรอแก้ไข ให้ทำการตรวจสอบเงื่อนไขการเสร็จสิ้น
+    console.log("status in post", doc.status_bill);
     if (doc.status_bill !== "รอแก้ไข") {
       await doc.checkSuccessCondition();
     }

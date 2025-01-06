@@ -11,6 +11,22 @@ const swestimatepriceSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
+  type_document: {
+    type: String,
+    required: [true, "กรุณาระบุประเภทเอกสาร"],
+    enum: {
+      values: ["ใบประเมินราคา"],
+      message: "ประเภทเอกสารไม่ถูกต้อง",
+    },
+  },
+  price_condition: {
+    type: String,
+    default: "1",
+    enum: {
+      values: ["1", "2", "3", "RM"],
+      message: "เงื่อนไขราคาไม่ถูกต้อง",
+    },
+  },
   // ข้อมูลลูกค้า
   cust_source: {
     type: String,
@@ -32,7 +48,23 @@ const swestimatepriceSchema = new mongoose.Schema({
         default: null,
       },
       cust_invoice_data: {
-        type: Object,
+        type: {
+          tax_name: {
+            type: String,
+            trim: true,
+            default: null,
+          },
+          tax_no: {
+            type: String,
+            trim: true,
+            default: null,
+          },
+          tax_address: {
+            type: String,
+            trim: true,
+            default: null,
+          },
+        },
         default: null,
       },
       address: {
@@ -47,20 +79,6 @@ const swestimatepriceSchema = new mongoose.Schema({
       },
     },
     required: [true, "กรุณาระบุลูกค้า"],
-  },
-  // ช่างผู้รับผิดชอบ
-  mechanic: {
-    type: {
-      _id: {
-        type: mongoose.Schema.ObjectId,
-        default: null,
-      },
-      mechanic_name: {
-        type: String,
-        default: null,
-      },
-    },
-    default: null,
   },
   //ข้อมูลรถยนต์
   vehicle_vin: {
@@ -92,15 +110,15 @@ const swestimatepriceSchema = new mongoose.Schema({
     },
     default: null,
   },
-  //ค่ารายค่าเเรง
-  service_cost: {
+  //ค่าใช้จ่ายอื่นๆ
+  another_cost: {
     type: [
       {
         id: {
           type: String,
-          required: [true, "กรุณาระบุ id ค่าแรง"],
+          required: [true, "กรุณาระบุ id"],
         },
-        service_desc: {
+        another_desc: {
           type: String,
           required: [true, "กรุณาระบุรายละเอียดค่าแรง"],
         },
@@ -164,6 +182,15 @@ const swestimatepriceSchema = new mongoose.Schema({
     type: [{ type: mongoose.Schema.ObjectId, ref: "Swpayment" }],
     default: [],
   },
+  //อื่นๆ
+  status_bill: {
+    type: String,
+    default: "บันทึกแล้ว",
+    enum: {
+      values: ["บันทึกแล้ว", "จ่ายครบ", "เสร็จสิ้น", "รอแก้ไข", "ยกเลิกแล้ว"],
+      message: "สถานะไม่ถูกต้อง",
+    },
+  },
   invoice_date: {
     type: Date,
     default: null,
@@ -208,7 +235,7 @@ const swestimatepriceSchema = new mongoose.Schema({
 });
 
 swestimatepriceSchema.index({
-  "vehicle.plate_no": 1,
+  vehicle_plate_no: 1,
   customer: 1,
 });
 

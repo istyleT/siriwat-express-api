@@ -19,7 +19,12 @@ router.use(protect);
 router
   .route("/")
   .get(getAllSwpayment)
-  .post(setSwpaymentNo, setSkipResNext, createSwpayment, pushPaymentToDoc);
+  .post(
+    setSwpaymentNo,
+    setSkipResNext(true),
+    createSwpayment,
+    pushPaymentToDoc
+  );
 router.route("/suggest").get(getSuggestSwpayment);
 router.route("/canceldoc/:id").patch(cancelData, updateSwpayment);
 router.route("/:id").patch(updateSwpayment);
