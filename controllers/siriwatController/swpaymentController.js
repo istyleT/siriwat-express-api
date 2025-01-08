@@ -32,7 +32,7 @@ exports.pushPaymentToDoc = catchAsync(async (req, res, next) => {
     } else {
       return next(new Error("ไม่พบเอกสารที่ต้องการเพิ่มการชำระเงิน", 404));
     }
-  } else if (document_type === "EP") {
+  } else if (document_type === "ES") {
     const estimateprice = await Swestimateprice.findOne({ id: document_no });
     if (estimateprice) {
       await estimateprice.addPayment(payment_id);

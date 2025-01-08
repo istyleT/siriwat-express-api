@@ -98,10 +98,9 @@ swpaymentSchema.pre(/^find/, function (next) {
 });
 
 // Middleware
-
 swpaymentSchema.post("save", async function (doc, next) {
-  // console.log("Post save working");
-  const order = await Sworder.findOne({ id: doc.order_no });
+  console.log("Post save working");
+  const order = await Sworder.findOne({ id: doc.document_no });
   if (order) {
     await order.saveLastestUpdate(`เพิ่มชำระเงิน ${doc.id}`);
   }
@@ -112,8 +111,6 @@ swpaymentSchema.post("save", async function (doc, next) {
 swpaymentSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getQuery());
   if (doc) {
-    this._updateLog = doc; // Get the document before update
-    this._updateUser = this.getOptions().context.user.username; // Get the user who made the update
     this._previousAmount = doc.amount; // บันทึกค่า amount ก่อนการอัพเดต
     this._previousMethod = doc.method; // เก็บค่า method ก่อนอัพเดต
   }
@@ -122,8 +119,8 @@ swpaymentSchema.pre("findOneAndUpdate", async function (next) {
 
 // Post Middleware for findOneAndUpdate
 swpaymentSchema.post("findOneAndUpdate", async function (doc, next) {
-  // console.log("Post findOneAndUpdate: ", doc);
-  const order = await Sworder.findOne({ id: doc.order_no });
+  console.log("Post findOneAndUpdate: ");
+  const order = await Sworder.findOne({ id: doc.document_no });
   if (doc && doc.amount !== this._previousAmount) {
     if (order) {
       await order.checkSuccessCondition();
@@ -131,16 +128,18 @@ swpaymentSchema.post("findOneAndUpdate", async function (doc, next) {
   }
 
   //อัพเดทข้อมูลล่าสุดของ order
-  if (doc.user_canceled) {
+  if (doc.user_canceled && order) {
     // ถ้าเป็นการยกเลิกการชำระเงิน
-    // console.log("Cancelling payment");
+    console.log("Cancelling payment");
     await order.saveLastestUpdate(`ยกเลิกชำระเงิน ${doc.id}`);
     //ตรวจสอบว่ายกเลิกการชำระเงินแล้ว order จะเป็นสถานะอะไร
     await order.checkSuccessCondition();
   } else {
     // ถ้าเป็นการแก้ไขการชำระเงิน
-    // console.log("Updating payment");
-    await order.saveLastestUpdate(`แก้ไขชำระเงิน ${doc.id}`);
+    console.log("Updating payment");
+    if (order) {
+      await order.saveLastestUpdate(`แก้ไขชำระเงิน ${doc.id}`);
+    }
   }
 
   // ตรวจสอบ method ก่อนและหลังการอัพเดต

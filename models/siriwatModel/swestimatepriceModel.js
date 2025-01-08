@@ -85,6 +85,10 @@ const swestimatepriceSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  vehicle_engine_no: {
+    type: String,
+    default: null,
+  },
   vehicle_distance: {
     type: Number,
     default: 0,
