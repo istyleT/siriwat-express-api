@@ -121,7 +121,10 @@ swpaymentSchema.pre("findOneAndUpdate", async function (next) {
 swpaymentSchema.post("findOneAndUpdate", async function (doc, next) {
   console.log("Post findOneAndUpdate: ");
   const order = await Sworder.findOne({ id: doc.document_no });
-  if (doc && doc.amount !== this._previousAmount) {
+  if (
+    doc &&
+    (doc.amount !== this._previousAmount || doc.confirmed_payment_user)
+  ) {
     if (order) {
       await order.checkSuccessCondition();
     }

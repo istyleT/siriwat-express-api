@@ -4,7 +4,7 @@ const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
 
 //Middleware
-exports.setSwdeliverNo = factory.setDocno(Swdeliver);
+exports.setSwdeliverNo = factory.setSwDocno(Swdeliver);
 
 // Method
 exports.getAllSwdeliver = factory.getAll(Swdeliver);

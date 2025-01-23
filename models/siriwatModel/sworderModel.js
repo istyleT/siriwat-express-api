@@ -16,7 +16,16 @@ const sworderSchema = new mongoose.Schema({
     type: String,
     required: [true, "กรุณาระบุประเภทบิล"],
     enum: {
-      values: ["บิลบริการ", "บิลขายปลีก", "บิลขายส่ง"],
+      values: [
+        "บริการ",
+        "ขายส่ง",
+        "ขายปลีก",
+        "เคลมเทคนิค",
+        "เคลมภายใน",
+        "แคมเปญ-Honda",
+        "แคมเปญร้าน",
+        //ลำดับการเรียงต้องเป็นแบบนี้เท่านั้น
+      ],
       message: "ประเภทบิลไม่ถูกต้อง",
     },
   },
@@ -326,6 +335,7 @@ sworderSchema.pre(/^find/, function (next) {
   next();
 });
 
+//method
 //บันทึกการเปลี่ยนแปลงล่าสุดของ order
 sworderSchema.methods.saveLastestUpdate = async function (action, userId) {
   this.updated_at = moment().tz("Asia/Bangkok").toDate();
@@ -383,7 +393,6 @@ sworderSchema.methods.addPartcancel = async function (partcancelId) {
 
 sworderSchema.methods.checkSuccessCondition = async function () {
   // console.log("checkSuccessCondition Working");
-
   const populatedOrder = await this.model("Sworder")
     .findById(this._id)
     .populate("payment")
@@ -398,9 +407,9 @@ sworderSchema.methods.checkSuccessCondition = async function () {
     // console.log("status_bill is ยกเลิกแล้ว");
     populatedOrder.status_bill = "ยกเลิกแล้ว";
   } else {
-    //เอา payment ที่ยกเลิกออก
+    //เอา payment ที่ยกเลิกออกและต้องมีการจ่ายเงินจริง
     const validPayments = populatedOrder.payment.filter(
-      (payment) => !payment.user_canceled
+      (payment) => !payment.user_canceled && payment.confirmed_payment_user
     );
     //เอา deliver ที่ยกเลิกออก
     const validDelivers = populatedOrder.deliver.filter(

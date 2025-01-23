@@ -61,13 +61,22 @@ const updateDataPricelists = async () => {
 // IMPORT DATA INTO DB
 const importDataPricelists = async () => {
   try {
-    await Pricelist.create(pricelists);
+    for (let i = 0; i < pricelists.length; i++) {
+      const existingPricelist = await Pricelist.findOne({
+        partnumber: pricelists[i].partnumber,
+      });
+
+      if (!existingPricelist) {
+        await Pricelist.create(pricelists[i]);
+      }
+    }
     console.log("Data pricelist successfully loaded!");
   } catch (err) {
     console.log(err);
   }
   process.exit();
 };
+
 const importDataProvinces = async () => {
   try {
     await Province.create(provincelists);
