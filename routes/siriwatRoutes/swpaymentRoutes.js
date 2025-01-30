@@ -26,7 +26,7 @@ router
     pushPaymentToDoc
   );
 router.route("/suggest").get(getSuggestSwpayment);
-router.route("/canceldoc/:id").patch(cancelData, updateSwpayment);
+router.route("/cancel/:id").patch(cancelData, updateSwpayment);
 router.route("/:id").patch(updateSwpayment);
 
 module.exports = router;

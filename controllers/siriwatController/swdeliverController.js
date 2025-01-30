@@ -11,17 +11,19 @@ exports.getAllSwdeliver = factory.getAll(Swdeliver);
 exports.getSuggestSwdeliver = factory.getSuggest(Swdeliver);
 exports.deleteSwdeliver = factory.deleteOne(Swdeliver);
 exports.updateSwdeliver = factory.updateOne(Swdeliver);
+exports.createSwdeliver = factory.createOne(Swdeliver);
 
-exports.createSwdeliver = catchAsync(async (req, res, next) => {
-  const orderId = req.body.order_id;
-  // สร้าง deliver ใหม่
-  const doc = await Swdeliver.create(req.body);
+exports.addDeliverToOrder = catchAsync(async (req, res, next) => {
+  const orderId = req.body.document_id;
+  const doc = req.createdDoc;
+
   // ค้นหา order โดยใช้ orderId
   const order = await Sworder.findById(orderId);
   if (!order) {
-    return next(new AppError("ไม่พบใบสั่งซื้อที่ต้องกการจัดส่ง", 404));
+    return next(new AppError("ไม่พบใบสั่งซื้อที่ต้องการจัดส่ง", 404));
   }
-  // ใช้ method ที่เราสร้างขึ้นเพื่อเพิ่ม paymentId เข้าไปใน order
+
+  // ใช้ method ที่เราสร้างขึ้นเพื่อเพิ่ม deliver เข้าไปใน order
   await order.addDeliverAndUpdateParts(doc._id, req.body.deliverlist);
   res.status(201).json({
     status: "success",

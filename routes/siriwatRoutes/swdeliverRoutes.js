@@ -9,17 +9,29 @@ const {
   pushTrackingNumber,
   getDailySwdeliverMove,
   getSuggestSwdeliver,
+  addDeliverToOrder,
 } = require("../../controllers/siriwatController/swdeliverController");
 const { protect } = require("../../controllers/authController");
-const { cancelData } = require("../../controllers/handlerFactory");
+const {
+  cancelData,
+  setSkipResNext,
+} = require("../../controllers/handlerFactory");
 //Global
 router.use(protect);
 //Routes
 router.route("/invoice/:id").put(statusInvoice);
-router.route("/canceldoc/:id").patch(cancelData, updateSwdeliver);
+router.route("/cancel/:id").patch(cancelData, updateSwdeliver);
 router.route("/addtrackingno/:id").patch(pushTrackingNumber);
 router.route("/suggest").get(getSuggestSwdeliver);
-router.route("/").get(getAllSwdeliver).post(setSwdeliverNo, createSwdeliver);
+router
+  .route("/")
+  .get(getAllSwdeliver)
+  .post(
+    setSwdeliverNo,
+    setSkipResNext(true),
+    createSwdeliver,
+    addDeliverToOrder
+  );
 router.route("/dailyreport").get(getDailySwdeliverMove);
 router.route("/:id").put(updateSwdeliver);
 

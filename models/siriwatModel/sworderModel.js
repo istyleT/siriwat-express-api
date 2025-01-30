@@ -453,8 +453,7 @@ sworderSchema.methods.checkSuccessCondition = async function () {
     );
     //รวมราคาสินค้าทั้งหมด
     const totalPartsPrice = populatedOrder.partslist.reduce(
-      (total, part) =>
-        total + Number(Number(part.net_price) * Number(part.qty)),
+      (total, part) => total + Number(Number(part.net_price)),
       0
     );
     //รวมยอดเงินที่ลูกค้าจะต้องจ่ายทั้งหมด
@@ -463,10 +462,10 @@ sworderSchema.methods.checkSuccessCondition = async function () {
     const totalMustDeliver = Number(totalPartsQty);
 
     //ตรวจสอบค่าหลังจากการคำนวณ
-    // console.log("totalPaymentAmount", totalPaymentAmount);
-    // console.log("totalMustPay", totalMustPay);
-    // console.log("totalQtyDeliver", totalQtyDeliver);
-    // console.log("totalMustDeliver", totalMustDeliver);
+    console.log("totalPaymentAmount", totalPaymentAmount);
+    console.log("totalMustPay", totalMustPay);
+    console.log("totalQtyDeliver", totalQtyDeliver);
+    console.log("totalMustDeliver", totalMustDeliver);
 
     if (
       Number(totalPaymentAmount) === Number(totalMustPay) ||

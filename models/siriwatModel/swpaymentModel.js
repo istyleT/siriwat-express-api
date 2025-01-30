@@ -99,7 +99,7 @@ swpaymentSchema.pre(/^find/, function (next) {
 
 // Middleware
 swpaymentSchema.post("save", async function (doc, next) {
-  console.log("Post save working");
+  // console.log("Post save working");
   const order = await Sworder.findOne({ id: doc.document_no });
   if (order) {
     await order.saveLastestUpdate(`เพิ่มชำระเงิน ${doc.id}`);
@@ -119,13 +119,14 @@ swpaymentSchema.pre("findOneAndUpdate", async function (next) {
 
 // Post Middleware for findOneAndUpdate
 swpaymentSchema.post("findOneAndUpdate", async function (doc, next) {
-  console.log("Post findOneAndUpdate: ");
+  // console.log("Post findOneAndUpdate Payment: ");
   const order = await Sworder.findOne({ id: doc.document_no });
   if (
     doc &&
     (doc.amount !== this._previousAmount || doc.confirmed_payment_user)
   ) {
     if (order) {
+      console.log("Updating order Working");
       await order.checkSuccessCondition();
     }
   }
@@ -133,13 +134,12 @@ swpaymentSchema.post("findOneAndUpdate", async function (doc, next) {
   //อัพเดทข้อมูลล่าสุดของ order
   if (doc.user_canceled && order) {
     // ถ้าเป็นการยกเลิกการชำระเงิน
-    console.log("Cancelling payment");
+    // console.log("Cancelling payment");
     await order.saveLastestUpdate(`ยกเลิกชำระเงิน ${doc.id}`);
     //ตรวจสอบว่ายกเลิกการชำระเงินแล้ว order จะเป็นสถานะอะไร
     await order.checkSuccessCondition();
   } else {
     // ถ้าเป็นการแก้ไขการชำระเงิน
-    console.log("Updating payment");
     if (order) {
       await order.saveLastestUpdate(`แก้ไขชำระเงิน ${doc.id}`);
     }

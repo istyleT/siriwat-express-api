@@ -11,7 +11,7 @@ moment.tz.setDefault("Asia/Bangkok");
 exports.setSkipResNext = (skip) =>
   catchAsync(async (req, res, next) => {
     req.skipResNext = skip;
-    // console.log(req.skipResNext);s
+    // console.log(req.skipResNext);
     next();
   });
 

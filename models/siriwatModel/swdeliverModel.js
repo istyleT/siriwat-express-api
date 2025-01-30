@@ -24,9 +24,9 @@ const swdeliverSchema = new mongoose.Schema({
       message: "ช่องทางการจัดส่งไม่ถูกต้อง",
     },
   },
-  order_no: {
+  document_no: {
     type: String,
-    required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
+    required: [true, "กรุณาระบุเอกสารอ้างอิง"],
   },
   receiver: {
     type: String,
@@ -117,7 +117,7 @@ const swdeliverSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-  //ส่วนที่ทำการสร้าง
+  // field พื้นฐาน
   created_at: {
     type: Date,
     default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
@@ -127,7 +127,6 @@ const swdeliverSchema = new mongoose.Schema({
     ref: "User",
     required: [true, "กรุณาระบุผู้ทำรายการ"],
   },
-  //ส่วนที่ทำการแก้ไข
   updated_at: {
     type: Date,
     default: null,
@@ -137,14 +136,13 @@ const swdeliverSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
-  //ส่วนที่ทำการยกเลิก
+  canceled_at: {
+    type: Date,
+    default: null,
+  },
   user_canceled: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    default: null,
-  },
-  date_canceled: {
-    type: Date,
     default: null,
   },
   remark_canceled: {
@@ -153,7 +151,7 @@ const swdeliverSchema = new mongoose.Schema({
   },
 });
 
-swdeliverSchema.index({ order_no: 1 });
+swdeliverSchema.index({ document_no: 1 });
 
 // populate path
 const populateFields = [
@@ -175,43 +173,43 @@ swdeliverSchema.pre(/^find/, async function (next) {
 // Post Middleware for save
 swdeliverSchema.post("save", async function (doc, next) {
   // console.log("Post save working");
-  const order = await Sworder.findOne({ id: doc.order_no });
+  const order = await Sworder.findOne({ id: doc.document_no });
   if (order) {
     await order.saveLastestUpdate(`เพิ่มจัดส่ง ${doc.id}`);
   }
   // ตรวจสอบว่า COD เป็น true หรือไม่ ถ้าเป็นจะสร้าง Payment ใหม่
-  if (doc.cod && doc.cod_amount > 0) {
-    const req = { body: {} }; // จำลอง req object เพื่อใช้ใน setDocno function
-    const res = {}; // จำลอง res object
+  // if (doc.cod && doc.cod_amount > 0) {
+  //   const req = { body: {} }; // จำลอง req object เพื่อใช้ใน setDocno function
+  //   const res = {}; // จำลอง res object
 
-    // ห่อ setDocno ด้วย Promise เพื่อให้แน่ใจว่าทำงานเสร็จก่อน
-    await new Promise((resolve, reject) => {
-      factory.setSwDocno(Swpayment)(req, res, (err) => {
-        if (err) return reject(err);
-        resolve();
-      });
-    });
+  //   // ห่อ setDocno ด้วย Promise เพื่อให้แน่ใจว่าทำงานเสร็จก่อน
+  //   await new Promise((resolve, reject) => {
+  //     factory.setSwDocno(Swpayment)(req, res, (err) => {
+  //       if (err) return reject(err);
+  //       resolve();
+  //     });
+  //   });
 
-    //เช็คว่า req.body.id ถูกสร้างขึ้นทัน newPayment หรือไม่
-    // console.log(req.body.id);
+  //   //เช็คว่า req.body.id ถูกสร้างขึ้นทัน newPayment หรือไม่
+  //   // console.log(req.body.id);
 
-    const newPayment = new Payment({
-      id: req.body.id, // ใช้เลขที่เอกสารที่สร้างจาก setDocno
-      order_no: doc.order_no,
-      payment_date: doc.deliver_date,
-      amount: doc.cod_amount,
-      method: "COD",
-      user_created: doc.user_created,
-    });
+  //   const newPayment = new Payment({
+  //     id: req.body.id, // ใช้เลขที่เอกสารที่สร้างจาก setDocno
+  //     order_no: doc.order_no,
+  //     payment_date: doc.deliver_date,
+  //     amount: doc.cod_amount,
+  //     method: "COD",
+  //     user_created: doc.user_created,
+  //   });
 
-    //สร้าง Payment ใหม่
-    await newPayment.save();
+  //   //สร้าง Payment ใหม่
+  //   await newPayment.save();
 
-    // เพิ่มการชำระเงินไปที่ Order
-    if (order) {
-      await order.addPayment(newPayment._id);
-    }
-  }
+  //   // เพิ่มการชำระเงินไปที่ Order
+  //   if (order) {
+  //     await order.addPayment(newPayment._id);
+  //   }
+  // }
 
   next();
 });
@@ -238,7 +236,7 @@ swdeliverSchema.post("findOneAndUpdate", async function (doc, next) {
     return next(new Error("ไม่พบเอกสารเดิมสำหรับการอัปเดต"));
   }
 
-  const order = await Sworder.findOne({ id: doc.order_no });
+  const order = await Sworder.findOne({ id: doc.document_no });
 
   if (this._isCanceledUpdate) {
     if (order) {
@@ -246,25 +244,9 @@ swdeliverSchema.post("findOneAndUpdate", async function (doc, next) {
       await order.save();
     }
     await order.saveLastestUpdate(`ยกเลิกจัดส่ง ${doc.id}`);
-    const log = new Log({
-      action: "canceled",
-      collectionName: "Deliver",
-      documentId: doc._id,
-      changedBy: this._updateUser,
-    });
-    await log.save();
   } else {
     // console.log("Regular update");
     await order.saveLastestUpdate(`แก้ไขจัดส่ง ${doc.id}`);
-    const log = new Log({
-      action: "update",
-      collectionName: "Deliver",
-      documentId: doc._id,
-      changedBy: this._updateUser,
-      oldData: this._updateLog,
-      newData: doc,
-    });
-    await log.save();
   }
 
   next();
