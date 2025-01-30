@@ -10,11 +10,14 @@ exports.setOrdercanpartNo = factory.setSwDocno(Swordercanpart);
 exports.getAllOrdercanpart = factory.getAll(Swordercanpart);
 
 exports.createOrdercanpart = catchAsync(async (req, res, next) => {
-  const orderId = req.body.order_id;
+  const user = req.user;
+  const orderId = req.body.document_id;
+  req.body.user_created = user._id;
   // สร้าง part cancel ใหม่
   const doc = await Swordercanpart.create(req.body);
   // ค้นหา order โดยใช้ orderId
   const order = await Sworder.findById(orderId);
+
   if (!order) {
     return next(new Error("ไม่พบใบสั่งซื้อที่ต้องการยกเลิกรายการสินค้า", 404));
   }

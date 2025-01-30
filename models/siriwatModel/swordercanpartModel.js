@@ -51,7 +51,7 @@ const swordercanpartSchema = new mongoose.Schema({
   user_created: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: [true, "กรุณาระบุผู้ทำรายการ"],
+    default: null,
   },
 });
 

@@ -6,10 +6,9 @@ const {
   setOrdercanpartNo,
   getDailyCancelPartMove,
 } = require("../../controllers/siriwatController/swordercanpartController");
-const { protect, restrictTo } = require("../../controllers/authController");
+const { protect } = require("../../controllers/authController");
 //Global
 router.use(protect);
-router.use(restrictTo("Owner", "Admin", "Sale"));
 //Routes
 router
   .route("/")
