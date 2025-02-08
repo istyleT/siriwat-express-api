@@ -25,6 +25,11 @@ const provinceRouter = require("./routes/basedataRoutes/provinceRoutes");
 const amphureRouter = require("./routes/basedataRoutes/amphureRoutes");
 const tambonRouter = require("./routes/basedataRoutes/tambonRoutes");
 
+//Routes ของ Packing
+const pkskudictionaryRouter = require("./routes/packingRoutes/pkskudictionaryRoutes");
+const pkworkRouter = require("./routes/packingRoutes/pkworkRoutes");
+const pkimportRouter = require("./routes/packingRoutes/pkimportRoutes");
+
 //Routes ของ Siriwat
 const swcustomerRouter = require("./routes/siriwatRoutes/swcustomerRoutes");
 const swestimatepriceRouter = require("./routes/siriwatRoutes/swestimatepriceRoutes");
@@ -51,6 +56,7 @@ console.log(process.env.NODE_ENV);
 const allowedOrigins = [
   "https://rmbkk.netlify.app",
   "https://ssmapp.netlify.app",
+  "https://rmpacking.netlify.app",
   "http://localhost:4173", //กรณี test เเบบ mode production
 ];
 
@@ -150,6 +156,11 @@ app.use("/ordercanpart", ordercanpartRouter);
 app.use("/province", provinceRouter);
 app.use("/amphure", amphureRouter);
 app.use("/tambon", tambonRouter);
+
+//packing routes
+app.use("/pk/skudictionarys", pkskudictionaryRouter);
+app.use("/pk/works", pkworkRouter);
+app.use("/pk/imports", pkimportRouter);
 
 // siriwat routes
 app.use("/sw/customers", swcustomerRouter);
