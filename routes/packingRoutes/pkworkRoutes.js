@@ -7,6 +7,7 @@ const {
   updatePkwork,
   deletePkwork,
   getSuggestPkwork,
+  deleteManyPkwork,
 } = require("../../controllers/packingController/pkworkController");
 const { cancelData } = require("../../controllers/handlerFactory");
 const { protect, restrictTo } = require("../../controllers/authController");
@@ -16,6 +17,7 @@ router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllPkwork).post(createPkwork);
 router.route("/suggest").get(getSuggestPkwork);
+router.route("/deletework").delete(deleteManyPkwork);
 router.route("/cancel/:id").patch(cancelData, updatePkwork);
 router.route("/:id").get(getOnePkwork).patch(updatePkwork).delete(deletePkwork);
 

@@ -4,6 +4,7 @@ const catchAsync = require("../utils/catchAsync");
 const APIFeatures = require("../utils/apiFeatures");
 const moment = require("moment-timezone");
 const { getFieldType } = require("./anotherFunction");
+const { isValid, parseISO } = require("date-fns");
 
 moment.tz.setDefault("Asia/Bangkok");
 
@@ -518,4 +519,53 @@ exports.reviveOne = (Model) =>
         data: doc,
       },
     });
+  });
+
+exports.deleteMany = (Model) =>
+  catchAsync(async (req, res, next) => {
+    const user = req.user;
+
+    if (!user) {
+      return next(new AppError("ไม่พบข้อมูลผู้ใช้งาน", 400));
+    }
+
+    let filter = { ...req.query };
+
+    if (!filter || Object.keys(filter).length === 0) {
+      return next(new AppError("กรุณาระบุเงื่อนไขในการลบข้อมูล", 400));
+    }
+
+    const dateFields = ["created_at", "updated_at", "canceled_at"];
+
+    Object.keys(filter).forEach((key) => {
+      if (dateFields.includes(key) && typeof filter[key] === "string") {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(filter[key])) {
+          // กรณีที่ส่งค่าเป็น YYYY-MM-DD → แปลงเป็นช่วงเวลา 00:00:00 - 23:59:59
+          const startOfDay = new Date(`${filter[key]}T00:00:00.000Z`);
+          const endOfDay = new Date(`${filter[key]}T23:59:59.999Z`);
+          filter[key] = { $gte: startOfDay, $lt: endOfDay };
+        } else {
+          // แปลงค่าเป็น Date ตามปกติ
+          const parsedDate = parseISO(filter[key]);
+          if (isValid(parsedDate)) {
+            filter[key] = parsedDate;
+          }
+        }
+      }
+    });
+
+    try {
+      const result = await Model.deleteMany(filter);
+
+      if (result.deletedCount === 0) {
+        return next(new AppError("ไม่พบข้อมูลที่ต้องการลบ", 404));
+      }
+
+      res.status(200).json({
+        status: "success",
+        message: `ลบข้อมูลสำเร็จ ${result.deletedCount} รายการ`,
+      });
+    } catch (error) {
+      return next(new AppError("เกิดข้อผิดพลาดในการลบข้อมูล", 500));
+    }
   });

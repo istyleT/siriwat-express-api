@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 
 const pkworkSchema = new mongoose.Schema({
   tracking_code: {
@@ -24,14 +25,18 @@ const pkworkSchema = new mongoose.Schema({
     enum: ["ดำเนินการ", "เสร็จสิ้น", "ยกเลิก"],
     default: "ดำเนินการ",
   },
-  //field พื้นฐาน
-  created_at: {
+  success_at: {
     type: Date,
     default: null,
   },
+  //field พื้นฐาน
+  created_at: {
+    type: Date,
+    default: () => moment().tz("Asia/Bangkok").toDate(),
+  },
   updated_at: {
     type: Date,
-    default: null,
+    default: () => moment().tz("Asia/Bangkok").toDate(),
   },
   user_updated: {
     type: mongoose.Schema.Types.ObjectId,
@@ -73,7 +78,8 @@ pkworkSchema.post("findOneAndUpdate", async function (doc) {
 
     if (updatedDoc && updatedDoc.parts_data.length === 0) {
       updatedDoc.status = "เสร็จสิ้น";
-      await updatedDoc.save(); // บันทึกการเปลี่ยนแปลง
+      updatedDoc.success_at = moment().tz("Asia/Bangkok").toDate();
+      await updatedDoc.save();
     }
   }
 });

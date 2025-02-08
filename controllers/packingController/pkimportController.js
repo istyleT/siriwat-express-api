@@ -3,7 +3,7 @@ const Pkwork = require("../../models/packingModel/pkworkModel");
 const catchAsync = require("../../utils/catchAsync");
 
 exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
-  console.log("This is convertSkuToPartCode");
+  // console.log("This is convertSkuToPartCode");
   const { sku_data } = req.body;
 
   if (!Array.isArray(sku_data) || sku_data.length === 0) {
@@ -12,7 +12,6 @@ exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
       .json({ status: "fail", message: "Invalid sku_data" });
   }
 
-  // ดึง sku_code ทั้งหมด
   const skuCodes = sku_data.map((item) => item.sku_code);
 
   // ค้นหาใน Pkskudictionary โดยใช้ skuCodes ทั้งหมดในครั้งเดียว
@@ -28,22 +27,18 @@ exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
   // อัพเดต sku_data โดยเพิ่ม part_code
   let updatedSkuData = sku_data.map((item) => ({
     ...item,
-    part_code: skuMap.get(item.sku_code) || item.sku_code, // ถ้าไม่พบให้ใช้ sku_code
+    part_code: skuMap.get(item.sku_code) || item.sku_code,
   }));
 
-  // ⭐ ลบ field `sku_code` ออกจากทุก object
   updatedSkuData = updatedSkuData.map(({ sku_code, ...rest }) => rest);
 
-  // ⭐ แทนที่ค่าใน req.body.sku_data ด้วย updatedSkuData
   req.body.sku_data = updatedSkuData;
-  //   console.log("Updated sku_data:", req.body.sku_data);
 
-  // เรียก middleware ถัดไป
   next();
 });
 
 exports.separatePartSet = catchAsync(async (req, res, next) => {
-  console.log("This is separatePartSet");
+  // console.log("This is separatePartSet");
   const { sku_data } = req.body;
 
   if (!Array.isArray(sku_data) || sku_data.length === 0) {
@@ -70,12 +65,10 @@ exports.separatePartSet = catchAsync(async (req, res, next) => {
 });
 
 exports.setToCreateWork = catchAsync(async (req, res, next) => {
-  console.log("This is setToCreateWork");
+  // console.log("This is setToCreateWork");
+  const { shop, sku_data } = req.body;
 
-  const { date_input, shop, sku_data } = req.body;
-
-  // ตรวจสอบค่าที่จำเป็น
-  if (!date_input || !shop || !sku_data || !Array.isArray(sku_data)) {
+  if (!shop || !sku_data || !Array.isArray(sku_data)) {
     return res.status(400).json({
       status: "fail",
       message: "ข้อมูลไม่ครบถ้วน",
@@ -107,9 +100,9 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
     // รวมข้อมูล parts ใหม่เข้ากับ partsMap
     parts.forEach((part) => {
       if (partsMap.has(part.partnumber)) {
-        partsMap.get(part.partnumber).qty += Number(part.qty); // รวมค่า qty
+        partsMap.get(part.partnumber).qty += Number(part.qty);
       } else {
-        partsMap.set(part.partnumber, { ...part }); // เพิ่ม part ใหม่
+        partsMap.set(part.partnumber, { ...part });
       }
     });
 
@@ -122,7 +115,6 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // ✅ 2. แปลง Object เป็น Array และเพิ่มข้อมูลอื่นๆ
   const workDocuments = Object.values(groupedData).map((data) => ({
     ...data,
-    created_at: date_input,
   }));
 
   // ✅ 3. บันทึกข้อมูลลง Database

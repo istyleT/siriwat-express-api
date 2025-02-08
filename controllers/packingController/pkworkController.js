@@ -10,3 +10,4 @@ exports.getAllPkwork = factory.getAll(Pkwork);
 exports.getOnePkwork = factory.getOne(Pkwork);
 exports.updatePkwork = factory.updateOne(Pkwork);
 exports.deletePkwork = factory.deleteOne(Pkwork);
+exports.deleteManyPkwork = factory.deleteMany(Pkwork);
