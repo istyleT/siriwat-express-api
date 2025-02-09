@@ -46,6 +46,7 @@ const swvehicleRouter = require("./routes/siriwatRoutes/swvehicleRoutes");
 //Controller
 const quotationController = require("./controllers/appController/quotationController");
 const swquotationController = require("./controllers/siriwatController/swquotationController");
+const pkworkController = require("./controllers/packingController/pkworkController");
 
 const app = express();
 //ส่วนการตั้งค่า cors origin
@@ -136,6 +137,10 @@ cron.schedule("0 0 * * *", () => {
 //ลบเอกสารใบเสนอราคาที่เกิน 45 วันใน App ของ SSMapp
 cron.schedule("0 0 * * *", () => {
   swquotationController.deleteSwquotationOld();
+});
+//ลบเอกสารใบงานที่เกิน 15 วันใน App ของ Packing
+cron.schedule("0 0 * * *", () => {
+  pkworkController.deletePkworkOld();
 });
 
 // ROUTES Pages Pug

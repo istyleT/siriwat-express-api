@@ -5,6 +5,7 @@ const factory = require("../handlerFactory");
 
 // Method
 exports.createPkdefaultcol = factory.createOne(Pkdefaultcol);
+exports.getSuggestPkdefaultcol = factory.getSuggest(Pkdefaultcol);
 exports.getAllPkdefaultcol = factory.getAll(Pkdefaultcol);
 exports.getOnePkdefaultcol = factory.getOne(Pkdefaultcol);
 exports.updatePkdefaultcol = factory.updateOne(Pkdefaultcol);
