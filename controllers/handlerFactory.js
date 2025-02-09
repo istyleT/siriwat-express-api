@@ -344,9 +344,7 @@ exports.getAll = (Model) =>
 
 exports.getByDate = (Model) =>
   catchAsync(async (req, res, next) => {
-    const startdate = req.query.startdate;
-    const enddate = req.query.enddate;
-    const typedate = req.query.typedate;
+    const { startdate, enddate, typedate, ...filters } = req.query;
 
     if (!startdate || !enddate || !typedate) {
       return next(new Error("กรุณาระบุวันที่ใน query string", 400));
@@ -356,7 +354,7 @@ exports.getByDate = (Model) =>
     const endDate = new Date(enddate);
     endDate.setDate(endDate.getDate() + 1);
 
-    const query = {};
+    const query = { ...filters };
     query[typedate] = { $gte: startDate, $lt: endDate };
 
     const docs = await Model.find(query).sort({ _id: 1 });

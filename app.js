@@ -29,6 +29,7 @@ const tambonRouter = require("./routes/basedataRoutes/tambonRoutes");
 const pkskudictionaryRouter = require("./routes/packingRoutes/pkskudictionaryRoutes");
 const pkworkRouter = require("./routes/packingRoutes/pkworkRoutes");
 const pkimportRouter = require("./routes/packingRoutes/pkimportRoutes");
+const pkdefaultcolRouter = require("./routes/packingRoutes/pkdefaultcolRoutes");
 
 //Routes ของ Siriwat
 const swcustomerRouter = require("./routes/siriwatRoutes/swcustomerRoutes");
@@ -161,6 +162,7 @@ app.use("/tambon", tambonRouter);
 app.use("/pk/skudictionarys", pkskudictionaryRouter);
 app.use("/pk/works", pkworkRouter);
 app.use("/pk/imports", pkimportRouter);
+app.use("/pk/defaultcols", pkdefaultcolRouter);
 
 // siriwat routes
 app.use("/sw/customers", swcustomerRouter);

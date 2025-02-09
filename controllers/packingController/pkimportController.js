@@ -49,12 +49,12 @@ exports.separatePartSet = catchAsync(async (req, res, next) => {
 
   const processedData = sku_data.map((sku) => {
     const parts = sku.part_code.split("_").map((part, partIndex) => ({
-      partnumber: part,
-      qty: sku.qty,
+      partnumber: part.trim(),
+      qty: Number(sku.qty),
     }));
 
     return {
-      tracking_code: sku.tracking_code,
+      tracking_code: sku.tracking_code.trim(),
       parts,
     };
   });
