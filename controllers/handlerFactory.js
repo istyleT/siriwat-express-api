@@ -1,4 +1,3 @@
-//handleFactory.js
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const APIFeatures = require("../utils/apiFeatures");
@@ -12,7 +11,6 @@ moment.tz.setDefault("Asia/Bangkok");
 exports.setSkipResNext = (skip) =>
   catchAsync(async (req, res, next) => {
     req.skipResNext = skip;
-    // console.log(req.skipResNext);
     next();
   });
 
@@ -213,7 +211,7 @@ exports.getSuggest = (Model) =>
 
         return res.status(200).json({
           status: "success",
-          length: doc.length,
+          totalRecords: features.totalDocuments || undefined,
           data: doc,
           totalPages: features.totalPages || undefined,
         });
@@ -295,6 +293,7 @@ exports.getSuggest = (Model) =>
         status: "success",
         data: suggestionList,
         length: suggestionList.length,
+        totalRecords,
         totalPages,
       });
     } catch (error) {
@@ -513,7 +512,7 @@ exports.reviveOne = (Model) =>
     res.status(200).json({
       status: "success",
       data: {
-        message: "เเก้ไขข้อมูลสำเร็จ",
+        message: "นำกลับมาใช้งานสำเร็จ",
         data: doc,
       },
     });

@@ -12,6 +12,7 @@ exports.getByDatePkwork = factory.getByDate(Pkwork);
 exports.getOnePkwork = factory.getOne(Pkwork);
 exports.updatePkwork = factory.updateOne(Pkwork);
 exports.deletePkwork = factory.deleteOne(Pkwork);
+exports.reviveOnePkwork = factory.reviveOne(Pkwork);
 exports.deleteManyPkwork = factory.deleteMany(Pkwork);
 
 //ลบเอกสารที่มีอายุเกินกว่า 15 วัน

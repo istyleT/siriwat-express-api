@@ -9,6 +9,7 @@ const {
   deletePkwork,
   getSuggestPkwork,
   deleteManyPkwork,
+  reviveOnePkwork,
 } = require("../../controllers/packingController/pkworkController");
 const { cancelData } = require("../../controllers/handlerFactory");
 const { protect, restrictTo } = require("../../controllers/authController");
@@ -21,6 +22,7 @@ router.route("/suggest").get(getSuggestPkwork);
 router.route("/report").get(getByDatePkwork);
 router.route("/deletework").delete(deleteManyPkwork);
 router.route("/cancel/:id").patch(cancelData, updatePkwork);
+router.route("/revive/:id").patch(reviveOnePkwork);
 router.route("/:id").get(getOnePkwork).patch(updatePkwork).delete(deletePkwork);
 
 module.exports = router;

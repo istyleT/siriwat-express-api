@@ -76,7 +76,11 @@ pkworkSchema.post("findOneAndUpdate", async function (doc) {
   if (doc) {
     const updatedDoc = await this.model.findById(doc._id);
 
-    if (updatedDoc && updatedDoc.parts_data.length === 0) {
+    if (
+      updatedDoc &&
+      updatedDoc.parts_data.length === 0 &&
+      updatedDoc.status !== "ยกเลิก"
+    ) {
       updatedDoc.status = "เสร็จสิ้น";
       updatedDoc.success_at = moment().tz("Asia/Bangkok").toDate();
       await updatedDoc.save();
