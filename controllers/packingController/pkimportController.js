@@ -1,6 +1,10 @@
 const Pkskudictionary = require("../../models/packingModel/pkskudictionaryModel");
 const Pkwork = require("../../models/packingModel/pkworkModel");
 const catchAsync = require("../../utils/catchAsync");
+const moment = require("moment-timezone");
+
+// ตั้งค่าให้ใช้เวลาไทย
+moment.tz.setDefault("Asia/Bangkok");
 
 exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
   // console.log("This is convertSkuToPartCode");
@@ -112,12 +116,48 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
     return acc;
   }, {});
 
-  // ✅ 2. แปลง Object เป็น Array และเพิ่มข้อมูลอื่นๆ
-  const workDocuments = Object.values(groupedData).map((data) => ({
+  // ✅ 2. แปลง Object เป็น Array
+  let workDocuments = Object.values(groupedData);
+
+  // ✅ 3. สร้าง upload_ref_no
+  const today = moment().format("YYMMDD");
+  const shopPrefix = `${shop.charAt(0).toUpperCase()}${shop
+    .charAt(shop.length - 1)
+    .toUpperCase()}`;
+  const refPrefix = `${shopPrefix}${today}`;
+
+  // ✅ 4. หาลำดับ upload_ref_no ล่าสุดที่มี prefix เดียวกัน
+  let existingRefs = [];
+  try {
+    existingRefs = await Pkwork.find(
+      { upload_ref_no: { $regex: `^${refPrefix}` } },
+      { upload_ref_no: 1 }
+    ).sort({ upload_ref_no: 1 });
+  } catch (error) {
+    console.error("Error querying Pkwork:", error);
+  }
+  // หาเลขลำดับสูงสุดที่มีอยู่
+  let lastNumber = 0;
+  if (existingRefs.length > 0) {
+    const lastRef = existingRefs[existingRefs.length - 1].upload_ref_no;
+    const lastSeq = parseInt(lastRef.slice(-2), 10);
+    if (!isNaN(lastSeq)) {
+      lastNumber = lastSeq;
+    }
+  }
+
+  // กำหนด upload_ref_no ที่ใช้สำหรับทุกเอกสาร
+  const uploadRefNo = `${refPrefix}${String(lastNumber + 1).padStart(2, "0")}`;
+
+  // ✅ 5. อัปเดต workDocuments ให้ใช้ upload_ref_no เดียวกันทุกเอกสาร
+  workDocuments = workDocuments.map((data) => ({
     ...data,
+    upload_ref_no: uploadRefNo,
   }));
 
-  // ✅ 3. บันทึกข้อมูลลง Database
+  // console.log(workDocuments);
+
+  // ✅ 6. บันทึกข้อมูลลง Database
   await Pkwork.insertMany(workDocuments);
 
   return res.status(201).json({

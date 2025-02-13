@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
 const pkworkSchema = new mongoose.Schema({
+  upload_ref_no: {
+    type: String,
+    required: [true, "กรุณาระบุเลขอ้างอิงการ upload"],
+  },
   tracking_code: {
     type: String,
     trim: true,
