@@ -107,7 +107,7 @@ app.use("/", limiter);
 // Set cors origin
 app.use(cors(corsOptions));
 // Set file size limit
-app.use(express.json({ limit: "50kb" }));
+app.use(express.json({ limit: "150kb" }));
 
 // ป้องกัน NoSQL Injection
 app.use(mongoSanitize()); //สงเสัยการกรองเครื่องหมาย+

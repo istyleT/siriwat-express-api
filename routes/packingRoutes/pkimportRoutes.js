@@ -4,6 +4,7 @@ const {
   convertSkuToPartCode,
   separatePartSet,
   setToCreateWork,
+  checkDuplicateOrderNos,
 } = require("../../controllers/packingController/pkimportController");
 const { protect, restrictTo } = require("../../controllers/authController");
 
@@ -14,5 +15,7 @@ router.use(restrictTo("Owner", "Sale"));
 router
   .route("/order")
   .post(convertSkuToPartCode, separatePartSet, setToCreateWork);
+
+router.route("/check-duplicate-order").post(checkDuplicateOrderNos);
 
 module.exports = router;

@@ -123,7 +123,7 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
 
   // หา Orders ที่มี id ตรงกับ order_no
   const orders = await Order.find({ id: { $in: orderNos } }).select(
-    "id status_bill cust_tier"
+    "id status_bill cust_tier anothercost"
   );
 
   // สร้าง mapping ระหว่าง id และ status_bill, cust_tier เพื่อให้เข้าถึงข้อมูลได้เร็ว
@@ -131,6 +131,7 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
     map[order.id] = {
       status_bill: order.status_bill,
       cust_tier: order.cust_tier,
+      anothercost: Array.isArray(order.anothercost) ? order.anothercost : [],
     };
     return map;
   }, {});
@@ -142,10 +143,11 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
       ...deliver.toObject(),
       status_bill: orderData.status_bill || null,
       cust_tier: orderData.cust_tier || null,
+      anothercost: orderData.anothercost || [],
     };
   });
 
-  // กรอง deliverlist ในแต่ละ object ของ updatedDelivers
+  // กรอง deliverlist ที่มี qty_deliver !== 0
   const filteredDelivers = updatedDelivers.map((deliver) => {
     if (deliver.deliverlist && Array.isArray(deliver.deliverlist)) {
       deliver.deliverlist = deliver.deliverlist.filter(

@@ -6,6 +6,43 @@ const moment = require("moment-timezone");
 // ตั้งค่าให้ใช้เวลาไทย
 moment.tz.setDefault("Asia/Bangkok");
 
+exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
+  const { sku_data } = req.body;
+
+  if (!Array.isArray(sku_data) || sku_data.length === 0) {
+    return res.status(400).json({
+      status: "fail",
+      message: "sku_data ไม่ถูกต้อง",
+    });
+  }
+
+  // ✅ 1. ดึง order_no ทั้งหมดจาก sku_data และกรองค่าไม่ให้ซ้ำ
+  const orderNos = sku_data
+    .map((item) => item.order_no)
+    .filter((orderNo, index, self) => self.indexOf(orderNo) === index);
+
+  // ✅ 2. ค้นหา order_no ที่มีอยู่แล้วใน Database
+  const existingOrders = await Pkwork.find(
+    { order_no: { $in: orderNos } },
+    { order_no: 1 }
+  );
+
+  if (existingOrders.length > 0) {
+    const duplicatedOrderNos = existingOrders.map((doc) => doc.order_no);
+    return res.status(200).json({
+      status: "success",
+      message: `Order จำนวน ${
+        existingOrders.length
+      } ซ้ำในระบบ: ${duplicatedOrderNos.join(", ")}`,
+    });
+  }
+
+  return res.status(200).json({
+    status: "success",
+    message: "ไม่มีเลขที่ order ซ้ำในระบบ",
+  });
+});
+
 exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
   // console.log("This is convertSkuToPartCode");
   const { sku_data } = req.body;
@@ -59,6 +96,8 @@ exports.separatePartSet = catchAsync(async (req, res, next) => {
 
     return {
       tracking_code: sku.tracking_code.trim(),
+      order_date: sku.order_date,
+      order_no: sku.order_no.trim(),
       parts,
     };
   });
@@ -81,13 +120,15 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 
   // ✅ 1. จัดกลุ่ม sku_data ตาม tracking_code และรวม parts_data (รวม qty ของ partnumber ที่ซ้ำกัน)
   const groupedData = sku_data.reduce((acc, item) => {
-    const { tracking_code, parts } = item;
+    const { tracking_code, order_date, order_no, parts } = item;
 
-    if (!tracking_code) return acc; // ข้ามถ้าไม่มี tracking_code
+    if (!tracking_code) return acc;
 
     if (!acc[tracking_code]) {
       acc[tracking_code] = {
         tracking_code,
+        order_date,
+        order_no,
         shop,
         parts_data: [],
       };
@@ -119,14 +160,31 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // ✅ 2. แปลง Object เป็น Array
   let workDocuments = Object.values(groupedData);
 
-  // ✅ 3. สร้าง upload_ref_no
+  // ✅ 3. ตรวจสอบว่าไม่มี order_no ซ้ำในฐานข้อมูล
+  const orderNos = workDocuments.map((doc) => doc.order_no);
+  const existingOrders = await Pkwork.find(
+    { order_no: { $in: orderNos } },
+    { order_no: 1 }
+  );
+
+  const existingOrderNos = new Set(existingOrders.map((doc) => doc.order_no));
+
+  // console.log("ก่อนจะเอา order_no ซ้ำออก", workDocuments.length);
+
+  workDocuments = workDocuments.filter(
+    (doc) => !existingOrderNos.has(doc.order_no)
+  );
+
+  // console.log("หลังจากที่เอา order_no ซ้ำออก", workDocuments.length);
+
+  // ✅ 4. สร้าง upload_ref_no
   const today = moment().format("YYMMDD");
   const shopPrefix = `${shop.charAt(0).toUpperCase()}${shop
     .charAt(shop.length - 1)
     .toUpperCase()}`;
   const refPrefix = `${shopPrefix}${today}`;
 
-  // ✅ 4. หาลำดับ upload_ref_no ล่าสุดที่มี prefix เดียวกัน
+  // ✅ 5. หาลำดับ upload_ref_no ล่าสุดที่มี prefix เดียวกัน
   let existingRefs = [];
   try {
     existingRefs = await Pkwork.find(
@@ -149,13 +207,13 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // กำหนด upload_ref_no ที่ใช้สำหรับทุกเอกสาร
   const uploadRefNo = `${refPrefix}${String(lastNumber + 1).padStart(2, "0")}`;
 
-  // ✅ 5. อัปเดต workDocuments ให้ใช้ upload_ref_no เดียวกันทุกเอกสาร
+  // ✅ 6. อัปเดต workDocuments ให้ใช้ upload_ref_no เดียวกันทุกเอกสาร
   workDocuments = workDocuments.map((data) => ({
     ...data,
     upload_ref_no: uploadRefNo,
   }));
 
-  // console.log(workDocuments);
+  // console.log(JSON.stringify(workDocuments, null, 2));
 
   // ✅ 6. บันทึกข้อมูลลง Database
   await Pkwork.insertMany(workDocuments);

@@ -24,6 +24,14 @@ const pkdefaultcolSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  col_orderdate: {
+    type: String,
+    default: null,
+  },
+  col_orderno: {
+    type: String,
+    default: null,
+  },
   //field พื้นฐาน
   updated_at: {
     type: Date,
