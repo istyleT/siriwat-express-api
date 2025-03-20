@@ -13,7 +13,7 @@ const pkworkSchema = new mongoose.Schema({
   },
   //เพิ่มเข้ามาใหม่
   order_date: {
-    type: Date,
+    type: String,
     required: [true, "กรุณาระบุวันที่สั่งซื้อ"],
   },
   order_no: {
