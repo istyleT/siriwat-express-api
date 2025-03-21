@@ -43,6 +43,58 @@ exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.checkTrackingCancel = catchAsync(async (req, res, next) => {
+  const { tracking_cancel, shop } = req.body;
+
+  if (
+    !Array.isArray(tracking_cancel) ||
+    tracking_cancel.length === 0 ||
+    !shop
+  ) {
+    return res.status(400).json({
+      status: "fail",
+      message: "tracking_cancel หรือ shop ไม่ถูกต้อง",
+    });
+  }
+
+  // ✅ 1. ดึง tracking_code ที่ไม่ซ้ำ
+  const uniqueTrackingCodes = [
+    ...new Set(tracking_cancel.map((item) => item.tracking_code.trim())),
+  ];
+
+  // ✅ 2. ค้นหาใน Pkwork เฉพาะ tracking_code และ shop ที่ตรงกัน
+  const existingTrackingDocs = await Pkwork.find(
+    {
+      tracking_code: { $in: uniqueTrackingCodes },
+      shop: shop.trim(),
+    },
+    { tracking_code: 1 }
+  );
+
+  // ✅ 3. แปลงผลลัพธ์ที่เจอเป็น Set
+  const existingTrackingSet = new Set(
+    existingTrackingDocs.map((doc) => doc.tracking_code)
+  );
+
+  // ✅ 4. หา tracking_code ที่ไม่เจอในระบบ
+  const lostTracking = uniqueTrackingCodes.filter(
+    (code) => !existingTrackingSet.has(code)
+  );
+
+  // ✅ 5. ตอบกลับ
+  if (lostTracking.length > 0) {
+    return res.status(200).json({
+      status: "success",
+      message: `ไม่พบเลขพัสดุในระบบของร้าน ${shop}: ${lostTracking.join(", ")}`,
+    });
+  }
+
+  return res.status(200).json({
+    status: "success",
+    message: `เลขพัสดุทุกตัวของร้าน ${shop} มีในระบบ`,
+  });
+});
+
 exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
   // console.log("This is convertSkuToPartCode");
   const { sku_data } = req.body;

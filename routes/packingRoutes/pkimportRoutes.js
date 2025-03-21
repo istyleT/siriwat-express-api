@@ -5,6 +5,7 @@ const {
   separatePartSet,
   setToCreateWork,
   checkDuplicateOrderNos,
+  checkTrackingCancel,
 } = require("../../controllers/packingController/pkimportController");
 const { protect, restrictTo } = require("../../controllers/authController");
 
@@ -17,5 +18,6 @@ router
   .post(convertSkuToPartCode, separatePartSet, setToCreateWork);
 
 router.route("/check-duplicate-order").post(checkDuplicateOrderNos);
+router.route("/check-tracking-cancel").post(checkTrackingCancel);
 
 module.exports = router;
