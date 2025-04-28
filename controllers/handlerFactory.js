@@ -403,6 +403,42 @@ exports.createOne = (Model) =>
     });
   });
 
+exports.createMany = (Model) =>
+  catchAsync(async (req, res, next) => {
+    const user = req.user;
+    const currentTime = moment.tz(new Date(), "Asia/Bangkok").format();
+
+    if (!user) {
+      return next(new AppError("ไม่พบข้อมูลผู้ใช้งาน", 400));
+    }
+
+    const dataArray = req.body;
+
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+      return next(
+        new AppError(
+          "กรุณาส่งข้อมูลเป็น Array ที่มีสมาชิกอย่างน้อย 1 รายการ",
+          400
+        )
+      );
+    }
+
+    const docsToCreate = dataArray.map((item) => ({
+      ...item,
+      user_created: user._id,
+      created_at: currentTime,
+      user_updated: user._id,
+      updated_at: currentTime,
+    }));
+
+    const createdDocs = await Model.insertMany(docsToCreate, { ordered: true });
+
+    res.status(201).json({
+      status: "success",
+      message: "เพิ่มข้อมูลหลายรายการสำเร็จ",
+    });
+  });
+
 exports.updateOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const user = req.user;

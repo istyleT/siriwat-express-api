@@ -43,6 +43,10 @@ const swmechanicalRouter = require("./routes/siriwatRoutes/swmechanicalRoutes");
 const swpartkitRouter = require("./routes/siriwatRoutes/swpartkitRoutes");
 const swvehicleRouter = require("./routes/siriwatRoutes/swvehicleRoutes");
 
+//Routes ของ Stock
+const skinventorymovementRouter = require("./routes/stockRoutes/skinventorymovementRoutes");
+const skinventoryRouter = require("./routes/stockRoutes/skinventoryRoutes");
+const skreceiveRouter = require("./routes/stockRoutes/skreceiveRoutes");
 //Controller
 const quotationController = require("./controllers/appController/quotationController");
 const swquotationController = require("./controllers/siriwatController/swquotationController");
@@ -59,6 +63,7 @@ const allowedOrigins = [
   "https://rmbkk.netlify.app",
   "https://ssmapp.netlify.app",
   "https://rmpacking.netlify.app",
+  "https://rmstock.netlify.app/",
   "http://localhost:4173", //กรณี test เเบบ mode production
 ];
 
@@ -168,6 +173,11 @@ app.use("/pk/skudictionarys", pkskudictionaryRouter);
 app.use("/pk/works", pkworkRouter);
 app.use("/pk/imports", pkimportRouter);
 app.use("/pk/defaultcols", pkdefaultcolRouter);
+
+// stock routes
+app.use("/sk/stockmovements", skinventorymovementRouter);
+app.use("/sk/inventories", skinventoryRouter);
+app.use("/sk/receives", skreceiveRouter);
 
 // siriwat routes
 app.use("/sw/customers", swcustomerRouter);
