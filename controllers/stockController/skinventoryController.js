@@ -162,31 +162,31 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
   });
 
   // 4. ตรวจสอบ qty หลังหักลบ
-  const insufficientParts = [];
+  // const insufficientParts = [];
 
-  for (const part of inventoryParts) {
-    const moveoutQty = mergedDataMap.get(part.part_code)?.qty || 0;
-    const newQty = part.qty - moveoutQty;
+  // for (const part of inventoryParts) {
+  //   const moveoutQty = mergedDataMap.get(part.part_code)?.qty || 0;
+  //   const newQty = part.qty - moveoutQty;
 
-    if (newQty < 0) {
-      insufficientParts.push({
-        partnumber: part.part_code,
-        requiredQty: moveoutQty - part.qty, // จำนวนที่ขาดอยู่
-      });
-    }
-  }
+  //   if (newQty < 0) {
+  //     insufficientParts.push({
+  //       partnumber: part.part_code,
+  //       requiredQty: moveoutQty - part.qty, // จำนวนที่ขาดอยู่
+  //     });
+  //   }
+  // }
 
-  if (insufficientParts.length > 0) {
-    // สร้าง message ที่รวมข้อมูล
-    const insufficientMessage = insufficientParts
-      .map((item) => `${item.partnumber} ต้องเพิ่ม ${item.requiredQty} ชิ้น`)
-      .join(", ");
+  // if (insufficientParts.length > 0) {
+  //   // สร้าง message ที่รวมข้อมูล
+  //   const insufficientMessage = insufficientParts
+  //     .map((item) => `${item.partnumber} ต้องเพิ่ม ${item.requiredQty} ชิ้น`)
+  //     .join(", ");
 
-    return res.status(400).json({
-      status: "fail",
-      message: `สินค้าไม่เพียงพอ: ${insufficientMessage}`,
-    });
-  }
+  //   return res.status(400).json({
+  //     status: "fail",
+  //     message: `สินค้าไม่เพียงพอ: ${insufficientMessage}`,
+  //   });
+  // }
 
   // 5. ถ้าไม่มีปัญหา อัปเดต qty แบบ bulk
   const bulkOperations = inventoryParts.map((part) => {

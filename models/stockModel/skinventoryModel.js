@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const moment = require("moment-timezone");
 
 const skinventorySchema = new mongoose.Schema({
   part_code: {
@@ -15,7 +16,6 @@ const skinventorySchema = new mongoose.Schema({
   qty: {
     type: Number,
     default: 0,
-    min: 0,
   },
   avg_cost: {
     type: Number,
