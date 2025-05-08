@@ -11,6 +11,7 @@ const {
   deleteManyPkwork,
   reviveOnePkwork,
   cancelTracking,
+  getDataScanForMoveInventory,
 } = require("../../controllers/packingController/pkworkController");
 const { cancelData } = require("../../controllers/handlerFactory");
 const { protect, restrictTo } = require("../../controllers/authController");
@@ -19,6 +20,9 @@ router.use(protect);
 router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllPkwork).post(createPkwork);
+router
+  .route("/part-scan-success/:uploadrefno")
+  .get(getDataScanForMoveInventory);
 router.route("/suggest").get(getSuggestPkwork);
 router.route("/report").get(getByDatePkwork);
 router.route("/deletework").delete(deleteManyPkwork);

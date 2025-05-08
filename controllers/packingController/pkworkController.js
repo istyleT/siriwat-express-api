@@ -64,6 +64,44 @@ exports.cancelTracking = catchAsync(async (req, res, next) => {
   });
 });
 
+//ฟังก์ชันสำหรับ get pkwork ที่มี
+exports.getDataScanForMoveInventory = catchAsync(async (req, res, next) => {
+  const { uploadrefno } = req.params;
+
+  if (!uploadrefno) {
+    return res.status(400).json({
+      status: "fail",
+      message: "กรุณาระบุเลขออ้างอิง Upload",
+    });
+  }
+
+  const pkworks = await Pkwork.find({
+    upload_ref_no: uploadrefno,
+    status: "เสร็จสิ้น",
+  });
+
+  if (!pkworks || pkworks.length === 0) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบข้อมูลพัสดุที่เสร็จสิ้น",
+    });
+  }
+
+  const scannedData = pkworks.flatMap((doc) => {
+    return doc.scan_data.map((scan) => ({
+      partnumber: scan.partnumber,
+      qty: scan.qty,
+      upload_ref_no: doc.upload_ref_no,
+      tracking_code: doc.tracking_code,
+    }));
+  });
+
+  res.status(200).json({
+    status: "success",
+    data: scannedData,
+  });
+});
+
 //ลบเอกสารที่มีอายุเกินกว่า 15 วัน
 exports.deletePkworkOld = catchAsync(async (req, res, next) => {
   const date = moment().tz("Asia/Bangkok").subtract(15, "days").toDate();

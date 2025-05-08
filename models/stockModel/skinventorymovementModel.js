@@ -2,30 +2,22 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
 const skinventorymovementSchema = new mongoose.Schema({
-  part: {
+  partnumber: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Skinventory",
     required: [true, "กรุณาระบุอะไหล่"],
-  },
-  movement_type: {
-    type: String,
-    enum: ["IN", "OUT"],
-    required: [true, "กรุณาระบุประเภทการเคลื่อนไหว"],
   },
   qty: {
     type: Number,
     required: [true, "กรุณาระบุจำนวน"],
     min: 0,
   },
-  before_qty_ava: {
-    type: Number,
-    required: [true, "กรุณาระบุจำนวนคงเหลือ"],
+  movement_type: {
+    type: String,
+    enum: ["IN", "OUT"],
+    required: [true, "กรุณาระบุประเภทการเคลื่อนไหว"],
   },
-  after_qty_ava: {
-    type: Number,
-    required: [true, "กรุณาระบุจำนวนคงเหลือ"],
-  },
-  document: {
+  document_ref: {
     type: String,
     required: [true, "กรุณาระบุเอกสารอ้างอิง"],
     trim: true,
@@ -63,3 +55,5 @@ const Skinventorymovement = mongoose.model(
 );
 
 module.exports = Skinventorymovement;
+
+//dfgdfgdfg
