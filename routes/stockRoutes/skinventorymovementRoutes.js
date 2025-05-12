@@ -6,6 +6,7 @@ const {
   getSuggestSkinventorymovement,
   createSkinventorymovement,
   updateSkinventorymovement,
+  getByDateSkinventorymovement,
 } = require("../../controllers/stockController/skinventorymovementController");
 const { cancelData } = require("../../controllers/handlerFactory");
 const { protect } = require("../../controllers/authController");
@@ -16,6 +17,7 @@ router
   .route("/")
   .get(getAllSkinventorymovement)
   .post(createSkinventorymovement);
+router.route("/bydate").get(getByDateSkinventorymovement);
 router.route("/suggest").get(getSuggestSkinventorymovement);
 router.route("/cancel/:id").patch(cancelData, updateSkinventorymovement);
 router

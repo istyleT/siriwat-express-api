@@ -175,7 +175,7 @@ app.use("/pk/imports", pkimportRouter);
 app.use("/pk/defaultcols", pkdefaultcolRouter);
 
 // stock routes
-app.use("/sk/stockmovements", skinventorymovementRouter);
+app.use("/sk/inventorymovements", skinventorymovementRouter);
 app.use("/sk/inventories", skinventoryRouter);
 app.use("/sk/receives", skreceiveRouter);
 

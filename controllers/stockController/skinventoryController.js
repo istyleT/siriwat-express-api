@@ -1,7 +1,49 @@
 const Skinventory = require("../../models/stockModel/skinventoryModel");
 const Skreceive = require("../../models/stockModel/skreceiveModel");
+const Skinventorymovement = require("../../models/stockModel/skinventorymovementModel");
 const factory = require("../handlerFactory");
+const moment = require("moment-timezone");
 const catchAsync = require("../../utils/catchAsync");
+
+//Middleware
+exports.checkForAdjustPart = catchAsync(async (req, res, next) => {
+  const user = req.user;
+
+  if (!user) {
+    return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
+  }
+
+  if (!req.body) {
+    return next(new AppError("กรุณากรอกข้อมูลให้ครบถ้วน", 400));
+  }
+
+  const { part_code, qty } = req.body;
+
+  if (!part_code || qty == null) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ข้อมูลไม่ครบถ้วน",
+    });
+  }
+
+  // ดึงข้อมูลอะไหล่จาก ID
+  const part = await Skinventory.findById(req.params.id);
+
+  if (!part) {
+    return res.status(404).json({
+      status: "fail",
+      message: `ไม่พบอะไหล่ id: ${req.params.id}`,
+    });
+  }
+
+  if (Number(part.qty) !== Number(qty)) {
+    req.skipResNext = true;
+    req.qtyDiff = Math.abs(Number(qty) - Number(part.qty));
+    req.isIncrease = Number(qty) > Number(part.qty);
+  }
+
+  next();
+});
 
 //Method
 exports.getAllSkinventory = factory.getAll(Skinventory);
@@ -65,16 +107,21 @@ exports.uploadReceivePart = catchAsync(async (req, res, next) => {
 
 //ยืนยันการรับสินค้าเข้าคลังจากจากการสแกน
 exports.confirmReceivePart = catchAsync(async (req, res, next) => {
-  const { partnumber, qty_in, cost_per_unit } = req.body;
+  const { partnumber, qty_in, cost_per_unit, upload_ref_no } = req.body;
 
-  if (!partnumber || qty_in == null || cost_per_unit == null) {
+  if (
+    !partnumber ||
+    qty_in == null ||
+    cost_per_unit == null ||
+    !upload_ref_no
+  ) {
     return res.status(400).json({
       status: "fail",
       message: "ข้อมูลไม่ครบถ้วน",
     });
   }
 
-  // หาอะไหล่จาก Skinventory
+  // หาอะไหล่จาก Skinventory และเพิ่มจำนวนเข้าไป
   const part = await Skinventory.findOne({ part_code: partnumber });
 
   if (!part) {
@@ -99,6 +146,16 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
 
   await part.save();
 
+  // บันทึกการเคลื่อนไหวของอะไหล่
+  await Skinventorymovement.createMovement({
+    partnumber: partnumber,
+    qty: Number(qty_in),
+    movement_type: "in",
+    cost_movement: Number(cost_per_unit),
+    document_ref: upload_ref_no,
+    user_created: req.user._id,
+  });
+
   //เปลี่ยนสถานะใน Skreceive
   await Skreceive.findOneAndUpdate(
     { partnumber: partnumber, status: "pending" },
@@ -116,8 +173,8 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
   });
 });
 
-//upload รายการสินค้าที่ออกจากคลัง
-exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
+//ตัดสินค้าออกจากคลังโดย work ที่ scan สำเร็จ
+exports.fromScanMoveOutPart = catchAsync(async (req, res, next) => {
   const moveout_parts = req.body;
 
   if (!Array.isArray(moveout_parts) || moveout_parts.length === 0) {
@@ -127,80 +184,95 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 1. ทำความสะอาดข้อมูล
+  // 1. ทำความสะอาดและตรวจสอบข้อมูล
   const cleanedData = moveout_parts
     .map((item) => {
       const partnumber =
         typeof item.partnumber === "string" ? item.partnumber.trim() : null;
       const qty = Number(item.qty);
+      const tracking_code =
+        typeof item.tracking_code === "string"
+          ? item.tracking_code.trim()
+          : null;
 
-      return { partnumber, qty };
+      return { partnumber, qty, tracking_code };
     })
-    .filter((item) => item.partnumber && !isNaN(item.qty));
+    .filter(
+      (item) => item.partnumber && !isNaN(item.qty) && item.tracking_code
+    );
 
-  // 2. รวม partnumber ซ้ำ
-  const mergedDataMap = new Map();
+  if (cleanedData.length !== moveout_parts.length) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ข้อมูลไม่ครบถ้วนหรือ tracking_code หายไปในบางรายการ",
+    });
+  }
+
+  // 2. รวมข้อมูลโดยใช้ทั้ง partnumber + tracking_code เป็น key
+  const mergedMap = new Map();
 
   for (const item of cleanedData) {
-    if (mergedDataMap.has(item.partnumber)) {
-      const existing = mergedDataMap.get(item.partnumber);
-      const totalQty = existing.qty + item.qty;
+    const key = `${item.partnumber}::${item.tracking_code}`;
 
-      mergedDataMap.set(item.partnumber, {
-        partnumber: item.partnumber,
-        qty: totalQty,
-      });
+    if (mergedMap.has(key)) {
+      const existing = mergedMap.get(key);
+      existing.qty += item.qty;
     } else {
-      mergedDataMap.set(item.partnumber, { ...item });
+      mergedMap.set(key, { ...item });
     }
   }
 
-  // 3. ค้นหาใน Skinventory ทีเดียวทั้งหมด
-  const partNumbers = Array.from(mergedDataMap.keys());
+  // 3. ดึงรายการอะไหล่ที่เกี่ยวข้องทั้งหมด
+  const uniquePartNumbers = Array.from(mergedMap.values()).map(
+    (item) => item.partnumber
+  );
   const inventoryParts = await Skinventory.find({
-    part_code: { $in: partNumbers },
+    part_code: { $in: [...new Set(uniquePartNumbers)] },
   });
 
-  // 4. ตรวจสอบ qty หลังหักลบ
-  // const insufficientParts = [];
+  // สร้าง map สำหรับเข้าถึง avg_cost ง่ายๆ
+  const inventoryMap = new Map();
+  for (const item of inventoryParts) {
+    inventoryMap.set(item.part_code, item);
+  }
 
-  // for (const part of inventoryParts) {
-  //   const moveoutQty = mergedDataMap.get(part.part_code)?.qty || 0;
-  //   const newQty = part.qty - moveoutQty;
+  // 4. เตรียม bulk update และ log movement
+  const bulkOperations = [];
+  const movementLogs = [];
 
-  //   if (newQty < 0) {
-  //     insufficientParts.push({
-  //       partnumber: part.part_code,
-  //       requiredQty: moveoutQty - part.qty, // จำนวนที่ขาดอยู่
-  //     });
-  //   }
-  // }
+  for (const [key, { partnumber, qty, tracking_code }] of mergedMap.entries()) {
+    const inventoryItem = inventoryMap.get(partnumber);
+    if (!inventoryItem) continue;
 
-  // if (insufficientParts.length > 0) {
-  //   // สร้าง message ที่รวมข้อมูล
-  //   const insufficientMessage = insufficientParts
-  //     .map((item) => `${item.partnumber} ต้องเพิ่ม ${item.requiredQty} ชิ้น`)
-  //     .join(", ");
-
-  //   return res.status(400).json({
-  //     status: "fail",
-  //     message: `สินค้าไม่เพียงพอ: ${insufficientMessage}`,
-  //   });
-  // }
-
-  // 5. ถ้าไม่มีปัญหา อัปเดต qty แบบ bulk
-  const bulkOperations = inventoryParts.map((part) => {
-    const moveoutQty = mergedDataMap.get(part.part_code)?.qty || 0;
-    return {
+    bulkOperations.push({
       updateOne: {
-        filter: { _id: part._id },
-        update: { $inc: { qty: -moveoutQty } }, // ลบจำนวนสินค้าออก
+        filter: { _id: inventoryItem._id },
+        update: { $inc: { qty: -qty } },
       },
-    };
-  });
+    });
 
+    movementLogs.push({
+      partnumber,
+      qty,
+      movement_type: "out",
+      cost_movement: inventoryItem.avg_cost || 0,
+      document_ref: tracking_code,
+      user_created: req.user._id,
+    });
+  }
+
+  // 5. ทำ bulk update
   if (bulkOperations.length > 0) {
     await Skinventory.bulkWrite(bulkOperations);
+  }
+
+  // 6. บันทึก movement log
+  if (movementLogs.length > 0) {
+    for (const m of movementLogs) {
+      m.created_at = moment().tz("Asia/Bangkok").toDate();
+    }
+
+    await Skinventorymovement.insertMany(movementLogs);
   }
 
   res.status(200).json({
@@ -208,3 +280,96 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
     message: `ตัดสินค้าออกจากคลังสำเร็จ จำนวน ${bulkOperations.length} รายการ`,
   });
 });
+
+//upload รายการสินค้าที่ออกจากคลัง
+// exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
+//   const moveout_parts = req.body;
+
+//   if (!Array.isArray(moveout_parts) || moveout_parts.length === 0) {
+//     return res.status(400).json({
+//       status: "fail",
+//       message: "ไม่มีข้อมูลอะไหล่",
+//     });
+//   }
+
+//   // 1. ทำความสะอาดข้อมูล
+//   const cleanedData = moveout_parts
+//     .map((item) => {
+//       const partnumber =
+//         typeof item.partnumber === "string" ? item.partnumber.trim() : null;
+//       const qty = Number(item.qty);
+
+//       return { partnumber, qty };
+//     })
+//     .filter((item) => item.partnumber && !isNaN(item.qty));
+
+//   // 2. รวม partnumber ซ้ำ
+//   const mergedDataMap = new Map();
+
+//   for (const item of cleanedData) {
+//     if (mergedDataMap.has(item.partnumber)) {
+//       const existing = mergedDataMap.get(item.partnumber);
+//       const totalQty = existing.qty + item.qty;
+
+//       mergedDataMap.set(item.partnumber, {
+//         partnumber: item.partnumber,
+//         qty: totalQty,
+//       });
+//     } else {
+//       mergedDataMap.set(item.partnumber, { ...item });
+//     }
+//   }
+
+//   // 3. ค้นหาใน Skinventory ทีเดียวทั้งหมด
+//   const partNumbers = Array.from(mergedDataMap.keys());
+//   const inventoryParts = await Skinventory.find({
+//     part_code: { $in: partNumbers },
+//   });
+
+//   // 4. ตรวจสอบ qty หลังหักลบ
+//   // const insufficientParts = [];
+
+//   // for (const part of inventoryParts) {
+//   //   const moveoutQty = mergedDataMap.get(part.part_code)?.qty || 0;
+//   //   const newQty = part.qty - moveoutQty;
+
+//   //   if (newQty < 0) {
+//   //     insufficientParts.push({
+//   //       partnumber: part.part_code,
+//   //       requiredQty: moveoutQty - part.qty, // จำนวนที่ขาดอยู่
+//   //     });
+//   //   }
+//   // }
+
+//   // if (insufficientParts.length > 0) {
+//   //   // สร้าง message ที่รวมข้อมูล
+//   //   const insufficientMessage = insufficientParts
+//   //     .map((item) => `${item.partnumber} ต้องเพิ่ม ${item.requiredQty} ชิ้น`)
+//   //     .join(", ");
+
+//   //   return res.status(400).json({
+//   //     status: "fail",
+//   //     message: `สินค้าไม่เพียงพอ: ${insufficientMessage}`,
+//   //   });
+//   // }
+
+//   // 5. ถ้าไม่มีปัญหา อัปเดต qty แบบ bulk
+//   const bulkOperations = inventoryParts.map((part) => {
+//     const moveoutQty = mergedDataMap.get(part.part_code)?.qty || 0;
+//     return {
+//       updateOne: {
+//         filter: { _id: part._id },
+//         update: { $inc: { qty: -moveoutQty } }, // ลบจำนวนสินค้าออก
+//       },
+//     };
+//   });
+
+//   if (bulkOperations.length > 0) {
+//     await Skinventory.bulkWrite(bulkOperations);
+//   }
+
+//   res.status(200).json({
+//     status: "success",
+//     message: `ตัดสินค้าออกจากคลังสำเร็จ จำนวน ${bulkOperations.length} รายการ`,
+//   });
+// });

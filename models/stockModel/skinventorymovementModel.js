@@ -2,10 +2,19 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
 const skinventorymovementSchema = new mongoose.Schema({
+  document_ref: {
+    type: String,
+    required: [true, "กรุณาระบุเอกสารอ้างอิง"],
+    trim: true,
+  },
+  docCount: {
+    type: Number,
+    default: 1,
+  },
   partnumber: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Skinventory",
-    required: [true, "กรุณาระบุอะไหล่"],
+    type: String,
+    required: [true, "กรุณาระบุรหัสอะไหล่"],
+    trim: true,
   },
   qty: {
     type: Number,
@@ -14,13 +23,14 @@ const skinventorymovementSchema = new mongoose.Schema({
   },
   movement_type: {
     type: String,
-    enum: ["IN", "OUT"],
+    enum: ["in", "out"],
     required: [true, "กรุณาระบุประเภทการเคลื่อนไหว"],
   },
-  document_ref: {
-    type: String,
-    required: [true, "กรุณาระบุเอกสารอ้างอิง"],
-    trim: true,
+  //ถ้าขาเข้าจะเป็นราคาทุนตัวที่พึ่งเข้ามา ถ้าเป็นขาออกหรือปรับจะเป็นราคาทุนเฉลี่ย
+  cost_movement: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
   //field พื้นฐาน
   created_at: {
@@ -39,6 +49,45 @@ skinventorymovementSchema.index({
   part: 1,
 });
 
+//method
+skinventorymovementSchema.statics.createMovement = async function ({
+  partnumber,
+  qty,
+  movement_type,
+  cost_movement,
+  document_ref,
+  user_created,
+}) {
+  // ตรวจสอบข้อมูลที่จำเป็น
+  if (
+    partnumber == null ||
+    qty == null ||
+    movement_type == null ||
+    document_ref == null ||
+    user_created == null
+  ) {
+    throw new Error("ข้อมูลไม่ครบถ้วนสำหรับการบันทึก Movement");
+  }
+
+  if (typeof cost_movement !== "number" || cost_movement < 0) {
+    throw new Error("กรุณาระบุต้นทุนที่เป็นตัวเลขและต้องไม่ต่ำกว่า 0");
+  }
+
+  // สร้าง document
+  const movement = new this({
+    partnumber,
+    qty,
+    movement_type,
+    cost_movement,
+    document_ref,
+    user_created,
+    created_at: moment().tz("Asia/Bangkok").toDate(), // กันไว้เผื่อกรณีมี override
+  });
+
+  // บันทึกลง database
+  return await movement.save();
+};
+
 // populate path
 skinventorymovementSchema.pre(/^find/, function (next) {
   this.populate({
@@ -55,5 +104,3 @@ const Skinventorymovement = mongoose.model(
 );
 
 module.exports = Skinventorymovement;
-
-//dfgdfgdfg
