@@ -10,10 +10,23 @@ const {
   getSuggestPkwork,
   deleteManyPkwork,
   reviveOnePkwork,
-  cancelTracking,
-  getDataScanForMoveInventory,
+  cancelOrder,
+  getDataPartsInWorkUpload,
+  getDataPartsInWorkCancel,
+  returnMockQtyToInventory,
+  returnUploadMockQtyToInventory,
+  changeStation,
+  adjustMockQtyInInventory,
+  movePartsToScan,
+  formatPartsInPickDoc,
+  formatPartsInArrangeDoc,
+  returnMockQtyBeforeDeleteWork,
+  updatePartsDataInWork,
 } = require("../../controllers/packingController/pkworkController");
-const { cancelData } = require("../../controllers/handlerFactory");
+const {
+  cancelData,
+  setSkipResNext,
+} = require("../../controllers/handlerFactory");
 const { protect, restrictTo } = require("../../controllers/authController");
 //Global
 router.use(protect);
@@ -21,14 +34,30 @@ router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllPkwork).post(createPkwork);
 router
-  .route("/part-scan-success/:uploadrefno")
-  .get(getDataScanForMoveInventory);
+  .route("/parts-pickupdoc")
+  .get(setSkipResNext(true), getAllPkwork, formatPartsInPickDoc);
+router
+  .route("/parts-arrangedoc")
+  .get(setSkipResNext(true), getAllPkwork, formatPartsInArrangeDoc);
+router.route("/part-scan-create/:created_at").get(getDataPartsInWorkUpload);
+router
+  .route("/part-cancel-done/:cancel_success_at")
+  .get(getDataPartsInWorkCancel);
 router.route("/suggest").get(getSuggestPkwork);
 router.route("/report").get(getByDatePkwork);
-router.route("/deletework").delete(deleteManyPkwork);
-router.route("/cancel-by-tracking").patch(cancelTracking);
-router.route("/cancel/:id").patch(cancelData, updatePkwork);
-router.route("/revive/:id").patch(reviveOnePkwork);
+router
+  .route("/deletework")
+  .delete(returnMockQtyBeforeDeleteWork, deleteManyPkwork);
+router
+  .route("/cancel-by-order")
+  .patch(returnUploadMockQtyToInventory, cancelOrder);
+router
+  .route("/cancel/:id")
+  .patch(cancelData, returnMockQtyToInventory, updatePkwork);
+router.route("/edit-partsdata/:id").patch(updatePartsDataInWork, updatePkwork);
+router.route("/rsmwork-success/:id").patch(movePartsToScan, updatePkwork);
+router.route("/change-station/:id").patch(changeStation, updatePkwork);
+router.route("/revive/:id").patch(adjustMockQtyInInventory, reviveOnePkwork);
 router.route("/:id").get(getOnePkwork).patch(updatePkwork).delete(deletePkwork);
 
 module.exports = router;

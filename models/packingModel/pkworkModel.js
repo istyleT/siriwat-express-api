@@ -43,6 +43,20 @@ const pkworkSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  station: {
+    type: String,
+    enum: ["RM", "RSM"],
+    default: "RM",
+  },
+  cancel_status: {
+    type: String,
+    enum: ["ดำเนินการ", "เสร็จสิ้น", "-"],
+    default: "-",
+  },
+  cancel_success_at: {
+    type: Date,
+    default: null,
+  },
   //field พื้นฐาน
   created_at: {
     type: Date,
@@ -86,10 +100,12 @@ pkworkSchema.pre(/^find/, function (next) {
   next();
 });
 
+//stamp เวลาที่เสร็จสิ้น
 pkworkSchema.post("findOneAndUpdate", async function (doc) {
   if (doc) {
     const updatedDoc = await this.model.findById(doc._id);
 
+    //work ที่ไม่โดนยกเลิก
     if (
       updatedDoc &&
       updatedDoc.parts_data.length === 0 &&
@@ -97,6 +113,17 @@ pkworkSchema.post("findOneAndUpdate", async function (doc) {
     ) {
       updatedDoc.status = "เสร็จสิ้น";
       updatedDoc.success_at = moment().tz("Asia/Bangkok").toDate();
+      await updatedDoc.save();
+    }
+
+    //work ที่โดนยกเลิก
+    if (
+      updatedDoc &&
+      updatedDoc.parts_data.length === 0 &&
+      updatedDoc.status === "ยกเลิก"
+    ) {
+      updatedDoc.cancel_status = "เสร็จสิ้น";
+      updatedDoc.cancel_success_at = moment().tz("Asia/Bangkok").toDate();
       await updatedDoc.save();
     }
   }

@@ -7,10 +7,11 @@ const {
   createSkinventory,
   updateSkinventory,
   uploadReceivePart,
-  // uploadMoveOutPart,
+  uploadMoveOutPart,
   checkForAdjustPart,
   confirmReceivePart,
-  fromScanMoveOutPart,
+  fromWorkUploadMoveOutPart,
+  fromWorkCancelDoneMoveInPart,
 } = require("../../controllers/stockController/skinventoryController");
 const {
   setAdjustDocNo,
@@ -22,9 +23,17 @@ const { protect } = require("../../controllers/authController");
 router.use(protect);
 //Routes
 router.route("/").get(getAllSkinventory).post(createSkinventory);
-router.route("/upload/receive").post(uploadReceivePart);
-// router.route("/upload/partmoveout").post(uploadMoveOutPart);
-router.route("/from-scan/partmoveout").patch(fromScanMoveOutPart);
+//upload สินค้าเข้าคลังโดยไม่ต้องผ่านการสแกน
+router.route("/upload/parts-in").post(uploadReceivePart);
+//upload สินค้าออกจากคลังโดยไม่ต้องผ่านการสแกน
+router.route("/upload/parts-out").post(uploadMoveOutPart);
+//ตัดสินค้าออกจากคลังโดย work ที่ upload
+router.route("/from-work-uplaod/partmoveout").patch(fromWorkUploadMoveOutPart);
+//เพิ่มสินค้าออกจากคลังโดย work ที่ยกเลิกเสร็จสิ้น
+router
+  .route("/from-work-cancel-done/partmovein")
+  .patch(fromWorkCancelDoneMoveInPart);
+//upload สินค้าเข้าคลังโดยการสแกน
 router.route("/confirm-receive").patch(confirmReceivePart);
 router.route("/suggest").get(getSuggestSkinventory);
 router.route("/cancel/:id").patch(cancelData, updateSkinventory);

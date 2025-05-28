@@ -313,6 +313,13 @@ exports.getOne = (Model) =>
     if (!doc) {
       return next(new AppError("ไม่พบเอกสารที่ต้องการ", 404));
     }
+
+    if (req.skipResNext) {
+      req.getDoc = doc;
+      delete req.skipResNext;
+      return next();
+    }
+
     res.status(200).json({
       status: "success",
       data: doc,
@@ -333,6 +340,13 @@ exports.getAll = (Model) =>
     }
 
     const doc = await features.query;
+
+    if (req.skipResNext) {
+      req.getDocs = doc;
+      delete req.skipResNext;
+      return next();
+    }
+
     res.status(200).json({
       status: "success",
       length: doc.length,

@@ -1,5 +1,6 @@
 const Pkskudictionary = require("../../models/packingModel/pkskudictionaryModel");
 const Pkwork = require("../../models/packingModel/pkworkModel");
+const Skinventory = require("../../models/stockModel/skinventoryModel");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
 
@@ -43,55 +44,51 @@ exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.checkTrackingCancel = catchAsync(async (req, res, next) => {
-  const { tracking_cancel, shop } = req.body;
+exports.checkOrderCancel = catchAsync(async (req, res, next) => {
+  const { order_cancel, shop } = req.body;
 
-  if (
-    !Array.isArray(tracking_cancel) ||
-    tracking_cancel.length === 0 ||
-    !shop
-  ) {
+  if (!Array.isArray(order_cancel) || order_cancel.length === 0 || !shop) {
     return res.status(400).json({
       status: "fail",
-      message: "tracking_cancel หรือ shop ไม่ถูกต้อง",
+      message: "order_cancel หรือ shop ไม่ถูกต้อง",
     });
   }
 
-  // ✅ 1. ดึง tracking_code ที่ไม่ซ้ำ
-  const uniqueTrackingCodes = [
-    ...new Set(tracking_cancel.map((item) => item.tracking_code.trim())),
+  // ✅ 1. ดึง order_no ที่ไม่ซ้ำ
+  const uniqueOrderNos = [
+    ...new Set(order_cancel.map((item) => item.order_no.trim())),
   ];
 
-  // ✅ 2. ค้นหาใน Pkwork เฉพาะ tracking_code และ shop ที่ตรงกัน
-  const existingTrackingDocs = await Pkwork.find(
+  // ✅ 2. ค้นหาใน Pkwork เฉพาะ order_no และ shop ที่ตรงกัน
+  const existingOrderDocs = await Pkwork.find(
     {
-      tracking_code: { $in: uniqueTrackingCodes },
+      order_no: { $in: uniqueOrderNos },
       shop: shop.trim(),
     },
-    { tracking_code: 1 }
+    { order_no: 1 }
   );
 
   // ✅ 3. แปลงผลลัพธ์ที่เจอเป็น Set
-  const existingTrackingSet = new Set(
-    existingTrackingDocs.map((doc) => doc.tracking_code)
+  const existingOrderSet = new Set(
+    existingOrderDocs.map((doc) => doc.order_no)
   );
 
-  // ✅ 4. หา tracking_code ที่ไม่เจอในระบบ
-  const lostTracking = uniqueTrackingCodes.filter(
-    (code) => !existingTrackingSet.has(code)
+  // ✅ 4. หา order_no ที่ไม่เจอในระบบ
+  const lostOrder = uniqueOrderNos.filter(
+    (code) => !existingOrderSet.has(code)
   );
 
   // ✅ 5. ตอบกลับ
-  if (lostTracking.length > 0) {
+  if (lostOrder.length > 0) {
     return res.status(200).json({
       status: "success",
-      message: `ไม่พบเลขพัสดุในระบบของร้าน ${shop}: ${lostTracking.join(", ")}`,
+      message: `ไม่พบคำสั่งซื้อในระบบของร้าน ${shop}: ${lostOrder.join(", ")}`,
     });
   }
 
   return res.status(200).json({
     status: "success",
-    message: `เลขพัสดุทุกตัวของร้าน ${shop} มีในระบบ`,
+    message: `ทุกคำสั่งซื้อของร้าน ${shop} มีในระบบ`,
   });
 });
 
@@ -227,7 +224,36 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
     (doc) => !existingOrderNos.has(doc.order_no)
   );
 
-  // console.log("หลังจากที่เอา order_no ซ้ำออก", workDocuments.length);
+  // ✅ 3.1 คำนวณ total_qty
+  workDocuments = workDocuments.map((doc) => {
+    const totalQty = doc.parts_data.reduce(
+      (sum, part) => sum + Number(part.qty || 0),
+      0
+    );
+    return {
+      ...doc,
+      total_qty: totalQty,
+    };
+  });
+
+  // ✅ 3.2 จัดเรียงตาม total_qty มากไปน้อย
+  workDocuments.sort((a, b) => b.total_qty - a.total_qty);
+
+  // console.dir(workDocuments, { depth: null });
+
+  //✅ 3.3 ตรวจสอบการจองอะไหล่ และอัปเดต reserve_qty ตามลำดับ
+  for (let i = 0; i < workDocuments.length; i++) {
+    const doc = workDocuments[i];
+
+    try {
+      await Skinventory.validateMockQtyUpdate("decrease", doc.parts_data);
+      doc.station = "RM";
+      await Skinventory.updateMockQty("decrease", doc.parts_data);
+    } catch (err) {
+      doc.station = "RSM";
+      // ไม่ต้อง throw error เพราะแค่เปลี่ยนสถานะ แล้วปล่อยผ่าน
+    }
+  }
 
   // ✅ 4. สร้าง upload_ref_no
   const today = moment().format("YYMMDD");
@@ -267,7 +293,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 
   // console.log(JSON.stringify(workDocuments, null, 2));
 
-  // ✅ 6. บันทึกข้อมูลลง Database
+  // ✅ 7. บันทึกข้อมูลลง Database
   await Pkwork.insertMany(workDocuments);
 
   return res.status(201).json({

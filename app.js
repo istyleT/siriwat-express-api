@@ -47,10 +47,9 @@ const swvehicleRouter = require("./routes/siriwatRoutes/swvehicleRoutes");
 const skinventorymovementRouter = require("./routes/stockRoutes/skinventorymovementRoutes");
 const skinventoryRouter = require("./routes/stockRoutes/skinventoryRoutes");
 const skreceiveRouter = require("./routes/stockRoutes/skreceiveRoutes");
-//Controller
-const quotationController = require("./controllers/appController/quotationController");
-const swquotationController = require("./controllers/siriwatController/swquotationController");
-const pkworkController = require("./controllers/packingController/pkworkController");
+
+//Controller ที่ต้องการจะให้ cron ทำงาน
+const startAllJobs = require("./controllers/cronjobs/index");
 
 const app = express();
 //ส่วนการตั้งค่า cors origin
@@ -135,18 +134,7 @@ app.use((req, res, next) => {
 });
 
 //การภตั้งค่า function จาก Controller ที่จะทำงานเป็น cron job
-//ลบเอกสารใบเสนอราคาที่เกิน 45 วันใน App ของ RMBKK
-cron.schedule("0 0 * * *", () => {
-  quotationController.deleteQuotationOld();
-});
-//ลบเอกสารใบเสนอราคาที่เกิน 45 วันใน App ของ SSMapp
-cron.schedule("0 0 * * *", () => {
-  swquotationController.deleteSwquotationOld();
-});
-//ลบเอกสารใบงานที่เกิน 15 วันใน App ของ Packing
-cron.schedule("0 0 * * *", () => {
-  pkworkController.deletePkworkOld();
-});
+startAllJobs();
 
 // ROUTES Pages Pug
 app.get("/", (req, res) => {
