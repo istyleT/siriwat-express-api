@@ -1,6 +1,5 @@
 const Pkwork = require("../../models/packingModel/pkworkModel");
 const Skinventory = require("../../models/stockModel/skinventoryModel");
-const SkinventoryMovement = require("../../models/stockModel/skinventorymovementModel");
 const { startOfDay, endOfDay } = require("date-fns");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
@@ -528,24 +527,50 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
       })) || []
   );
 
+  // ❗ สร้างชุดของ partnumber ที่ไม่ซ้ำ
+  const uniquePartNumbers = [
+    ...new Set(formattedData.map((item) => item.partnumber)),
+  ];
+
+  // ❗ ดึงข้อมูลจาก Skinventory โดยใช้ partnumber เทียบกับ part_code
+  const inventoryParts = await Skinventory.find(
+    { part_code: { $in: uniquePartNumbers } },
+    { part_code: 1, part_name: 1, _id: 0 } // ดึงเฉพาะ field ที่ต้องการ
+  );
+
+  // ❗ สร้าง Map สำหรับ mapping part_code => part_name
+  const partNameMap = new Map(
+    inventoryParts.map((part) => [part.part_code, part.part_name])
+  );
+
+  // ❗ เพิ่ม field part_name เข้าไปใน formattedData
+  const dataWithNames = formattedData.map((item) => ({
+    ...item,
+    part_name: partNameMap.get(item.partnumber) || "-",
+  }));
+
+  // ❗ รวม qty ตาม partnumber
   const qtyMap = new Map();
 
-  formattedData.forEach((item) => {
+  dataWithNames.forEach((item) => {
     const key = item.partnumber;
     if (qtyMap.has(key)) {
-      qtyMap.set(key, qtyMap.get(key) + item.qty);
+      const existing = qtyMap.get(key);
+      qtyMap.set(key, {
+        ...existing,
+        qty: existing.qty + item.qty,
+      });
     } else {
-      qtyMap.set(key, item.qty);
+      qtyMap.set(key, {
+        partnumber: item.partnumber,
+        qty: item.qty,
+        part_name: item.part_name,
+        upload_ref_no,
+      });
     }
   });
 
-  const uniqueParts = Array.from(qtyMap.entries()).map(([partnumber, qty]) => ({
-    partnumber,
-    qty,
-    upload_ref_no,
-  }));
-
-  const sortedData = uniqueParts.sort((a, b) =>
+  const sortedData = Array.from(qtyMap.values()).sort((a, b) =>
     a.partnumber.localeCompare(b.partnumber)
   );
 
@@ -577,8 +602,30 @@ exports.formatPartsInArrangeDoc = catchAsync(async (req, res, next) => {
     }))
   );
 
-  // เรียงลำดับตาม tracking_code แล้วตาม partnumber เพื่อให้ชัดเจนยิ่งขึ้น
-  const sortedData = formattedData.sort((a, b) => {
+  // ❗ สร้างชุด partnumber ที่ไม่ซ้ำกัน
+  const uniquePartNumbers = [
+    ...new Set(formattedData.map((item) => item.partnumber)),
+  ];
+
+  // ❗ ดึงข้อมูล part_name จาก Skinventory
+  const inventoryParts = await Skinventory.find(
+    { part_code: { $in: uniquePartNumbers } },
+    { part_code: 1, part_name: 1, _id: 0 }
+  );
+
+  // ❗ สร้าง Map สำหรับ mapping part_code => part_name
+  const partNameMap = new Map(
+    inventoryParts.map((part) => [part.part_code, part.part_name])
+  );
+
+  // ❗ เพิ่ม part_name ลงใน formattedData
+  const dataWithNames = formattedData.map((item) => ({
+    ...item,
+    part_name: partNameMap.get(item.partnumber) || "-",
+  }));
+
+  // เรียงลำดับตาม tracking_code แล้วตาม partnumber
+  const sortedData = dataWithNames.sort((a, b) => {
     const trackingCompare = a.tracking_code.localeCompare(b.tracking_code);
     return trackingCompare !== 0
       ? trackingCompare
