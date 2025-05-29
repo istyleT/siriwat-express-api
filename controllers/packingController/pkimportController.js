@@ -285,7 +285,6 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // กำหนด upload_ref_no ที่ใช้สำหรับทุกเอกสาร
   const uploadRefNo = `${refPrefix}${String(lastNumber + 1).padStart(2, "0")}`;
 
-  //เริ่มทดสอบ process ใหม่
   //✅ เตรียมข้อมูลสำหรับ bulkWrite
   const bulkOps = workDocuments.map((doc) => ({
     insertOne: {
@@ -297,13 +296,13 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   }));
 
   try {
-    // const result = await Pkwork.bulkWrite(bulkOps, { ordered: true });
-    Pkwork.bulkWrite(bulkOps, { ordered: true });
+    const result = await Pkwork.bulkWrite(bulkOps, { ordered: true });
+    // Pkwork.bulkWrite(bulkOps, { ordered: true });
 
     return res.status(201).json({
       status: "success",
       message: "สร้าง Work ทั้งหมดสำเร็จ",
-      // insertedCount: result.insertedCount,
+      insertedCount: result.insertedCount,
     });
   } catch (error) {
     console.error("BulkWrite error:", error);
@@ -328,5 +327,4 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
       mongo_error: error.message,
     });
   }
-  //จบการทดสอบ process ใหม่
 });
