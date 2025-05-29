@@ -594,6 +594,7 @@ exports.formatPartsInArrangeDoc = catchAsync(async (req, res, next) => {
   const formattedData = works.flatMap((work) =>
     (work.parts_data || []).map((part) => ({
       upload_ref_no: work.upload_ref_no || "",
+      order_date: work.order_date || "",
       partnumber: part.partnumber,
       qty: Number(part.qty),
       order_no: work.order_no || "",
@@ -703,14 +704,94 @@ exports.getDataPartsInWorkCancel = catchAsync(async (req, res, next) => {
   });
 });
 
-//ลบเอกสารที่มีอายุเกินกว่า 15 วัน
-exports.deletePkworkOld = catchAsync(async (req, res, next) => {
-  const date = moment().tz("Asia/Bangkok").subtract(15, "days").toDate();
+//จัดการเอาข้อมูลใน parts_data ย้ายไปยัง scan_data ทั้งหมด (กรณีย้ายทีเดียวหลายๆ work)
+exports.movePartsToScanWorkSuccessMany = catchAsync(async (req, res, next) => {
+  const user = req.user;
+  const { ids } = req.body;
 
+  if (!user) {
+    return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
+  }
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ต้องส่งรายการ _id อย่างน้อย 1 รายการ",
+    });
+  }
+
+  // ดึงเอกสารทั้งหมดที่มี _id ใน ids
+  const pkworks = await Pkwork.find({ _id: { $in: ids } });
+
+  if (pkworks.length === 0) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบข้อมูลเอกสารที่ตรงกับ _id ที่ส่งมา",
+    });
+  }
+
+  let updatedCount = 0;
+
+  // วน loop ทีละ document
+  for (const pkwork of pkworks) {
+    if (
+      pkwork.station === "RSM" &&
+      Array.isArray(pkwork.parts_data) &&
+      pkwork.parts_data.length > 0
+    ) {
+      // ย้ายข้อมูลโดยใช้ findOneAndUpdate เพื่อให้ trigger
+      await Pkwork.findOneAndUpdate(
+        { _id: pkwork._id },
+        {
+          $push: { scan_data: { $each: pkwork.parts_data } },
+          $set: {
+            parts_data: [],
+            user_updated: user._id,
+            updated_at: moment().tz("Asia/Bangkok").toDate(),
+          },
+        },
+        { new: true }
+      );
+      updatedCount++;
+    }
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      message: `Work ที่เลือกแก้ไขสำเร็จ ${updatedCount} รายการ`,
+    },
+  });
+});
+
+//ลบเอกสารที่มีอายุเกินกว่า 10 วัน มีเงื่อนไขในการลบ
+exports.deletePkworkOld = catchAsync(async (req, res, next) => {
+  const date = moment().tz("Asia/Bangkok").subtract(10, "days").toDate();
+
+  //ลบเอกสารที่เสร็จสิ้นไปเเล้ว
   await Pkwork.deleteMany({
     $and: [
-      { created_at: { $lt: date } },
-      { cancel_status: { $ne: "ดำเนินการ" } },
+      { success_at: { $ne: null } },
+      { success_at: { $lt: date } },
+      { status: "เสร็จสิ้น" },
+    ],
+  });
+
+  //ลบการเอกสารที่โดนยกเลิก เเละ ยกเลิกเสร็จสิ้นไปแล้ว ของร้าน RM
+  await Pkwork.deleteMany({
+    $and: [
+      { cancel_success_at: { $ne: null } },
+      { cancel_success_at: { $lt: date } },
+      { station: "RM", status: "ยกเลิก", cancel_status: "เสร็จสิ้น" },
+    ],
+  });
+
+  //ลบเอกสารที่โดนยกเลิกของร้าน RSM
+  await Pkwork.deleteMany({
+    $and: [
+      { canceled_at: { $ne: null } },
+      { canceled_at: { $lt: date } },
+      { station: "RSM", status: "ยกเลิก" },
     ],
   });
 

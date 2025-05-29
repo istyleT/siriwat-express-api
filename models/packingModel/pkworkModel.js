@@ -11,7 +11,6 @@ const pkworkSchema = new mongoose.Schema({
     trim: true,
     required: [true, "กรุณาระบุ tracking_code"],
   },
-  //เพิ่มเข้ามาใหม่
   order_date: {
     type: String,
     required: [true, "กรุณาระบุวันที่สั่งซื้อ"],
@@ -20,7 +19,6 @@ const pkworkSchema = new mongoose.Schema({
     type: String,
     required: [true, "กรุณาระบุเลขที่สั่งซื้อ"],
   },
-  //จบเพิ่มเข้ามาใหม่
   shop: {
     type: String,
     enum: ["Lazada", "Shopee", "TikTok"],

@@ -22,6 +22,7 @@ const {
   formatPartsInArrangeDoc,
   returnMockQtyBeforeDeleteWork,
   updatePartsDataInWork,
+  movePartsToScanWorkSuccessMany,
 } = require("../../controllers/packingController/pkworkController");
 const {
   cancelData,
@@ -51,6 +52,7 @@ router
 router
   .route("/cancel-by-order")
   .patch(returnUploadMockQtyToInventory, cancelOrder);
+router.route("/rsmwork-many-success").patch(movePartsToScanWorkSuccessMany);
 router
   .route("/cancel/:id")
   .patch(cancelData, returnMockQtyToInventory, updatePkwork);

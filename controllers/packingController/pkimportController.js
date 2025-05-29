@@ -285,20 +285,65 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // กำหนด upload_ref_no ที่ใช้สำหรับทุกเอกสาร
   const uploadRefNo = `${refPrefix}${String(lastNumber + 1).padStart(2, "0")}`;
 
-  // ✅ 6. อัปเดต workDocuments ให้ใช้ upload_ref_no เดียวกันทุกเอกสาร
-  workDocuments = workDocuments.map((data) => ({
-    ...data,
-    upload_ref_no: uploadRefNo,
+  //เริ่มทดสอบ process ใหม่
+  //✅ เตรียมข้อมูลสำหรับ bulkWrite
+  const bulkOps = workDocuments.map((doc) => ({
+    insertOne: {
+      document: {
+        ...doc,
+        upload_ref_no: uploadRefNo,
+      },
+    },
   }));
 
-  // console.log(JSON.stringify(workDocuments, null, 2));
+  try {
+    const result = await Pkwork.bulkWrite(bulkOps, { ordered: true });
 
-  // ✅ 7. บันทึกข้อมูลลง Database
-  await Pkwork.insertMany(workDocuments);
+    return res.status(201).json({
+      status: "success",
+      message: "สร้าง Work ทั้งหมดสำเร็จ",
+      insertedCount: result.insertedCount,
+    });
+  } catch (error) {
+    console.error("BulkWrite error:", error);
 
-  return res.status(201).json({
-    status: "success",
-    message: "สร้างเอกสารสำเร็จ",
-    data: workDocuments,
-  });
+    // ✅ เมื่อ ordered: true → error จะอยู่ที่ writeErrors[0]
+    const failedIndex = Array.isArray(error.writeErrors)
+      ? error.writeErrors[0]?.index
+      : undefined;
+
+    let failedTrackingCode = "ไม่สามารถระบุ tracking_code ได้";
+
+    if (typeof failedIndex === "number") {
+      failedTrackingCode =
+        bulkOps[failedIndex]?.insertOne?.document?.tracking_code ||
+        failedTrackingCode;
+    }
+
+    return res.status(500).json({
+      status: "error",
+      message: "สร้าง Work ล้มเหลว เนื่องจากบางเอกสารถูกต้องไม่ได้",
+      failed_tracking_code: failedTrackingCode,
+      mongo_error: error.message,
+    });
+  }
+  //จบการทดสอบ process ใหม่
 });
+
+//✅ 6. อัปเดต workDocuments ให้ใช้ upload_ref_no เดียวกันทุกเอกสาร
+// workDocuments = workDocuments.map((data) => ({
+//   ...data,
+//   upload_ref_no: uploadRefNo,
+// }));
+
+// console.log(JSON.stringify(workDocuments, null, 2));
+
+// ✅ 7. บันทึกข้อมูลลง Database
+// await Pkwork.insertMany(workDocuments);
+
+// return res.status(201).json({
+//   status: "success",
+//   message: "สร้างเอกสารสำเร็จ",
+//   data: workDocuments,
+// });
+// });
