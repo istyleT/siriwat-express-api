@@ -297,12 +297,13 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   }));
 
   try {
-    const result = await Pkwork.bulkWrite(bulkOps, { ordered: true });
+    // const result = await Pkwork.bulkWrite(bulkOps, { ordered: true });
+    Pkwork.bulkWrite(bulkOps, { ordered: true });
 
     return res.status(201).json({
       status: "success",
       message: "สร้าง Work ทั้งหมดสำเร็จ",
-      insertedCount: result.insertedCount,
+      // insertedCount: result.insertedCount,
     });
   } catch (error) {
     console.error("BulkWrite error:", error);
@@ -329,21 +330,3 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   }
   //จบการทดสอบ process ใหม่
 });
-
-//✅ 6. อัปเดต workDocuments ให้ใช้ upload_ref_no เดียวกันทุกเอกสาร
-// workDocuments = workDocuments.map((data) => ({
-//   ...data,
-//   upload_ref_no: uploadRefNo,
-// }));
-
-// console.log(JSON.stringify(workDocuments, null, 2));
-
-// ✅ 7. บันทึกข้อมูลลง Database
-// await Pkwork.insertMany(workDocuments);
-
-// return res.status(201).json({
-//   status: "success",
-//   message: "สร้างเอกสารสำเร็จ",
-//   data: workDocuments,
-// });
-// });
