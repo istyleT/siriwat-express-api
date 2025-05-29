@@ -469,6 +469,7 @@ exports.getDataPartsInWorkUpload = catchAsync(async (req, res, next) => {
       created_at: { $gte: start, $lte: end },
     },
     {
+      order_no: 1,
       scan_data: 1,
       parts_data: 1,
       upload_ref_no: 1,
@@ -492,6 +493,7 @@ exports.getDataPartsInWorkUpload = catchAsync(async (req, res, next) => {
         qty: item.qty,
         upload_ref_no: doc.upload_ref_no,
         tracking_code: doc.tracking_code,
+        order_no: doc.order_no,
       })) || [];
 
     return [...extractData(doc.scan_data), ...extractData(doc.parts_data)];
