@@ -328,6 +328,7 @@ exports.fromWorkUploadMoveOutPart = catchAsync(async (req, res, next) => {
     alreadyMovedOut.map((item) => `${item.partnumber}::${item.document_ref}`)
   );
 
+  //ไล่ลบรายการที่ซ้ำออกจาก mergedMap
   for (const key of duplicateKeys) {
     if (mergedMap.has(key)) {
       mergedMap.delete(key);

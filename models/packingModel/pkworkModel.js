@@ -9,6 +9,7 @@ const pkworkSchema = new mongoose.Schema({
   tracking_code: {
     type: String,
     trim: true,
+    unique: true,
     required: [true, "กรุณาระบุ tracking_code"],
   },
   order_date: {
@@ -107,7 +108,8 @@ pkworkSchema.post("findOneAndUpdate", async function (doc) {
     if (
       updatedDoc &&
       updatedDoc.parts_data.length === 0 &&
-      updatedDoc.status !== "ยกเลิก"
+      updatedDoc.status !== "ยกเลิก" &&
+      !updatedDoc.success_at
     ) {
       updatedDoc.status = "เสร็จสิ้น";
       updatedDoc.success_at = moment().tz("Asia/Bangkok").toDate();
@@ -118,7 +120,8 @@ pkworkSchema.post("findOneAndUpdate", async function (doc) {
     if (
       updatedDoc &&
       updatedDoc.parts_data.length === 0 &&
-      updatedDoc.status === "ยกเลิก"
+      updatedDoc.status === "ยกเลิก" &&
+      !updatedDoc.cancel_success_at
     ) {
       updatedDoc.cancel_status = "เสร็จสิ้น";
       updatedDoc.cancel_success_at = moment().tz("Asia/Bangkok").toDate();

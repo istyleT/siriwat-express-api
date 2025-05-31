@@ -2,9 +2,11 @@ const mongoose = require("mongoose");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const RMorder = require("../models/appModel/orderModel");
+const Pkwork = require("../models/packingModel/pkworkModel");
 const RMdeliver = require("../models/appModel/deliverModel");
 const Skinventory = require("../models/stockModel/skinventoryModel");
 const Pricelist = require("../models/appModel/pricelistModel");
+const User = require("../models/userModel");
 
 dotenv.config({ path: "./config.env" });
 
@@ -19,6 +21,11 @@ mongoose
     // useUnifiedTopology: true,
   })
   .then(() => console.log("DB connection successful!"));
+
+// READ JSON FILE
+const convertorderno = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/convertorderno.json`, "utf-8")
+);
 
 //function RMBKK เอาไว้แก้ไขข้อผิดพลาดบันทึกจัดส่งจำนวนที่จัดส่งไม่ไป update ที่ order
 const updateQtyDeliverToOrder = async (orderId, deliverId) => {
@@ -100,6 +107,74 @@ const updatePartNameInSkinventoryFromPricelist = async () => {
   }
 };
 
+//function ที่เอาไว้แก้ไข order_no ตอน upload และสลับ column
+const updateOrderNoInPkwork = async () => {
+  try {
+    for (const item of convertorderno) {
+      const { orderItemId, orderNumber } = item;
+      if (!orderItemId || !orderNumber) continue;
+
+      const updatePkwork = await Pkwork.findOneAndUpdate(
+        { order_no: orderItemId },
+        { order_no: orderNumber },
+        { new: true }
+      );
+
+      if (updatePkwork) {
+        console.log(`Updated order_no for ${orderItemId} to ${orderNumber}`);
+      } else {
+        console.log(`Failed to update order_no for ${orderItemId}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error updating order numbers:", error);
+  } finally {
+    // Ensure process does not hang if used in CLI
+    if (process.argv.includes("--updateOrderNoInPkwork")) {
+      process.exit();
+    }
+  }
+};
+
+//function report tracking_code ที่ซ้ำกันใน pkwork
+const findDuplicateTrackingCodes = async () => {
+  try {
+    const duplicates = await Pkwork.aggregate([
+      {
+        $group: {
+          _id: "$tracking_code",
+          count: { $sum: 1 },
+          docs: { $push: "$_id" }, // รวม id ของเอกสารที่ซ้ำ
+        },
+      },
+      {
+        $match: {
+          _id: { $ne: null }, // ตัดค่าที่เป็น null ออก
+          count: { $gt: 1 }, // เอาเฉพาะที่ซ้ำ (มากกว่า 1)
+        },
+      },
+      {
+        $sort: { count: -1 }, // เรียงจากซ้ำมากไปน้อย (optional)
+      },
+    ]);
+
+    if (duplicates.length === 0) {
+      console.log("ไม่พบ tracking_code ที่ซ้ำกัน");
+    } else {
+      console.log("พบ tracking_code ที่ซ้ำกัน:");
+      duplicates.forEach((item) => {
+        console.log(
+          `tracking_code: ${item._id}, count: ${
+            item.count
+          }, ids: ${item.docs.join(", ")}`
+        );
+      });
+    }
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการค้นหา tracking_code ที่ซ้ำกัน:", error);
+  }
+};
+
 //command in terminal
 if (process.argv[2] === "--updateQtyDeliverToOrder") {
   const orderId = "671614eb4b2c4bd6a37f093e";
@@ -108,6 +183,12 @@ if (process.argv[2] === "--updateQtyDeliverToOrder") {
 }
 if (process.argv[2] === "--updatePartNameInSkinventoryFromPricelist") {
   updatePartNameInSkinventoryFromPricelist();
+}
+if (process.argv[2] === "--updateOrderNoInPkwork") {
+  updateOrderNoInPkwork();
+}
+if (process.argv[2] === "--findDuplicateTrackingCodes") {
+  findDuplicateTrackingCodes();
 }
 
 //command in terminal
