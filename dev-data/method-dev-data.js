@@ -27,6 +27,10 @@ const convertorderno = JSON.parse(
   fs.readFileSync(`${__dirname}/data/convertorderno.json`, "utf-8")
 );
 
+const ordernolist = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/checkorderno.json`, "utf-8")
+);
+
 //function RMBKK เอาไว้แก้ไขข้อผิดพลาดบันทึกจัดส่งจำนวนที่จัดส่งไม่ไป update ที่ order
 const updateQtyDeliverToOrder = async (orderId, deliverId) => {
   try {
@@ -136,6 +140,42 @@ const updateOrderNoInPkwork = async () => {
   }
 };
 
+//function check order_no ว่ามีใน pkwork หรือไม่
+const checkOrderNumbersInPkwork = async () => {
+  try {
+    const { orderNumbers } = ordernolist;
+
+    // ลบค่าที่ซ้ำออกก่อนเพื่อประหยัดจำนวน Query
+    const uniqueOrderNumbers = [...new Set(orderNumbers)];
+
+    // ดึงรายการ order_no ที่มีอยู่จริงทั้งหมดในฐานข้อมูล
+    const existingOrders = await Pkwork.find(
+      { order_no: { $in: uniqueOrderNumbers } },
+      { order_no: 1, _id: 0 }
+    ).lean();
+
+    const existingOrderSet = new Set(
+      existingOrders.map((item) => item.order_no)
+    );
+
+    const notFound = uniqueOrderNumbers.filter(
+      (orderNo) => !existingOrderSet.has(orderNo)
+    );
+
+    if (notFound.length === 0) {
+      console.log("✅ พบ Order Number ทั้งหมดในฐานข้อมูลแล้ว");
+    } else {
+      console.log("❌ ไม่พบ Order Number เหล่านี้ในฐานข้อมูล:");
+      notFound.forEach((orderNo) => console.log(`- ${orderNo}`));
+    }
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดระหว่างการตรวจสอบ:", error);
+  } finally {
+    if (process.argv.includes("--checkOrderNumbersInPkwork")) {
+      process.exit();
+    }
+  }
+};
 //function report tracking_code ที่ซ้ำกันใน pkwork
 const findDuplicateTrackingCodes = async () => {
   try {
@@ -190,7 +230,10 @@ if (process.argv[2] === "--updateOrderNoInPkwork") {
 if (process.argv[2] === "--findDuplicateTrackingCodes") {
   findDuplicateTrackingCodes();
 }
+if (process.argv[2] === "--checkOrderNumbersInPkwork") {
+  checkOrderNumbersInPkwork();
+}
 
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
-// node dev-data/method-dev-data.js --updateQtyDeliverToOrder
+// node dev-data/method-dev-data.js --checkOrderNumbersInPkwork

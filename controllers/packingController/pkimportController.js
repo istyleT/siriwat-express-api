@@ -17,12 +17,16 @@ exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
     });
   }
 
-  // ✅ 1. ดึง order_no ทั้งหมดจาก sku_data และกรองค่าไม่ให้ซ้ำ
+  // ✅ ดึง order_no และ tracking_code ทั้งหมด พร้อมกรองไม่ให้ซ้ำ
   const orderNos = sku_data
     .map((item) => item.order_no)
     .filter((orderNo, index, self) => self.indexOf(orderNo) === index);
 
-  // ✅ 2. ค้นหา order_no ที่มีอยู่แล้วใน Database
+  const trackingCodes = [
+    ...new Set(sku_data.map((item) => item.tracking_code)),
+  ];
+
+  // ✅ ตรวจสอบ order_no ที่ซ้ำในระบบ
   const existingOrders = await Pkwork.find(
     { order_no: { $in: orderNos } },
     { order_no: 1 }
@@ -38,9 +42,27 @@ exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
     });
   }
 
+  // ✅ ตรวจสอบ tracking_code ที่ซ้ำในระบบ
+  const existingTrackings = await Pkwork.find(
+    { tracking_code: { $in: trackingCodes } },
+    { tracking_code: 1 }
+  );
+
+  if (existingTrackings.length > 0) {
+    const duplicatedTrackingCodes = existingTrackings.map(
+      (doc) => doc.tracking_code
+    );
+    return res.status(200).json({
+      status: "success",
+      message: `Tracking จำนวน ${
+        duplicatedTrackingCodes.length
+      } ซ้ำในระบบ: ${duplicatedTrackingCodes.join(", ")}`,
+    });
+  }
+
   return res.status(200).json({
     status: "success",
-    message: "ไม่มีเลขที่ order ซ้ำในระบบ",
+    message: "ไม่มีเลขที่ order และ tracking ซ้ำในระบบ",
   });
 });
 
@@ -218,10 +240,26 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 
   const existingOrderNos = new Set(existingOrders.map((doc) => doc.order_no));
 
-  // console.log("ก่อนจะเอา order_no ซ้ำออก", workDocuments.length);
-
+  // ✅ กรอง workDocuments ที่ order_no ไม่ซ้ำ
   workDocuments = workDocuments.filter(
     (doc) => !existingOrderNos.has(doc.order_no)
+  );
+
+  // ✅ ตรวจสอบว่าไม่มี tracking_code ซ้ำในฐานข้อมูล
+  const trackingCodes = workDocuments.map((doc) => doc.tracking_code);
+
+  const existingTrackings = await Pkwork.find(
+    { tracking_code: { $in: trackingCodes } },
+    { tracking_code: 1 }
+  );
+
+  const existingTrackingCodes = new Set(
+    existingTrackings.map((doc) => doc.tracking_code)
+  );
+
+  // ✅ กรอง workDocuments ที่ tracking_code ไม่ซ้ำ
+  workDocuments = workDocuments.filter(
+    (doc) => !existingTrackingCodes.has(doc.tracking_code)
   );
 
   // ✅ 3.1 คำนวณ total_qty
@@ -296,34 +334,30 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   }));
 
   try {
-    const result = await Pkwork.bulkWrite(bulkOps, { ordered: true });
-    // Pkwork.bulkWrite(bulkOps, { ordered: true });
+    const result = await Pkwork.bulkWrite(bulkOps, { ordered: false });
 
     return res.status(201).json({
       status: "success",
-      message: "สร้าง Work ทั้งหมดสำเร็จ",
+      message: `สร้าง Work สำเร็จทั้งหมด (${result.insertedCount} รายการ)`,
       insertedCount: result.insertedCount,
+      failedTrackingCodes: [], // ใส่ไว้เผื่ออนาคต
     });
   } catch (error) {
-    console.error("BulkWrite error:", error);
+    // ดึง tracking_code ที่ fail ออกมาจาก error.writeErrors
+    const failedTrackingCodes =
+      error.writeErrors?.map((err) => {
+        const index = err.index;
+        return bulkOps[index]?.insertOne?.document?.tracking_code || "ไม่ทราบ";
+      }) || [];
 
-    // ✅ เมื่อ ordered: true → error จะอยู่ที่ writeErrors[0]
-    const failedIndex = Array.isArray(error.writeErrors)
-      ? error.writeErrors[0]?.index
-      : undefined;
-
-    let failedTrackingCode = "ไม่สามารถระบุ tracking_code ได้";
-
-    if (typeof failedIndex === "number") {
-      failedTrackingCode =
-        bulkOps[failedIndex]?.insertOne?.document?.tracking_code ||
-        failedTrackingCode;
-    }
-
-    return res.status(500).json({
-      status: "error",
-      message: "สร้าง Work ล้มเหลว เนื่องจากบางเอกสารถูกต้องไม่ได้",
-      failed_tracking_code: failedTrackingCode,
+    return res.status(207).json({
+      // ใช้ 207 Multi-Status เพื่อสื่อว่าบางอย่างสำเร็จ บางอย่างล้มเหลว
+      status: "partial_success",
+      message: `สร้าง Work สำเร็จบางส่วน (${
+        bulkOps.length - failedTrackingCodes.length
+      } จาก ${bulkOps.length})`,
+      insertedCount: bulkOps.length - failedTrackingCodes.length,
+      failedTrackingCodes,
       mongo_error: error.message,
     });
   }
