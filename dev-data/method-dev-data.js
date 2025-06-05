@@ -236,4 +236,4 @@ if (process.argv[2] === "--checkOrderNumbersInPkwork") {
 
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
-// node dev-data/method-dev-data.js --checkOrderNumbersInPkwork
+// node dev-data/method-dev-data.js --updateOrderNoInPkwork

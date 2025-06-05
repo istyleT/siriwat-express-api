@@ -226,10 +226,12 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
 
   // ดึงข้อมูล qty และ avg_cost ปัจจุบัน
   const currentQty = Number(part.qty || 0);
+  const currentMockQty = Number(part.mock_qty || 0);
   const currentAvgCost = Number(part.avg_cost || 0);
 
   // คำนวณค่า avg_cost ใหม่แบบ weighted average
   const newQty = Number(currentQty) + Number(qty_in);
+  const newMockQty = Number(currentMockQty) + Number(qty_in);
   const newAvgCost = Number(
     Number(
       Number(currentAvgCost) * Number(currentQty) +
@@ -239,6 +241,7 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
 
   // Update ข้อมูล
   part.qty = newQty;
+  part.mock_qty = newMockQty;
   part.avg_cost = Math.round(newAvgCost * 100) / 100;
 
   await part.save();
