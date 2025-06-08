@@ -403,7 +403,7 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
     return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
   }
 
-  const { order_cancel, shop } = req.body;
+  const { order_cancel, shop, cause } = req.body;
 
   // ✅ ตรวจสอบข้อมูลเบื้องต้น
   if (!Array.isArray(order_cancel) || order_cancel.length === 0 || !shop) {
@@ -429,7 +429,7 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
       $set: {
         status: "ยกเลิก",
         user_canceled: user._id,
-        remark_canceled: "ลูกค้ายกเลิก",
+        remark_canceled: cause || "ลูกค้ายกเลิก",
         canceled_at: currentTime,
         cancel_status: "ดำเนินการ",
       },
