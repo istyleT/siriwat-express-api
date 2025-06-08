@@ -90,38 +90,38 @@ exports.returnMockQtyToInventory = catchAsync(async (req, res, next) => {
     });
   }
 
-  //2) ตรวจสอบว่า station เป็นอะไรและดำเนินการ
+  if (pkwork.scan_data && pkwork.scan_data.length > 0) {
+    // สร้าง Map เพื่อให้ lookup เร็วขึ้น
+    const partsMap = new Map();
+    pkwork.parts_data.forEach((item) => {
+      partsMap.set(item.partnumber, item);
+    });
+
+    // วนลูป scan_data เพื่อย้ายข้อมูลเข้า parts_data
+    pkwork.scan_data.forEach((scanItem) => {
+      const existing = partsMap.get(scanItem.partnumber);
+      if (existing) {
+        existing.qty += scanItem.qty;
+      } else {
+        const newItem = {
+          partnumber: scanItem.partnumber,
+          qty: scanItem.qty,
+        };
+        pkwork.parts_data.push(newItem);
+        partsMap.set(scanItem.partnumber, newItem);
+      }
+    });
+  }
+
+  // ล้าง scan_data
+  pkwork.scan_data = [];
+  pkwork.cancel_status = "ดำเนินการ";
+
+  // บันทึกข้อมูล pkwork ใหม่
+  await pkwork.save();
+
+  //ถ้าเป็นของร้าน RM ต้องเอาของไปคืนค่า mock_qty ใน inventory
   if (pkwork.station === "RM") {
-    if (pkwork.scan_data && pkwork.scan_data.length > 0) {
-      // สร้าง Map เพื่อให้ lookup เร็วขึ้น
-      const partsMap = new Map();
-      pkwork.parts_data.forEach((item) => {
-        partsMap.set(item.partnumber, item);
-      });
-
-      // วนลูป scan_data เพื่อย้ายข้อมูลเข้า parts_data
-      pkwork.scan_data.forEach((scanItem) => {
-        const existing = partsMap.get(scanItem.partnumber);
-        if (existing) {
-          existing.qty += scanItem.qty;
-        } else {
-          const newItem = {
-            partnumber: scanItem.partnumber,
-            qty: scanItem.qty,
-          };
-          pkwork.parts_data.push(newItem);
-          partsMap.set(scanItem.partnumber, newItem);
-        }
-      });
-
-      // ล้าง scan_data
-      pkwork.scan_data = [];
-      pkwork.cancel_status = "ดำเนินการ";
-
-      // บันทึกข้อมูล pkwork ใหม่
-      await pkwork.save();
-    }
-
     // เรียกใช้งาน updateMockQty หลังจากย้ายข้อมูลเรียบร้อย
     await Skinventory.updateMockQty("increase", pkwork.parts_data);
   }
@@ -154,32 +154,34 @@ exports.returnUploadMockQtyToInventory = catchAsync(async (req, res, next) => {
   });
 
   for (const pkwork of pkworks) {
+    if (pkwork.scan_data && pkwork.scan_data.length > 0) {
+      const partsMap = new Map();
+
+      pkwork.parts_data.forEach((item) => {
+        partsMap.set(item.partnumber, item);
+      });
+
+      pkwork.scan_data.forEach((scanItem) => {
+        const existing = partsMap.get(scanItem.partnumber);
+        if (existing) {
+          existing.qty += scanItem.qty;
+        } else {
+          const newItem = {
+            partnumber: scanItem.partnumber,
+            qty: scanItem.qty,
+          };
+          pkwork.parts_data.push(newItem);
+          partsMap.set(scanItem.partnumber, newItem);
+        }
+      });
+    }
+
+    pkwork.scan_data = [];
+
+    await pkwork.save();
+
+    // ถ้าเป็นของร้าน RM ต้องเอาของไปคืนค่า mock_qty ใน inventory
     if (pkwork.station === "RM") {
-      if (pkwork.scan_data && pkwork.scan_data.length > 0) {
-        const partsMap = new Map();
-
-        pkwork.parts_data.forEach((item) => {
-          partsMap.set(item.partnumber, item);
-        });
-
-        pkwork.scan_data.forEach((scanItem) => {
-          const existing = partsMap.get(scanItem.partnumber);
-          if (existing) {
-            existing.qty += scanItem.qty;
-          } else {
-            const newItem = {
-              partnumber: scanItem.partnumber,
-              qty: scanItem.qty,
-            };
-            pkwork.parts_data.push(newItem);
-            partsMap.set(scanItem.partnumber, newItem);
-          }
-        });
-
-        pkwork.scan_data = [];
-
-        await pkwork.save();
-      }
       await Skinventory.updateMockQty("increase", pkwork.parts_data);
     }
   }
@@ -652,27 +654,28 @@ exports.getDataPartsInWorkCancel = catchAsync(async (req, res, next) => {
     });
   }
 
-  // แปลง cancel_success_at (string) เป็น Date
-  const date = new Date(cancel_success_at);
-  if (isNaN(date.getTime())) {
+  // ตรวจสอบรูปแบบก่อน
+  const date = moment.tz(cancel_success_at, "YYYY-MM-DD", "Asia/Bangkok");
+  if (!date.isValid()) {
     return res.status(400).json({
       status: "fail",
       message: "รูปแบบวันที่ไม่ถูกต้อง (เช่น 2024-05-14)",
     });
   }
 
-  const start = startOfDay(date);
-  const end = endOfDay(date);
+  // แปลงช่วงเวลาเริ่มต้น-สิ้นสุดของวันนั้นในเวลาไทย -> เป็น UTC
+  const start = date.clone().startOf("day").utc().toDate(); // เริ่มต้นวันในไทย แต่แปลงเป็น UTC
+  const end = date.clone().endOf("day").utc().toDate(); // สิ้นสุดวันในไทย แต่แปลงเป็น UTC
 
   const pkworks = await Pkwork.find(
     {
-      station: "RM",
       cancel_success_at: { $gte: start, $lte: end },
     },
     {
       scan_data: 1,
       upload_ref_no: 1,
       tracking_code: 1,
+      station: 1,
     }
   );
 
@@ -691,6 +694,7 @@ exports.getDataPartsInWorkCancel = catchAsync(async (req, res, next) => {
         qty: scan.qty,
         upload_ref_no: doc.upload_ref_no,
         tracking_code: doc.tracking_code,
+        station: doc.station,
       })) || []
     );
   });
@@ -770,7 +774,7 @@ exports.movePartsToScanWorkSuccessMany = catchAsync(async (req, res, next) => {
 exports.deletePkworkOld = catchAsync(async (req, res, next) => {
   const date = moment().tz("Asia/Bangkok").subtract(25, "days").toDate();
 
-  //ลบเอกสารที่เสร็จสิ้นไปเเล้ว
+  //ลบเอกสารที่เสร็จสิ้นไปเเล้วทั้ง 2 ร้าน
   await Pkwork.deleteMany({
     $and: [
       { success_at: { $ne: null } },
@@ -779,21 +783,12 @@ exports.deletePkworkOld = catchAsync(async (req, res, next) => {
     ],
   });
 
-  //ลบการเอกสารที่โดนยกเลิก เเละ ยกเลิกเสร็จสิ้นไปแล้ว ของร้าน RM
+  //ลบการเอกสารที่โดนยกเลิก เเละ ยกเลิกเสร็จสิ้นไปแล้วทั้ง 2 ร้าน
   await Pkwork.deleteMany({
     $and: [
       { cancel_success_at: { $ne: null } },
       { cancel_success_at: { $lt: date } },
-      { station: "RM", status: "ยกเลิก", cancel_status: "เสร็จสิ้น" },
-    ],
-  });
-
-  //ลบเอกสารที่โดนยกเลิกของร้าน RSM
-  await Pkwork.deleteMany({
-    $and: [
-      { canceled_at: { $ne: null } },
-      { canceled_at: { $lt: date } },
-      { station: "RSM", status: "ยกเลิก" },
+      { status: "ยกเลิก", cancel_status: "เสร็จสิ้น" },
     ],
   });
 

@@ -214,6 +214,9 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     });
   }
 
+  //กำหนดค่าสั่งซื้อ
+  const rawOrderQty = req.body.order_qty ?? 0;
+
   // หาอะไหล่จาก Skinventory และเพิ่มจำนวนเข้าไป
   const part = await Skinventory.findOne({ part_code: partnumber });
 
@@ -252,6 +255,7 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     qty: Number(qty_in),
     movement_type: "in",
     cost_movement: Number(cost_per_unit),
+    order_qty: Number(rawOrderQty),
     document_ref: upload_ref_no,
     user_created: req.user._id,
   });

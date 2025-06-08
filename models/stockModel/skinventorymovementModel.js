@@ -21,6 +21,11 @@ const skinventorymovementSchema = new mongoose.Schema({
     required: [true, "กรุณาระบุจำนวน"],
     min: 0,
   },
+  order_qty: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
   movement_type: {
     type: String,
     enum: ["in", "out"],
@@ -57,6 +62,7 @@ skinventorymovementSchema.statics.createMovement = async function ({
   cost_movement,
   document_ref,
   user_created,
+  order_qty = 0, // ค่าพื้นฐานสำหรับ order_qty
 }) {
   // ตรวจสอบข้อมูลที่จำเป็น
   if (
@@ -77,6 +83,7 @@ skinventorymovementSchema.statics.createMovement = async function ({
   const movement = new this({
     partnumber,
     qty,
+    order_qty,
     movement_type,
     cost_movement,
     document_ref,
