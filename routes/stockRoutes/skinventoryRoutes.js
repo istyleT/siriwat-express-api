@@ -12,6 +12,7 @@ const {
   confirmReceivePart,
   fromWorkUploadMoveOutPart,
   fromWorkCancelDoneMoveInPart,
+  getInventoriesWithZeroFilter,
 } = require("../../controllers/stockController/skinventoryController");
 const {
   setAdjustDocNo,
@@ -36,6 +37,7 @@ router
 //upload สินค้าเข้าคลังโดยการสแกน
 router.route("/confirm-receive").patch(confirmReceivePart);
 router.route("/suggest").get(getSuggestSkinventory);
+router.route("/balance").get(getInventoriesWithZeroFilter);
 router.route("/cancel/:id").patch(cancelData, updateSkinventory);
 router
   .route("/:id")

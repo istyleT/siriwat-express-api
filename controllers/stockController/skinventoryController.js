@@ -534,6 +534,38 @@ exports.fromWorkCancelDoneMoveInPart = catchAsync(async (req, res, next) => {
   });
 });
 
+//Get ข้อมูลของ inventory โดยมีเงื่อนไข qty กับ 0
+exports.getInventoriesWithZeroFilter = catchAsync(async (req, res) => {
+  const { zero } = req.query;
+
+  let filter = {};
+
+  switch (zero) {
+    case "more":
+      filter.qty = { $gt: 0 };
+      break;
+    case "less":
+      filter.qty = { $lt: 0 };
+      break;
+    case "equal":
+      filter.qty = 0;
+      break;
+    default:
+      filter = {};
+      break;
+  }
+
+  const inventories = await Skinventory.find(filter).select(
+    "part_code part_name qty"
+  );
+
+  res.status(200).json({
+    status: "success",
+    length: inventories.length,
+    data: inventories,
+  });
+});
+
 //cron job function
 exports.resetMockQty = catchAsync(async () => {
   const result = await Skinventory.updateMany({}, [
