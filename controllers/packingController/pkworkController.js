@@ -7,6 +7,93 @@ const moment = require("moment-timezone");
 
 //Middleware
 
+//จัดการว่า work ที่โดนยกเลิกแล้วจะต้องสแกนข้อมูลเพื่อรอคืนยอดเข้า inventory หรือไม่
+exports.cancelWillReturnInventory = catchAsync(async (req, res, next) => {
+  const { cancel_will_return_inventory } = req.body;
+
+  if (cancel_will_return_inventory === undefined) {
+    return res.status(400).json({
+      status: "fail",
+      message: "กรุณาระบุว่าต้องการคืนยอดเข้า inventory หรือไม่",
+    });
+  }
+
+  if (typeof cancel_will_return_inventory !== "boolean") {
+    return res.status(400).json({
+      status: "fail",
+      message: "cancel_will_return_inventory ต้องเป็น boolean",
+    });
+  }
+
+  //1) หา Work
+  const pkwork = await Pkwork.findById(req.params.id);
+
+  if (!pkwork) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบ pkwork ที่ต้องการเปลี่ยนแปลง",
+    });
+  }
+
+  if (cancel_will_return_inventory) {
+    // สร้าง Map เพื่อให้ lookup เร็วขึ้น
+    const partsMap = new Map();
+    pkwork.parts_data.forEach((item) => {
+      partsMap.set(item.partnumber, item);
+    });
+
+    // วนลูป scan_data เพื่อย้ายข้อมูลเข้า parts_data
+    pkwork.scan_data.forEach((scanItem) => {
+      const existing = partsMap.get(scanItem.partnumber);
+      if (existing) {
+        existing.qty += scanItem.qty;
+      } else {
+        const newItem = {
+          partnumber: scanItem.partnumber,
+          qty: scanItem.qty,
+        };
+        pkwork.parts_data.push(newItem);
+        partsMap.set(scanItem.partnumber, newItem);
+      }
+    });
+
+    // ล้าง scan_data
+    pkwork.scan_data = [];
+    //ตั้งค่าตัวแปรอื่นๆ
+    pkwork.cancel_status = "ดำเนินการ";
+    pkwork.cancel_success_at = null;
+  } else {
+    // แสดงว่า work ที่ยกเลิกนั้นของร้าน RSM ส่งและไม่คืน inventory
+    // กรณีไม่คืน inventory: ย้าย parts_data -> scan_data
+    const scanMap = new Map();
+    pkwork.scan_data.forEach((item) => {
+      scanMap.set(item.partnumber, item);
+    });
+
+    pkwork.parts_data.forEach((partItem) => {
+      const existing = scanMap.get(partItem.partnumber);
+      if (existing) {
+        existing.qty += partItem.qty;
+      } else {
+        const newItem = {
+          partnumber: partItem.partnumber,
+          qty: partItem.qty,
+        };
+        pkwork.scan_data.push(newItem);
+        scanMap.set(partItem.partnumber, newItem);
+      }
+    });
+
+    // ล้าง parts_data
+    pkwork.parts_data = [];
+  }
+
+  // บันทึกข้อมูล pkwork ใหม่
+  await pkwork.save();
+
+  next();
+});
+
 //จัดการข้อมูลของ parts_data ที่มีการแก้ไข
 exports.updatePartsDataInWork = catchAsync(async (req, res, next) => {
   let new_parts_data = req.body;
@@ -670,6 +757,7 @@ exports.getDataPartsInWorkCancel = catchAsync(async (req, res, next) => {
   const pkworks = await Pkwork.find(
     {
       cancel_success_at: { $gte: start, $lte: end },
+      cancel_will_return_inventory: true,
     },
     {
       scan_data: 1,

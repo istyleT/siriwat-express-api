@@ -6,7 +6,6 @@ const pkworkJob = cron.schedule(
   // "* * * * *",
   () => {
     console.log("Running pkwork job...");
-    //ลบ work ที่เกิน 15 วัน
     pkworkController.deletePkworkOld();
   },
   {

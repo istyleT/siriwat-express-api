@@ -23,6 +23,7 @@ const {
   returnMockQtyBeforeDeleteWork,
   updatePartsDataInWork,
   movePartsToScanWorkSuccessMany,
+  cancelWillReturnInventory,
 } = require("../../controllers/packingController/pkworkController");
 const {
   cancelData,
@@ -56,6 +57,9 @@ router.route("/rsmwork-many-success").patch(movePartsToScanWorkSuccessMany);
 router
   .route("/cancel/:id")
   .patch(cancelData, returnMockQtyToInventory, updatePkwork);
+router
+  .route("/cancel-will-return-inventory/:id")
+  .patch(cancelWillReturnInventory, updatePkwork);
 router.route("/edit-partsdata/:id").patch(updatePartsDataInWork, updatePkwork);
 router.route("/rsmwork-success/:id").patch(movePartsToScan, updatePkwork);
 router.route("/change-station/:id").patch(changeStation, updatePkwork);

@@ -56,6 +56,10 @@ const pkworkSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  cancel_will_return_inventory: {
+    type: Boolean,
+    default: true,
+  },
   //field พื้นฐาน
   created_at: {
     type: Date,
