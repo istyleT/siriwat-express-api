@@ -858,9 +858,9 @@ exports.movePartsToScanWorkSuccessMany = catchAsync(async (req, res, next) => {
   });
 });
 
-//ลบเอกสารที่มีอายุเกินกว่า 20 วัน มีเงื่อนไขในการลบ
+//ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ
 exports.deletePkworkOld = catchAsync(async (req, res, next) => {
-  const date = moment().tz("Asia/Bangkok").subtract(25, "days").toDate();
+  const date = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
 
   //ลบเอกสารที่เสร็จสิ้นไปเเล้วทั้ง 2 ร้าน
   await Pkwork.deleteMany({
