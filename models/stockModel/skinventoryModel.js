@@ -28,7 +28,7 @@ const skinventorySchema = new mongoose.Schema({
   },
   location: {
     type: String,
-    default: null,
+    default: "-",
     trim: true,
   },
   //field พื้นฐาน

@@ -1,0 +1,1838 @@
+[
+  {
+    "part_code": "15410-KYJ-902",
+    "location": "A"
+  },
+  {
+    "part_code": "15412-KYJ-901",
+    "location": "A"
+  },
+  {
+    "part_code": "22011-K04-930",
+    "location": "A"
+  },
+  {
+    "part_code": "22011-K1N-V01",
+    "location": "A"
+  },
+  {
+    "part_code": "22011-K20-T20",
+    "location": "A"
+  },
+  {
+    "part_code": "22011-KWN-900",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-K0J-N00",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-K0R-V00",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-K1N-V00",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-K44-V00",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-K97-T00",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-KVB-900",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-KVY-900",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-KWN-900",
+    "location": "A"
+  },
+  {
+    "part_code": "22105-KZL-C00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-K0J-N00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-K0S-V00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-K1N-V00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-K36-T00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-K44-V00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-K97-B00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-KVB-900",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-KVB-T00",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-KWN-640",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-KWN-780",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-KWN-900",
+    "location": "A"
+  },
+  {
+    "part_code": "22123-KYT-900",
+    "location": "A"
+  },
+  {
+    "part_code": "88113-KET-900",
+    "location": "A"
+  },
+  {
+    "part_code": "88113-KWW-640",
+    "location": "A"
+  },
+  {
+    "part_code": "88114-KVB-900",
+    "location": "A"
+  },
+  {
+    "part_code": "88119-KWW-640",
+    "location": "A"
+  },
+  {
+    "part_code": "90061-KYJ-900",
+    "location": "A"
+  },
+  {
+    "part_code": "90101-KWW-640",
+    "location": "A"
+  },
+  {
+    "part_code": "90104-KZR-701",
+    "location": "A"
+  },
+  {
+    "part_code": "90131-883-000",
+    "location": "A"
+  },
+  {
+    "part_code": "90301-KWW-640",
+    "location": "A"
+  },
+  {
+    "part_code": "90314-KFM-840",
+    "location": "A"
+  },
+  {
+    "part_code": "90314-KFM-900",
+    "location": "A"
+  },
+  {
+    "part_code": "90314-KRS-690",
+    "location": "A"
+  },
+  {
+    "part_code": "90314-KVB-900",
+    "location": "A"
+  },
+  {
+    "part_code": "90407-259-000",
+    "location": "A"
+  },
+  {
+    "part_code": "92800-12000",
+    "location": "A"
+  },
+  {
+    "part_code": "06410-KEA-750",
+    "location": "B"
+  },
+  {
+    "part_code": "06410-KFL-850",
+    "location": "B"
+  },
+  {
+    "part_code": "06410-KSP-900",
+    "location": "B"
+  },
+  {
+    "part_code": "06410-KWB-600",
+    "location": "B"
+  },
+  {
+    "part_code": "06430-KPH-900",
+    "location": "B"
+  },
+  {
+    "part_code": "06430-KVB-900",
+    "location": "B"
+  },
+  {
+    "part_code": "06430-KWN-900",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-K04-702",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-K0B-T01",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-K26-901",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-K97-N01",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-KPP-T01",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-KRE-G32",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-KSP-B02",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-KYJ-902",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-KZZ-901",
+    "location": "B"
+  },
+  {
+    "part_code": "06435-KZZ-902",
+    "location": "B"
+  },
+  {
+    "part_code": "06451-961-405",
+    "location": "B"
+  },
+  {
+    "part_code": "06451-GE2-405",
+    "location": "B"
+  },
+  {
+    "part_code": "06451-KZZ-902",
+    "location": "B"
+  },
+  {
+    "part_code": "06451-MA7-405",
+    "location": "B"
+  },
+  {
+    "part_code": "06451-MZ2-405",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-K31-902",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-K33-D52",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-K46-N21",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-K59-A71",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-K84-902",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-K94-T01",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KPH-952",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KPP-N02",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KRE-K02",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KWB-601",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KYJ-901",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KYJ-902",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KYJ-912",
+    "location": "B"
+  },
+  {
+    "part_code": "06455-KZL-932",
+    "location": "B"
+  },
+  {
+    "part_code": "15410-MFJ-D02",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-K03-H11",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-K0S-V01",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-K35-V01",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-K36-J01",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-K60-T71",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-K76-T61",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-KSS-B31",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-KVB-S51",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-KVB-T01",
+    "location": "C"
+  },
+  {
+    "part_code": "16450-KZR-601",
+    "location": "C"
+  },
+  {
+    "part_code": "16707-K35-V01",
+    "location": "C"
+  },
+  {
+    "part_code": "16707-KVB-S51",
+    "location": "C"
+  },
+  {
+    "part_code": "16707-KVG-V41",
+    "location": "C"
+  },
+  {
+    "part_code": "16707-KWN-711",
+    "location": "C"
+  },
+  {
+    "part_code": "16707-KWW-641",
+    "location": "C"
+  },
+  {
+    "part_code": "16707-KZR-601",
+    "location": "C"
+  },
+  {
+    "part_code": "16707-KZV-T01",
+    "location": "C"
+  },
+  {
+    "part_code": "31916-KRM-841",
+    "location": "C"
+  },
+  {
+    "part_code": "31916-KWB-601",
+    "location": "C"
+  },
+  {
+    "part_code": "31916-MCG-601",
+    "location": "C"
+  },
+  {
+    "part_code": "31917-K0R-V01",
+    "location": "C"
+  },
+  {
+    "part_code": "31917-KPH-901",
+    "location": "C"
+  },
+  {
+    "part_code": "31917-KWB-601",
+    "location": "C"
+  },
+  {
+    "part_code": "31917-KWP-D01",
+    "location": "C"
+  },
+  {
+    "part_code": "31918-K44-V01",
+    "location": "C"
+  },
+  {
+    "part_code": "31918-K97-T01",
+    "location": "C"
+  },
+  {
+    "part_code": "98056-56727",
+    "location": "C"
+  },
+  {
+    "part_code": "98059-57916",
+    "location": "C"
+  },
+  {
+    "part_code": "11394-KWB-920",
+    "location": "D"
+  },
+  {
+    "part_code": "11394-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "11395-KPH-901",
+    "location": "D"
+  },
+  {
+    "part_code": "11395-KWB-920",
+    "location": "D"
+  },
+  {
+    "part_code": "12191-KWB-920",
+    "location": "D"
+  },
+  {
+    "part_code": "12191-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "12191-KZR-600",
+    "location": "D"
+  },
+  {
+    "part_code": "12191-KZY-900",
+    "location": "D"
+  },
+  {
+    "part_code": "12209-GB4-682",
+    "location": "D"
+  },
+  {
+    "part_code": "12251-KWB-601",
+    "location": "D"
+  },
+  {
+    "part_code": "12251-KYZ-901",
+    "location": "D"
+  },
+  {
+    "part_code": "12391-KWW-600",
+    "location": "D"
+  },
+  {
+    "part_code": "13011-K03-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13011-KWB-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13011-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "13012-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-K03-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-K36-T00",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-KPH-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-KVB-T00",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-KVY-700",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-KWB-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-KWN-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13031-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "13032-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13041-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "13042-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13051-K03-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13051-KWB-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13051-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "13052-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13101-K03-H10",
+    "location": "D"
+  },
+  {
+    "part_code": "13101-KWB-600",
+    "location": "D"
+  },
+  {
+    "part_code": "13101-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "13101-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13103-K03-H10",
+    "location": "D"
+  },
+  {
+    "part_code": "13103-KWB-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13103-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "13103-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13105-K03-H10",
+    "location": "D"
+  },
+  {
+    "part_code": "13105-KWB-305",
+    "location": "D"
+  },
+  {
+    "part_code": "13105-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "13105-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "13111-087-000",
+    "location": "D"
+  },
+  {
+    "part_code": "13115-GN5-910",
+    "location": "D"
+  },
+  {
+    "part_code": "14401-KWB-601",
+    "location": "D"
+  },
+  {
+    "part_code": "14401-KYZ-T01",
+    "location": "D"
+  },
+  {
+    "part_code": "14500-KWB-600",
+    "location": "D"
+  },
+  {
+    "part_code": "14500-KWW-740",
+    "location": "D"
+  },
+  {
+    "part_code": "14500-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14502-086-000",
+    "location": "D"
+  },
+  {
+    "part_code": "14550-KRS-691",
+    "location": "D"
+  },
+  {
+    "part_code": "14566-086-030",
+    "location": "D"
+  },
+  {
+    "part_code": "14610-KWB-600",
+    "location": "D"
+  },
+  {
+    "part_code": "14670-KWB-600",
+    "location": "D"
+  },
+  {
+    "part_code": "14670-KYZ-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14711-K1M-T00",
+    "location": "D"
+  },
+  {
+    "part_code": "14711-K81-N00",
+    "location": "D"
+  },
+  {
+    "part_code": "14711-KPH-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14711-KVY-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14711-KWB-600",
+    "location": "D"
+  },
+  {
+    "part_code": "14711-KWN-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14711-KZY-700",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-K1M-T00",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-K81-N00",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-KPH-880",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-KVB-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-KVB-T00",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-KVY-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-KWN-900",
+    "location": "D"
+  },
+  {
+    "part_code": "14721-KZY-700",
+    "location": "D"
+  },
+  {
+    "part_code": "15119-KWB-600",
+    "location": "D"
+  },
+  {
+    "part_code": "17572-GGL-J00",
+    "location": "D"
+  },
+  {
+    "part_code": "17572-GHB-601",
+    "location": "D"
+  },
+  {
+    "part_code": "17572-KWB-600",
+    "location": "D"
+  },
+  {
+    "part_code": "44800-KVB-910",
+    "location": "D"
+  },
+  {
+    "part_code": "44800-KWW-650",
+    "location": "D"
+  },
+  {
+    "part_code": "44830-K16-940",
+    "location": "D"
+  },
+  {
+    "part_code": "44830-K20-901",
+    "location": "D"
+  },
+  {
+    "part_code": "44830-KVB-900",
+    "location": "D"
+  },
+  {
+    "part_code": "44830-KWW-640",
+    "location": "D"
+  },
+  {
+    "part_code": "44830-KYT-900",
+    "location": "D"
+  },
+  {
+    "part_code": "45132-166-016",
+    "location": "D"
+  },
+  {
+    "part_code": "45133-MA3-006",
+    "location": "D"
+  },
+  {
+    "part_code": "91202-KVB-901",
+    "location": "D"
+  },
+  {
+    "part_code": "91202-KWN-901",
+    "location": "D"
+  },
+  {
+    "part_code": "91203-KWN-901",
+    "location": "D"
+  },
+  {
+    "part_code": "22100-K0J-N01",
+    "location": "E"
+  },
+  {
+    "part_code": "22100-KWN-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-K0J-N00",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-K1Z-J10",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-K2S-N00",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-K35-V00",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-K44-V00",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-K97-T01",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-KVB-901",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-KVY-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-KWN-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-KZL-930",
+    "location": "E"
+  },
+  {
+    "part_code": "22102-KZR-600",
+    "location": "E"
+  },
+  {
+    "part_code": "22102KZL930",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-GFM-960",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-K0J-N00",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-K1Z-J10",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-K2S-N00",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-K35-V00",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-K36-A00",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-K44-V00",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-K97-T00",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-KVB-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-KVY-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-KWN-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-KZR-601",
+    "location": "E"
+  },
+  {
+    "part_code": "22110-KZY-701",
+    "location": "E"
+  },
+  {
+    "part_code": "22113-GFM-970",
+    "location": "E"
+  },
+  {
+    "part_code": "22113-KVY-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22131-K0J-N00",
+    "location": "E"
+  },
+  {
+    "part_code": "22131-K40-F00",
+    "location": "E"
+  },
+  {
+    "part_code": "22131-KVB-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22131-KVY-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22131-KWN-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22535-K12-V00",
+    "location": "E"
+  },
+  {
+    "part_code": "22535-K35-V00",
+    "location": "E"
+  },
+  {
+    "part_code": "22535-K81-N00",
+    "location": "E"
+  },
+  {
+    "part_code": "22535-KWN-900",
+    "location": "E"
+  },
+  {
+    "part_code": "22535-KZL-A00",
+    "location": "E"
+  },
+  {
+    "part_code": "22804-148-000",
+    "location": "E"
+  },
+  {
+    "part_code": "23801-K1M-T01",
+    "location": "F"
+  },
+  {
+    "part_code": "23801-K26-900",
+    "location": "F"
+  },
+  {
+    "part_code": "23801-K26-G00",
+    "location": "F"
+  },
+  {
+    "part_code": "23801-KBP-900",
+    "location": "F"
+  },
+  {
+    "part_code": "23801-KPH-900",
+    "location": "F"
+  },
+  {
+    "part_code": "23801-KWW-740",
+    "location": "F"
+  },
+  {
+    "part_code": "23801-KYJ-901",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-GGJ-741",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-K26-901",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-K26-G01",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-K45-N41",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-K58-T81",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-K73-T71",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-K76-T61",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-KPH-902",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-KPP-901",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-KPP-T02",
+    "location": "F"
+  },
+  {
+    "part_code": "40530-KWB-601",
+    "location": "F"
+  },
+  {
+    "part_code": "40540-KYJ-902",
+    "location": "F"
+  },
+  {
+    "part_code": "41200-K0A-E10",
+    "location": "F"
+  },
+  {
+    "part_code": "41200-K26-901",
+    "location": "F"
+  },
+  {
+    "part_code": "41200-K26-G01",
+    "location": "F"
+  },
+  {
+    "part_code": "41200-K45-NA0",
+    "location": "F"
+  },
+  {
+    "part_code": "41200-K94-T01",
+    "location": "F"
+  },
+  {
+    "part_code": "41200-KPP-900",
+    "location": "F"
+  },
+  {
+    "part_code": "41200-KPP-T00",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-K1M-T02",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-K33-D00",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-K58-T81",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-K73-T60",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-K76-T60",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-KWB-601",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-KWW-621",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-KWW-651",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-KYJ-900",
+    "location": "F"
+  },
+  {
+    "part_code": "41201-KYZ-901",
+    "location": "F"
+  },
+  {
+    "part_code": "50661-GN8-920",
+    "location": "F"
+  },
+  {
+    "part_code": "50661-KWB-600",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-K03-N30",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-K2F-N00",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-K35-V00",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-K44-V00",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-K59-A70",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-K97-T00",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-KPH-970",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-KWN-900",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-KWW-620",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-KYJ-900",
+    "location": "F"
+  },
+  {
+    "part_code": "53140-KYT-900ZA",
+    "location": "F"
+  },
+  {
+    "part_code": "53166-K2S-N00",
+    "location": "F"
+  },
+  {
+    "part_code": "53166-KFL-D20",
+    "location": "F"
+  },
+  {
+    "part_code": "53166-KWB-600",
+    "location": "F"
+  },
+  {
+    "part_code": "53166-KWN-900",
+    "location": "F"
+  },
+  {
+    "part_code": "53166-KYJ-900",
+    "location": "F"
+  },
+  {
+    "part_code": "53166-KYT-900ZC",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-K04-931",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-K1M-T00",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-K26-901",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-K59-A71",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-K81-N31",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KET-921",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KRS-T80",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KVB-910",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KVB-921",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KVB-930",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KVG-A21",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KWN-901",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KWW-600",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KWW-660",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KYT-922",
+    "location": "F"
+  },
+  {
+    "part_code": "53175-KYZ-T00",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-K04-931",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-K0J-N00",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-K0W-N01",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-K2S-N00",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-K35-V00",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-K59-A10",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-K81-N30",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KRS-780",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KV0-000",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KVB-900",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KVB-920",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KVB-930",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KVG-A20",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KWN-930",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KYT-900",
+    "location": "F"
+  },
+  {
+    "part_code": "53178-KYT-920",
+    "location": "F"
+  },
+  {
+    "part_code": "H0640-KPH-900",
+    "location": "F"
+  },
+  {
+    "part_code": "17620-K20-901",
+    "location": "G"
+  },
+  {
+    "part_code": "17620-KGH-600",
+    "location": "G"
+  },
+  {
+    "part_code": "22401-KVB-900",
+    "location": "G"
+  },
+  {
+    "part_code": "22401-KVY-900",
+    "location": "G"
+  },
+  {
+    "part_code": "30700-KPH-901",
+    "location": "G"
+  },
+  {
+    "part_code": "30700-KWW-641",
+    "location": "G"
+  },
+  {
+    "part_code": "30700-KYZ-901",
+    "location": "G"
+  },
+  {
+    "part_code": "30700-KZL-A01",
+    "location": "G"
+  },
+  {
+    "part_code": "30700-KZR-601",
+    "location": "G"
+  },
+  {
+    "part_code": "35160-K20-T21",
+    "location": "G"
+  },
+  {
+    "part_code": "35160-KVB-851",
+    "location": "G"
+  },
+  {
+    "part_code": "35160-KYZ-901",
+    "location": "G"
+  },
+  {
+    "part_code": "35170-K35-V01",
+    "location": "G"
+  },
+  {
+    "part_code": "35170-K35-V02",
+    "location": "G"
+  },
+  {
+    "part_code": "35170-K46-N01",
+    "location": "G"
+  },
+  {
+    "part_code": "35170-K59-A11",
+    "location": "G"
+  },
+  {
+    "part_code": "35170-KVB-851",
+    "location": "G"
+  },
+  {
+    "part_code": "35170-KYZ-901",
+    "location": "G"
+  },
+  {
+    "part_code": "35180-K03-N31",
+    "location": "G"
+  },
+  {
+    "part_code": "35180-K20-T21",
+    "location": "G"
+  },
+  {
+    "part_code": "35180-KVB-851",
+    "location": "G"
+  },
+  {
+    "part_code": "35180-KYZ-901",
+    "location": "G"
+  },
+  {
+    "part_code": "35200-K03-N31",
+    "location": "G"
+  },
+  {
+    "part_code": "35200-K35-V01",
+    "location": "G"
+  },
+  {
+    "part_code": "35200-K35-V02",
+    "location": "G"
+  },
+  {
+    "part_code": "35200-KYZ-901",
+    "location": "G"
+  },
+  {
+    "part_code": "40543-K26-900",
+    "location": "G"
+  },
+  {
+    "part_code": "40543-KPG-T00",
+    "location": "G"
+  },
+  {
+    "part_code": "40543-KWB-600",
+    "location": "G"
+  },
+  {
+    "part_code": "40545-141-000",
+    "location": "G"
+  },
+  {
+    "part_code": "45208-KWB-601",
+    "location": "G"
+  },
+  {
+    "part_code": "45530-KVS-M21",
+    "location": "G"
+  },
+  {
+    "part_code": "45530-KVY-911",
+    "location": "G"
+  },
+  {
+    "part_code": "50530-KPH-900",
+    "location": "G"
+  },
+  {
+    "part_code": "50530-KWW-640",
+    "location": "G"
+  },
+  {
+    "part_code": "50530-KYZ-900",
+    "location": "G"
+  },
+  {
+    "part_code": "51490-KGH-901",
+    "location": "G"
+  },
+  {
+    "part_code": "51490-KRM-852",
+    "location": "G"
+  },
+  {
+    "part_code": "53102-K59-A70",
+    "location": "G"
+  },
+  {
+    "part_code": "53102-K97-T00",
+    "location": "G"
+  },
+  {
+    "part_code": "53102-KVB-S00",
+    "location": "G"
+  },
+  {
+    "part_code": "53102-KVB-T00",
+    "location": "G"
+  },
+  {
+    "part_code": "53105-KWB-600",
+    "location": "G"
+  },
+  {
+    "part_code": "53105-KWW-640",
+    "location": "G"
+  },
+  {
+    "part_code": "90116-SP0-003",
+    "location": "G"
+  },
+  {
+    "part_code": "90191-KWB-600",
+    "location": "G"
+  },
+  {
+    "part_code": "90474-333-000",
+    "location": "G"
+  },
+  {
+    "part_code": "90495-MN5-000",
+    "location": "G"
+  },
+  {
+    "part_code": "90677-KAN-T00",
+    "location": "G"
+  },
+  {
+    "part_code": "91001-KCW-003",
+    "location": "G"
+  },
+  {
+    "part_code": "91004-KCW-880",
+    "location": "G"
+  },
+  {
+    "part_code": "91052-KWB-601",
+    "location": "G"
+  },
+  {
+    "part_code": "91053-KWB-601",
+    "location": "G"
+  },
+  {
+    "part_code": "91203-K50-T01",
+    "location": "G"
+  },
+  {
+    "part_code": "91303-377-000",
+    "location": "G"
+  },
+  {
+    "part_code": "91307-035-000",
+    "location": "G"
+  },
+  {
+    "part_code": "APSTDPTS01ZA",
+    "location": "G"
+  },
+  {
+    "part_code": "APSTDPTS01ZB",
+    "location": "G"
+  },
+  {
+    "part_code": "APSTDPTS01ZD",
+    "location": "G"
+  },
+  {
+    "part_code": "APSTDPTS01ZZ",
+    "location": "G"
+  },
+  {
+    "part_code": "88210-K03-H33",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-K20-902",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-K26-900",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-K26-901",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-K26-C21",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-K60-T01",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-K97-T00",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-KTL-740",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-KVB-900",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-KWN-900",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-KWW-640",
+    "location": "H"
+  },
+  {
+    "part_code": "88210-KZR-701",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-K03-H33",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-K60-T01",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-K97-T00",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-KTL-740",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-KVB-900",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-KWN-900",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-KWW-640",
+    "location": "H"
+  },
+  {
+    "part_code": "88220-KZR-701",
+    "location": "H"
+  },
+  {
+    "part_code": "17210-K04-930",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K0B-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K16-900",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K1B-U10",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K1M-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K1Z-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K26-900",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K2F-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K36-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K3M-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K59-A70",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K73-V40",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-K97-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KFL-850",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KPH-900",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KVB-930",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KVB-T00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KWB-600",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KWN-900",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KWW-640",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KYT-900",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KYZ-V00",
+    "location": "I"
+  },
+  {
+    "part_code": "17210-KZR-600",
+    "location": "I"
+  },
+  {
+    "part_code": "17213-KZR-600",
+    "location": "I"
+  },
+  {
+    "part_code": "08203-M9938ZT1",
+    "location": "J"
+  },
+  {
+    "part_code": "08268-M99K0ZT1",
+    "location": "J"
+  },
+  {
+    "part_code": "08290-M9900ZT9",
+    "location": "J"
+  },
+  {
+    "part_code": "08294-M99K8LT1",
+    "location": "J"
+  },
+  {
+    "part_code": "08294-M99K8LT3",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K04-932",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K0J-N01",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K1B-T02",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K1Z-J11",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K2F-T01",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K2S-N01",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K35-V01",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K36-J01",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K44-V01",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-K97-T01",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-KVB-901",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-KWN-901",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-KYT-901",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-KZL-931",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-KZR-601",
+    "location": "J"
+  },
+  {
+    "part_code": "23100-KZY-701",
+    "location": "J"
+  },
+  {
+    "part_code": "APCHMD120ML7",
+    "location": "J"
+  },
+  {
+    "part_code": "08233-2MAK1LT3",
+    "location": "K"
+  },
+  {
+    "part_code": "08233-2MAK8LT1",
+    "location": "K"
+  },
+  {
+    "part_code": "08233-2MAK9LT1",
+    "location": "K"
+  },
+  {
+    "part_code": "08233-2MBK1LT1",
+    "location": "K"
+  },
+  {
+    "part_code": "08233-2MBK9LT3",
+    "location": "K"
+  },
+  {
+    "part_code": "08234-2MAL1LT3",
+    "location": "K"
+  },
+  {
+    "part_code": "08234-2MBK8LT3",
+    "location": "K"
+  },
+  {
+    "part_code": "08CLA-M9910NT1",
+    "location": "K"
+  },
+  {
+    "part_code": "08CLA-M9911NT8",
+    "location": "K"
+  },
+  {
+    "part_code": "APCHMD045ML5",
+    "location": "K"
+  },
+  {
+    "part_code": "APCHMD800ML6",
+    "location": "K"
+  }
+]

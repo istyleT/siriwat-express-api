@@ -176,6 +176,7 @@ const checkOrderNumbersInPkwork = async () => {
     }
   }
 };
+
 //function report tracking_code ที่ซ้ำกันใน pkwork
 const findDuplicateTrackingCodes = async () => {
   try {

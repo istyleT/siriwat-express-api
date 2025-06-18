@@ -626,7 +626,7 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
   // ❗ ดึงข้อมูลจาก Skinventory โดยใช้ partnumber เทียบกับ part_code
   const inventoryParts = await Skinventory.find(
     { part_code: { $in: uniquePartNumbers } },
-    { part_code: 1, part_name: 1, _id: 0 } // ดึงเฉพาะ field ที่ต้องการ
+    { part_code: 1, part_name: 1, location: 1, _id: 0 } // ดึงเฉพาะ field ที่ต้องการ
   );
 
   // ❗ สร้าง Map สำหรับ mapping part_code => part_name
@@ -634,10 +634,16 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
     inventoryParts.map((part) => [part.part_code, part.part_name])
   );
 
+  // ❗ สร้าง Map สำหรับ mapping part_code => location
+  const partLocationMap = new Map(
+    inventoryParts.map((part) => [part.part_code, part.location])
+  );
+
   // ❗ เพิ่ม field part_name เข้าไปใน formattedData
   const dataWithNames = formattedData.map((item) => ({
     ...item,
     part_name: partNameMap.get(item.partnumber) || "-",
+    location: partLocationMap.get(item.partnumber) || "-",
   }));
 
   // ❗ รวม qty ตาม partnumber
@@ -656,13 +662,14 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
         partnumber: item.partnumber,
         qty: item.qty,
         part_name: item.part_name,
+        location: item.location || "-",
         upload_ref_no,
       });
     }
   });
 
   const sortedData = Array.from(qtyMap.values()).sort((a, b) =>
-    a.partnumber.localeCompare(b.partnumber)
+    a.location.localeCompare(b.location)
   );
 
   res.status(200).json({
