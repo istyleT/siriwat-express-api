@@ -409,6 +409,39 @@ exports.adjustMockQtyInInventory = catchAsync(async (req, res, next) => {
     });
   }
 
+  // 👉 เพิ่ม logic ตรวจสอบและย้าย parts_data ไป scan_data
+  if (req.body.status === "เสร็จสิ้น") {
+    if (pkwork.parts_data && pkwork.parts_data.length > 0) {
+      // สร้าง Map เพื่อ lookup เร็วขึ้น
+      const scanMap = new Map();
+      (pkwork.scan_data || []).forEach((item) => {
+        scanMap.set(item.partnumber, item);
+      });
+
+      // วนลูป parts_data เพื่อ merge เข้า scan_data
+      pkwork.parts_data.forEach((partItem) => {
+        const existing = scanMap.get(partItem.partnumber);
+        if (existing) {
+          existing.qty += partItem.qty;
+        } else {
+          const newItem = {
+            partnumber: partItem.partnumber,
+            qty: partItem.qty,
+          };
+          if (!pkwork.scan_data) pkwork.scan_data = [];
+          pkwork.scan_data.push(newItem);
+          scanMap.set(partItem.partnumber, newItem);
+        }
+      });
+
+      // ล้าง parts_data
+      pkwork.parts_data = [];
+
+      // บันทึกข้อมูลลงฐานข้อมูล
+      await pkwork.save();
+    }
+  }
+
   // ตรวจสอบว่า station เป็นอะไรและดำเนินการ
   if (pkwork.station === "RM") {
     // รวม parts_data และ scan_data เข้าด้วยกัน และรวม qty ของ partnumber ซ้ำ
@@ -570,7 +603,7 @@ exports.getDataPartsInWorkUpload = catchAsync(async (req, res, next) => {
     return res.status(202).json({
       status: "fail",
       data: [],
-      message: "ไม่พบข้อมูลพัสดุที่เสร็จสิ้นในวันดังกล่าว",
+      message: "ไม่พบข้อมูลพัสดุที่สร้าง Work ในวันดังกล่าว",
     });
   }
 

@@ -43,6 +43,10 @@ const locationparts = JSON.parse(
   fs.readFileSync(`${__dirname}/data/location_parts.json`, "utf-8")
 );
 
+const avgcostparts = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/avgcost_parts.json`, "utf-8")
+);
+
 // UPDATE DATA INTO DB
 const updateDataPricelists = async () => {
   try {
@@ -77,6 +81,26 @@ const updateLocationParts = async () => {
       );
     }
     console.log("Data location parts successfully updated!");
+  } catch (err) {
+    console.log(err);
+  }
+  process.exit();
+};
+
+// UPDATE AVGCOST PARTS INTO DB
+const updateAvgcostParts = async () => {
+  try {
+    for (let i = 0; i < avgcostparts.length; i++) {
+      await Skinventory.findOneAndUpdate(
+        { part_code: avgcostparts[i].part_code },
+        { avg_cost: avgcostparts[i].avg_cost },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+    }
+    console.log("Data avg_cost parts successfully updated!");
   } catch (err) {
     console.log(err);
   }
@@ -217,6 +241,10 @@ if (process.argv[2] === "--updatelocationparts") {
   updateLocationParts();
 }
 
+if (process.argv[2] === "--updateavgcostparts") {
+  updateAvgcostParts();
+}
+
 //deletedata
 if (process.argv[2] === "--deletepricelists") {
   deleteDataPricelists();
@@ -235,4 +263,4 @@ if (process.argv[2] === "--deletecustomerlists") {
 }
 
 //command in terminal
-// node dev-data/import-dev-data.js --updatelocationparts
+// node dev-data/import-dev-data.js --updateavgcostparts

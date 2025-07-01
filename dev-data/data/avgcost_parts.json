@@ -1,0 +1,1946 @@
+[
+  {
+    "part_code": "90407-259-000",
+    "avg_cost": 5
+  },
+  {
+    "part_code": "90677-KAN-T00",
+    "avg_cost": 5
+  },
+  {
+    "part_code": "94101-06000",
+    "avg_cost": 5
+  },
+  {
+    "part_code": "15119-KWB-600",
+    "avg_cost": 6
+  },
+  {
+    "part_code": "53214-GN5-900",
+    "avg_cost": 6
+  },
+  {
+    "part_code": "90701-KFM-900",
+    "avg_cost": 6
+  },
+  {
+    "part_code": "91302-KWN-900",
+    "avg_cost": 6
+  },
+  {
+    "part_code": "11395-KWB-920",
+    "avg_cost": 7
+  },
+  {
+    "part_code": "88119-KWW-640",
+    "avg_cost": 7
+  },
+  {
+    "part_code": "90131-KWB-600",
+    "avg_cost": 7
+  },
+  {
+    "part_code": "91301-KVB-900",
+    "avg_cost": 7
+  },
+  {
+    "part_code": "91307-035-000",
+    "avg_cost": 7
+  },
+  {
+    "part_code": "13115-GN5-910",
+    "avg_cost": 8
+  },
+  {
+    "part_code": "40545-141-000",
+    "avg_cost": 8
+  },
+  {
+    "part_code": "88114-KVB-900",
+    "avg_cost": 8
+  },
+  {
+    "part_code": "90301-KWW-640",
+    "avg_cost": 8
+  },
+  {
+    "part_code": "92800-12000",
+    "avg_cost": 8
+  },
+  {
+    "part_code": "95014-72102",
+    "avg_cost": 8
+  },
+  {
+    "part_code": "12191-KWB-920",
+    "avg_cost": 9
+  },
+  {
+    "part_code": "22401-KVY-900",
+    "avg_cost": 9
+  },
+  {
+    "part_code": "88113-KWW-640",
+    "avg_cost": 9
+  },
+  {
+    "part_code": "90191-KWB-600",
+    "avg_cost": 9
+  },
+  {
+    "part_code": "18291-GE2-920",
+    "avg_cost": 10
+  },
+  {
+    "part_code": "90061-KYJ-900",
+    "avg_cost": 10
+  },
+  {
+    "part_code": "90314-KRS-690",
+    "avg_cost": 11
+  },
+  {
+    "part_code": "90314-KVB-900",
+    "avg_cost": 11
+  },
+  {
+    "part_code": "91372-KPH-900",
+    "avg_cost": 11
+  },
+  {
+    "part_code": "40543-KWB-600",
+    "avg_cost": 12
+  },
+  {
+    "part_code": "88113-KET-900",
+    "avg_cost": 13
+  },
+  {
+    "part_code": "90474-333-000",
+    "avg_cost": 13
+  },
+  {
+    "part_code": "91203-KWN-901",
+    "avg_cost": 13
+  },
+  {
+    "part_code": "45208-KWB-601",
+    "avg_cost": 14
+  },
+  {
+    "part_code": "91202-KWN-901",
+    "avg_cost": 14
+  },
+  {
+    "part_code": "91203-K50-T01",
+    "avg_cost": 14
+  },
+  {
+    "part_code": "50661-KWB-600",
+    "avg_cost": 15
+  },
+  {
+    "part_code": "50710-KWB-600",
+    "avg_cost": 15
+  },
+  {
+    "part_code": "91304-KPH-700",
+    "avg_cost": 15
+  },
+  {
+    "part_code": "11395-KPH-901",
+    "avg_cost": 16
+  },
+  {
+    "part_code": "12191-KZR-600",
+    "avg_cost": 16
+  },
+  {
+    "part_code": "90101-KWW-640",
+    "avg_cost": 16
+  },
+  {
+    "part_code": "17213-KZR-600",
+    "avg_cost": 17
+  },
+  {
+    "part_code": "53102-KVB-S00",
+    "avg_cost": 17
+  },
+  {
+    "part_code": "53166-KWB-600",
+    "avg_cost": 17
+  },
+  {
+    "part_code": "90104-KZR-701",
+    "avg_cost": 17
+  },
+  {
+    "part_code": "15439-KWW-741",
+    "avg_cost": 19
+  },
+  {
+    "part_code": "53166-KYT-900ZC",
+    "avg_cost": 19
+  },
+  {
+    "part_code": "91202-KVB-901",
+    "avg_cost": 19
+  },
+  {
+    "part_code": "06410-KWB-600",
+    "avg_cost": 21
+  },
+  {
+    "part_code": "12191-KYZ-900",
+    "avg_cost": 21
+  },
+  {
+    "part_code": "13111-087-000",
+    "avg_cost": 21
+  },
+  {
+    "part_code": "22401-KVB-900",
+    "avg_cost": 21
+  },
+  {
+    "part_code": "53102-K59-A70",
+    "avg_cost": 21
+  },
+  {
+    "part_code": "12251-KWB-601",
+    "avg_cost": 23
+  },
+  {
+    "part_code": "17572-GHB-601",
+    "avg_cost": 23
+  },
+  {
+    "part_code": "53102-KVB-T00",
+    "avg_cost": 23
+  },
+  {
+    "part_code": "53166-K2S-N00",
+    "avg_cost": 23
+  },
+  {
+    "part_code": "53166-KWN-900",
+    "avg_cost": 23
+  },
+  {
+    "part_code": "90314-KFM-840",
+    "avg_cost": 23
+  },
+  {
+    "part_code": "90314-KFM-900",
+    "avg_cost": 23
+  },
+  {
+    "part_code": "14566-086-030",
+    "avg_cost": 24
+  },
+  {
+    "part_code": "53166-KFL-D20",
+    "avg_cost": 24
+  },
+  {
+    "part_code": "15412-KYJ-901",
+    "avg_cost": 25
+  },
+  {
+    "part_code": "22011-K20-T20",
+    "avg_cost": 25
+  },
+  {
+    "part_code": "22804-148-000",
+    "avg_cost": 25
+  },
+  {
+    "part_code": "50661-GN8-920",
+    "avg_cost": 25
+  },
+  {
+    "part_code": "53140-K2F-N00",
+    "avg_cost": 25
+  },
+  {
+    "part_code": "08CLA-M9910NT1",
+    "avg_cost": 26
+  },
+  {
+    "part_code": "53140-K44-V00",
+    "avg_cost": 26
+  },
+  {
+    "part_code": "53140-K03-N30",
+    "avg_cost": 27
+  },
+  {
+    "part_code": "53140-KWW-620",
+    "avg_cost": 27
+  },
+  {
+    "part_code": "22113-GFM-970",
+    "avg_cost": 29
+  },
+  {
+    "part_code": "53140-KYT-900ZA",
+    "avg_cost": 29
+  },
+  {
+    "part_code": "17572-GGL-J00",
+    "avg_cost": 30
+  },
+  {
+    "part_code": "53140-K59-A70",
+    "avg_cost": 30
+  },
+  {
+    "part_code": "11394-KWB-920",
+    "avg_cost": 31
+  },
+  {
+    "part_code": "90495-MN5-000",
+    "avg_cost": 31
+  },
+  {
+    "part_code": "17572-KWB-600",
+    "avg_cost": 33
+  },
+  {
+    "part_code": "12209-GB4-682",
+    "avg_cost": 35
+  },
+  {
+    "part_code": "53166-KYJ-900",
+    "avg_cost": 35
+  },
+  {
+    "part_code": "90116-SP0-003",
+    "avg_cost": 35
+  },
+  {
+    "part_code": "08268-M99K0ZT1",
+    "avg_cost": 36
+  },
+  {
+    "part_code": "14500-KWW-740",
+    "avg_cost": 36
+  },
+  {
+    "part_code": "53105-KWB-600",
+    "avg_cost": 36
+  },
+  {
+    "part_code": "11394-KYZ-900",
+    "avg_cost": 37
+  },
+  {
+    "part_code": "45132-166-016",
+    "avg_cost": 37
+  },
+  {
+    "part_code": "53140-KWN-900",
+    "avg_cost": 37
+  },
+  {
+    "part_code": "APCHMD120ML7",
+    "avg_cost": 37
+  },
+  {
+    "part_code": "35160-K20-T21",
+    "avg_cost": 38
+  },
+  {
+    "part_code": "98056-56727",
+    "avg_cost": 38
+  },
+  {
+    "part_code": "22011-KWN-900",
+    "avg_cost": 39
+  },
+  {
+    "part_code": "35170-KYZ-901",
+    "avg_cost": 39
+  },
+  {
+    "part_code": "35180-K20-T21",
+    "avg_cost": 39
+  },
+  {
+    "part_code": "53105-KWW-640",
+    "avg_cost": 39
+  },
+  {
+    "part_code": "91052-KWB-601",
+    "avg_cost": 39
+  },
+  {
+    "part_code": "APCHMD045ML5",
+    "avg_cost": 40
+  },
+  {
+    "part_code": "08290-M9900ZT9",
+    "avg_cost": 41
+  },
+  {
+    "part_code": "14610-KWB-600",
+    "avg_cost": 41
+  },
+  {
+    "part_code": "53175-KET-921",
+    "avg_cost": 41
+  },
+  {
+    "part_code": "35180-KYZ-901",
+    "avg_cost": 42
+  },
+  {
+    "part_code": "35160-KYZ-901",
+    "avg_cost": 43
+  },
+  {
+    "part_code": "35170-K59-A11",
+    "avg_cost": 43
+  },
+  {
+    "part_code": "35170-KVB-851",
+    "avg_cost": 43
+  },
+  {
+    "part_code": "45133-MA3-006",
+    "avg_cost": 43
+  },
+  {
+    "part_code": "53175-KRS-T80",
+    "avg_cost": 44
+  },
+  {
+    "part_code": "08203-M9938ZT1",
+    "avg_cost": 46
+  },
+  {
+    "part_code": "14670-KYZ-900",
+    "avg_cost": 46
+  },
+  {
+    "part_code": "12251-KYZ-901",
+    "avg_cost": 47
+  },
+  {
+    "part_code": "APSTDPTS01ZA",
+    "avg_cost": 48
+  },
+  {
+    "part_code": "APSTDPTS01ZB",
+    "avg_cost": 48
+  },
+  {
+    "part_code": "APSTDPTS01ZD",
+    "avg_cost": 48
+  },
+  {
+    "part_code": "08CLA-M9911NT8",
+    "avg_cost": 49
+  },
+  {
+    "part_code": "23801-KWW-740",
+    "avg_cost": 49
+  },
+  {
+    "part_code": "50530-KPH-900",
+    "avg_cost": 49
+  },
+  {
+    "part_code": "08294-M99K8LT1",
+    "avg_cost": 50
+  },
+  {
+    "part_code": "17620-KGH-600",
+    "avg_cost": 50
+  },
+  {
+    "part_code": "14550-KRS-691",
+    "avg_cost": 51
+  },
+  {
+    "part_code": "23801-KPH-900",
+    "avg_cost": 51
+  },
+  {
+    "part_code": "35170-K35-V02",
+    "avg_cost": 51
+  },
+  {
+    "part_code": "35180-K03-N31",
+    "avg_cost": 52
+  },
+  {
+    "part_code": "13011-K03-305",
+    "avg_cost": 53
+  },
+  {
+    "part_code": "13031-K03-305",
+    "avg_cost": 53
+  },
+  {
+    "part_code": "13051-K03-305",
+    "avg_cost": 53
+  },
+  {
+    "part_code": "22131-K0J-N00",
+    "avg_cost": 53
+  },
+  {
+    "part_code": "23801-K1M-T01",
+    "avg_cost": 53
+  },
+  {
+    "part_code": "91053-KWB-601",
+    "avg_cost": 53
+  },
+  {
+    "part_code": "06410-KSP-900",
+    "avg_cost": 54
+  },
+  {
+    "part_code": "14670-KWB-600",
+    "avg_cost": 55
+  },
+  {
+    "part_code": "22131-KVB-900",
+    "avg_cost": 55
+  },
+  {
+    "part_code": "06410-KFL-850",
+    "avg_cost": 56
+  },
+  {
+    "part_code": "40543-KPG-T00",
+    "avg_cost": 56
+  },
+  {
+    "part_code": "14711-KWB-600",
+    "avg_cost": 57
+  },
+  {
+    "part_code": "35160-KVB-851",
+    "avg_cost": 57
+  },
+  {
+    "part_code": "40543-K26-900",
+    "avg_cost": 57
+  },
+  {
+    "part_code": "53140-KPH-970",
+    "avg_cost": 57
+  },
+  {
+    "part_code": "91303-377-000",
+    "avg_cost": 57
+  },
+  {
+    "part_code": "98059-57916",
+    "avg_cost": 57
+  },
+  {
+    "part_code": "22105-KVY-900",
+    "avg_cost": 58
+  },
+  {
+    "part_code": "22105-KZL-C00",
+    "avg_cost": 58
+  },
+  {
+    "part_code": "31918-K97-T01",
+    "avg_cost": 58
+  },
+  {
+    "part_code": "35170-K46-N01",
+    "avg_cost": 58
+  },
+  {
+    "part_code": "91004-KCW-880",
+    "avg_cost": 58
+  },
+  {
+    "part_code": "APSTDPTS01ZZ",
+    "avg_cost": 58
+  },
+  {
+    "part_code": "06410-KEA-750",
+    "avg_cost": 59
+  },
+  {
+    "part_code": "22105-K44-V00",
+    "avg_cost": 59
+  },
+  {
+    "part_code": "50530-KWW-640",
+    "avg_cost": 59
+  },
+  {
+    "part_code": "50530-KYZ-900",
+    "avg_cost": 60
+  },
+  {
+    "part_code": "22131-KVY-900",
+    "avg_cost": 61
+  },
+  {
+    "part_code": "53140-K35-V00",
+    "avg_cost": 61
+  },
+  {
+    "part_code": "53140-K97-T00",
+    "avg_cost": 61
+  },
+  {
+    "part_code": "14711-K1M-T00",
+    "avg_cost": 62
+  },
+  {
+    "part_code": "22102-K0J-N00",
+    "avg_cost": 62
+  },
+  {
+    "part_code": "35180-KVB-851",
+    "avg_cost": 62
+  },
+  {
+    "part_code": "15410-KYJ-902",
+    "avg_cost": 63
+  },
+  {
+    "part_code": "22102-K44-V00",
+    "avg_cost": 63
+  },
+  {
+    "part_code": "31916-KRM-841",
+    "avg_cost": 63
+  },
+  {
+    "part_code": "31916-KWB-601",
+    "avg_cost": 63
+  },
+  {
+    "part_code": "31917-KPH-901",
+    "avg_cost": 63
+  },
+  {
+    "part_code": "44830-KWW-640",
+    "avg_cost": 63
+  },
+  {
+    "part_code": "22105-KVB-900",
+    "avg_cost": 64
+  },
+  {
+    "part_code": "23801-KBP-900",
+    "avg_cost": 64
+  },
+  {
+    "part_code": "44830-KVB-900",
+    "avg_cost": 64
+  },
+  {
+    "part_code": "06530-GBG-B20",
+    "avg_cost": 65
+  },
+  {
+    "part_code": "14711-KWN-900",
+    "avg_cost": 65
+  },
+  {
+    "part_code": "22113-KVY-900",
+    "avg_cost": 65
+  },
+  {
+    "part_code": "35200-K03-N31",
+    "avg_cost": 65
+  },
+  {
+    "part_code": "35200-KYZ-901",
+    "avg_cost": 65
+  },
+  {
+    "part_code": "53175-KWW-660",
+    "avg_cost": 66
+  },
+  {
+    "part_code": "APCHMD500MLX",
+    "avg_cost": 66
+  },
+  {
+    "part_code": "APCHMD800ML6",
+    "avg_cost": 66
+  },
+  {
+    "part_code": "14711-KZY-700",
+    "avg_cost": 67
+  },
+  {
+    "part_code": "17210-KWW-640",
+    "avg_cost": 67
+  },
+  {
+    "part_code": "22105-K0J-N00",
+    "avg_cost": 67
+  },
+  {
+    "part_code": "44800-KWW-650",
+    "avg_cost": 67
+  },
+  {
+    "part_code": "53178-KVB-900",
+    "avg_cost": 67
+  },
+  {
+    "part_code": "22105-K1N-V00",
+    "avg_cost": 68
+  },
+  {
+    "part_code": "17210-KVB-T00",
+    "avg_cost": 69
+  },
+  {
+    "part_code": "17210-KYT-900",
+    "avg_cost": 69
+  },
+  {
+    "part_code": "22102-KZR-600",
+    "avg_cost": 69
+  },
+  {
+    "part_code": "44830-K20-901",
+    "avg_cost": 69
+  },
+  {
+    "part_code": "53175-KWW-600",
+    "avg_cost": 69
+  },
+  {
+    "part_code": "17210-K73-V40",
+    "avg_cost": 70
+  },
+  {
+    "part_code": "17210-KYZ-V00",
+    "avg_cost": 70
+  },
+  {
+    "part_code": "44830-K16-940",
+    "avg_cost": 70
+  },
+  {
+    "part_code": "53178-KWN-930",
+    "avg_cost": 71
+  },
+  {
+    "part_code": "88210-KVB-900",
+    "avg_cost": 71
+  },
+  {
+    "part_code": "88220-KVB-900",
+    "avg_cost": 71
+  },
+  {
+    "part_code": "14721-K1M-T00",
+    "avg_cost": 73
+  },
+  {
+    "part_code": "22105-KWN-900",
+    "avg_cost": 73
+  },
+  {
+    "part_code": "53178-K0J-N00",
+    "avg_cost": 73
+  },
+  {
+    "part_code": "53212-GN5-900",
+    "avg_cost": 73
+  },
+  {
+    "part_code": "88210-K20-902",
+    "avg_cost": 73
+  },
+  {
+    "part_code": "17210-KVB-930",
+    "avg_cost": 74
+  },
+  {
+    "part_code": "14721-K81-N00",
+    "avg_cost": 75
+  },
+  {
+    "part_code": "17210-KFL-850",
+    "avg_cost": 75
+  },
+  {
+    "part_code": "22102-K2S-N00",
+    "avg_cost": 75
+  },
+  {
+    "part_code": "31917-KWB-601",
+    "avg_cost": 75
+  },
+  {
+    "part_code": "53140-KYJ-900",
+    "avg_cost": 75
+  },
+  {
+    "part_code": "16707-KVG-V41",
+    "avg_cost": 76
+  },
+  {
+    "part_code": "31916-MCG-601",
+    "avg_cost": 76
+  },
+  {
+    "part_code": "06430-KPH-900",
+    "avg_cost": 77
+  },
+  {
+    "part_code": "17210-K1M-T00",
+    "avg_cost": 77
+  },
+  {
+    "part_code": "22102-KWN-900",
+    "avg_cost": 77
+  },
+  {
+    "part_code": "53178-KYT-900",
+    "avg_cost": 77
+  },
+  {
+    "part_code": "53178-K81-N30",
+    "avg_cost": 78
+  },
+  {
+    "part_code": "88210-K03-H33",
+    "avg_cost": 78
+  },
+  {
+    "part_code": "88220-K03-H33",
+    "avg_cost": 78
+  },
+  {
+    "part_code": "16707-KVB-S51",
+    "avg_cost": 79
+  },
+  {
+    "part_code": "53178-KYT-920",
+    "avg_cost": 79
+  },
+  {
+    "part_code": "06531-GBG-B20",
+    "avg_cost": 80
+  },
+  {
+    "part_code": "44830-KYT-900",
+    "avg_cost": 80
+  },
+  {
+    "part_code": "53175-K1M-T00",
+    "avg_cost": 80
+  },
+  {
+    "part_code": "22102-K1Z-J10",
+    "avg_cost": 81
+  },
+  {
+    "part_code": "88210-KTL-740",
+    "avg_cost": 81
+  },
+  {
+    "part_code": "88220-KTL-740",
+    "avg_cost": 81
+  },
+  {
+    "part_code": "90543-MV9-670",
+    "avg_cost": 81
+  },
+  {
+    "part_code": "16707-KZR-601",
+    "avg_cost": 83
+  },
+  {
+    "part_code": "17210-K16-900",
+    "avg_cost": 83
+  },
+  {
+    "part_code": "17210-K26-900",
+    "avg_cost": 83
+  },
+  {
+    "part_code": "17210-K2F-T00",
+    "avg_cost": 83
+  },
+  {
+    "part_code": "17210-KPH-900",
+    "avg_cost": 83
+  },
+  {
+    "part_code": "22102-K35-V00",
+    "avg_cost": 83
+  },
+  {
+    "part_code": "22102-K97-T01",
+    "avg_cost": 83
+  },
+  {
+    "part_code": "30700-KZL-A01",
+    "avg_cost": 84
+  },
+  {
+    "part_code": "30700-KZR-601",
+    "avg_cost": 84
+  },
+  {
+    "part_code": "53102-K97-T00",
+    "avg_cost": 84
+  },
+  {
+    "part_code": "08233-2MAK8LT1",
+    "avg_cost": 85
+  },
+  {
+    "part_code": "08233-2MBK1LT1",
+    "avg_cost": 85
+  },
+  {
+    "part_code": "14711-KPH-900",
+    "avg_cost": 85
+  },
+  {
+    "part_code": "88220-K60-T01",
+    "avg_cost": 85
+  },
+  {
+    "part_code": "08233-2MAK9LT1",
+    "avg_cost": 86
+  },
+  {
+    "part_code": "14500-KYZ-900",
+    "avg_cost": 86
+  },
+  {
+    "part_code": "17210-KWN-900",
+    "avg_cost": 86
+  },
+  {
+    "part_code": "51490-KGH-901",
+    "avg_cost": 86
+  },
+  {
+    "part_code": "50301-GN5-901",
+    "avg_cost": 87
+  },
+  {
+    "part_code": "88210-KWN-900",
+    "avg_cost": 87
+  },
+  {
+    "part_code": "88220-KWN-900",
+    "avg_cost": 87
+  },
+  {
+    "part_code": "88210-KZR-701",
+    "avg_cost": 88
+  },
+  {
+    "part_code": "88220-KZR-701",
+    "avg_cost": 88
+  },
+  {
+    "part_code": "23801-KYJ-901",
+    "avg_cost": 89
+  },
+  {
+    "part_code": "44800-KVB-910",
+    "avg_cost": 89
+  },
+  {
+    "part_code": "53178-K59-A10",
+    "avg_cost": 89
+  },
+  {
+    "part_code": "50302-GN5-900",
+    "avg_cost": 90
+  },
+  {
+    "part_code": "53211-GN5-900",
+    "avg_cost": 90
+  },
+  {
+    "part_code": "88210-K60-T01",
+    "avg_cost": 90
+  },
+  {
+    "part_code": "22105-K0R-V00",
+    "avg_cost": 91
+  },
+  {
+    "part_code": "88210-K26-901",
+    "avg_cost": 91
+  },
+  {
+    "part_code": "22105-K97-T00",
+    "avg_cost": 92
+  },
+  {
+    "part_code": "14502-086-000",
+    "avg_cost": 93
+  },
+  {
+    "part_code": "14711-K81-N00",
+    "avg_cost": 93
+  },
+  {
+    "part_code": "30700-KPH-901",
+    "avg_cost": 93
+  },
+  {
+    "part_code": "14401-KYZ-T01",
+    "avg_cost": 94
+  },
+  {
+    "part_code": "30700-KYZ-901",
+    "avg_cost": 94
+  },
+  {
+    "part_code": "08233-2MBK9LT3",
+    "avg_cost": 95
+  },
+  {
+    "part_code": "13031-KWW-740",
+    "avg_cost": 95
+  },
+  {
+    "part_code": "13051-KWW-740",
+    "avg_cost": 95
+  },
+  {
+    "part_code": "51490-KRM-852",
+    "avg_cost": 95
+  },
+  {
+    "part_code": "17210-KZR-600",
+    "avg_cost": 96
+  },
+  {
+    "part_code": "24701-KWW-621",
+    "avg_cost": 96
+  },
+  {
+    "part_code": "17210-K59-A70",
+    "avg_cost": 97
+  },
+  {
+    "part_code": "53178-K35-V00",
+    "avg_cost": 97
+  },
+  {
+    "part_code": "53178-KVG-A20",
+    "avg_cost": 97
+  },
+  {
+    "part_code": "14711-KVY-900",
+    "avg_cost": 98
+  },
+  {
+    "part_code": "31917-KWP-D01",
+    "avg_cost": 100
+  },
+  {
+    "part_code": "31918-K44-V01",
+    "avg_cost": 100
+  },
+  {
+    "part_code": "53175-K59-A71",
+    "avg_cost": 100
+  },
+  {
+    "part_code": "53175-KYZ-T00",
+    "avg_cost": 101
+  },
+  {
+    "part_code": "53178-KVB-930",
+    "avg_cost": 101
+  },
+  {
+    "part_code": "22011-K1N-V01",
+    "avg_cost": 102
+  },
+  {
+    "part_code": "22123-KYT-900",
+    "avg_cost": 102
+  },
+  {
+    "part_code": "53175-K26-901",
+    "avg_cost": 102
+  },
+  {
+    "part_code": "53175-K81-N31",
+    "avg_cost": 102
+  },
+  {
+    "part_code": "53178-K2S-N00",
+    "avg_cost": 102
+  },
+  {
+    "part_code": "88210-KWW-640",
+    "avg_cost": 102
+  },
+  {
+    "part_code": "88220-KWW-640",
+    "avg_cost": 102
+  },
+  {
+    "part_code": "14401-KWB-601",
+    "avg_cost": 103
+  },
+  {
+    "part_code": "41201-K58-T81",
+    "avg_cost": 103
+  },
+  {
+    "part_code": "17210-K1Z-T00",
+    "avg_cost": 104
+  },
+  {
+    "part_code": "17210-K36-T00",
+    "avg_cost": 104
+  },
+  {
+    "part_code": "17210-K3M-T00",
+    "avg_cost": 104
+  },
+  {
+    "part_code": "17210-K97-T00",
+    "avg_cost": 104
+  },
+  {
+    "part_code": "53175-KVB-921",
+    "avg_cost": 104
+  },
+  {
+    "part_code": "53178-KVB-920",
+    "avg_cost": 104
+  },
+  {
+    "part_code": "91001-KCW-003",
+    "avg_cost": 104
+  },
+  {
+    "part_code": "13011-KWW-740",
+    "avg_cost": 105
+  },
+  {
+    "part_code": "13041-KWW-740",
+    "avg_cost": 105
+  },
+  {
+    "part_code": "53175-KVG-A21",
+    "avg_cost": 105
+  },
+  {
+    "part_code": "45530-KVS-M21",
+    "avg_cost": 107
+  },
+  {
+    "part_code": "45530-KVY-911",
+    "avg_cost": 107
+  },
+  {
+    "part_code": "08233-2MAK1LT3",
+    "avg_cost": 108
+  },
+  {
+    "part_code": "30700-KWW-641",
+    "avg_cost": 108
+  },
+  {
+    "part_code": "13032-KYZ-900",
+    "avg_cost": 109
+  },
+  {
+    "part_code": "53175-KWN-901",
+    "avg_cost": 109
+  },
+  {
+    "part_code": "53175-KYT-922",
+    "avg_cost": 109
+  },
+  {
+    "part_code": "88210-K97-T00",
+    "avg_cost": 111
+  },
+  {
+    "part_code": "17620-K20-901",
+    "avg_cost": 113
+  },
+  {
+    "part_code": "53175-KVB-910",
+    "avg_cost": 113
+  },
+  {
+    "part_code": "13052-KYZ-900",
+    "avg_cost": 114
+  },
+  {
+    "part_code": "17210-K04-930",
+    "avg_cost": 114
+  },
+  {
+    "part_code": "06455-KWB-601",
+    "avg_cost": 118
+  },
+  {
+    "part_code": "23801-K26-900",
+    "avg_cost": 118
+  },
+  {
+    "part_code": "23801-K26-G00",
+    "avg_cost": 118
+  },
+  {
+    "part_code": "53175-KVB-930",
+    "avg_cost": 119
+  },
+  {
+    "part_code": "88220-K97-T00",
+    "avg_cost": 119
+  },
+  {
+    "part_code": "13031-KWN-900",
+    "avg_cost": 120
+  },
+  {
+    "part_code": "22110-KZR-601",
+    "avg_cost": 122
+  },
+  {
+    "part_code": "13012-KYZ-900",
+    "avg_cost": 123
+  },
+  {
+    "part_code": "22123-K1N-V00",
+    "avg_cost": 124
+  },
+  {
+    "part_code": "40530-GGJ-741",
+    "avg_cost": 124
+  },
+  {
+    "part_code": "40530-K73-T71",
+    "avg_cost": 124
+  },
+  {
+    "part_code": "14721-KVB-T00",
+    "avg_cost": 125
+  },
+  {
+    "part_code": "17210-K0B-T00",
+    "avg_cost": 125
+  },
+  {
+    "part_code": "913076-39000",
+    "avg_cost": 125
+  },
+  {
+    "part_code": "53178-K0W-N01",
+    "avg_cost": 126
+  },
+  {
+    "part_code": "53175-K04-931",
+    "avg_cost": 127
+  },
+  {
+    "part_code": "53178-K04-931",
+    "avg_cost": 127
+  },
+  {
+    "part_code": "40530-K26-901",
+    "avg_cost": 130
+  },
+  {
+    "part_code": "40530-K58-T81",
+    "avg_cost": 131
+  },
+  {
+    "part_code": "22123-K0S-V00",
+    "avg_cost": 132
+  },
+  {
+    "part_code": "22131-K40-F00",
+    "avg_cost": 132
+  },
+  {
+    "part_code": "06455-K46-N21",
+    "avg_cost": 133
+  },
+  {
+    "part_code": "22123-KWN-640",
+    "avg_cost": 134
+  },
+  {
+    "part_code": "22123-KWN-780",
+    "avg_cost": 134
+  },
+  {
+    "part_code": "22131-KWN-900",
+    "avg_cost": 135
+  },
+  {
+    "part_code": "40530-K76-T61",
+    "avg_cost": 136
+  },
+  {
+    "part_code": "40530-KWB-601",
+    "avg_cost": 136
+  },
+  {
+    "part_code": "08234-2MBK8LT3",
+    "avg_cost": 137
+  },
+  {
+    "part_code": "22123-KWN-900",
+    "avg_cost": 137
+  },
+  {
+    "part_code": "14721-KPH-880",
+    "avg_cost": 139
+  },
+  {
+    "part_code": "16707-KWN-711",
+    "avg_cost": 140
+  },
+  {
+    "part_code": "22110-K0J-N00",
+    "avg_cost": 142
+  },
+  {
+    "part_code": "40530-K26-G01",
+    "avg_cost": 143
+  },
+  {
+    "part_code": "22110-K44-V00",
+    "avg_cost": 144
+  },
+  {
+    "part_code": "22123-K36-T00",
+    "avg_cost": 144
+  },
+  {
+    "part_code": "34901-KZL-841",
+    "avg_cost": 144
+  },
+  {
+    "part_code": "41201-KWW-621",
+    "avg_cost": 147
+  },
+  {
+    "part_code": "14721-KVY-900",
+    "avg_cost": 148
+  },
+  {
+    "part_code": "22011-K04-930",
+    "avg_cost": 149
+  },
+  {
+    "part_code": "14721-KWN-900",
+    "avg_cost": 150
+  },
+  {
+    "part_code": "22110-GFM-960",
+    "avg_cost": 150
+  },
+  {
+    "part_code": "14721-KZY-700",
+    "avg_cost": 152
+  },
+  {
+    "part_code": "17210-K1B-U10",
+    "avg_cost": 154
+  },
+  {
+    "part_code": "40530-KPH-902",
+    "avg_cost": 154
+  },
+  {
+    "part_code": "22123-KVB-T00",
+    "avg_cost": 156
+  },
+  {
+    "part_code": "22110-K35-V00",
+    "avg_cost": 158
+  },
+  {
+    "part_code": "22123-K0J-N00",
+    "avg_cost": 158
+  },
+  {
+    "part_code": "22123-K44-V00",
+    "avg_cost": 161
+  },
+  {
+    "part_code": "06455-KPH-952",
+    "avg_cost": 164
+  },
+  {
+    "part_code": "46500-KWW-C00",
+    "avg_cost": 164
+  },
+  {
+    "part_code": "22123-KVB-900",
+    "avg_cost": 166
+  },
+  {
+    "part_code": "41201-K73-T60",
+    "avg_cost": 167
+  },
+  {
+    "part_code": "41201-KYZ-901",
+    "avg_cost": 167
+  },
+  {
+    "part_code": "22102-KZL-930",
+    "avg_cost": 168
+  },
+  {
+    "part_code": "08234-2MAL1LT3",
+    "avg_cost": 171
+  },
+  {
+    "part_code": "06430-KVB-900",
+    "avg_cost": 172
+  },
+  {
+    "part_code": "16707-K35-V01",
+    "avg_cost": 175
+  },
+  {
+    "part_code": "22110-K97-T00",
+    "avg_cost": 175
+  },
+  {
+    "part_code": "13103-KYZ-900",
+    "avg_cost": 177
+  },
+  {
+    "part_code": "41201-K1M-T02",
+    "avg_cost": 179
+  },
+  {
+    "part_code": "22110-KVY-900",
+    "avg_cost": 180
+  },
+  {
+    "part_code": "13031-KPH-900",
+    "avg_cost": 182
+  },
+  {
+    "part_code": "22110-KZY-701",
+    "avg_cost": 183
+  },
+  {
+    "part_code": "06451-KZZ-902",
+    "avg_cost": 184
+  },
+  {
+    "part_code": "22110-K36-A00",
+    "avg_cost": 184
+  },
+  {
+    "part_code": "13105-KYZ-900",
+    "avg_cost": 186
+  },
+  {
+    "part_code": "06455-K59-A71",
+    "avg_cost": 187
+  },
+  {
+    "part_code": "13101-KYZ-900",
+    "avg_cost": 190
+  },
+  {
+    "part_code": "13105-K03-H10",
+    "avg_cost": 192
+  },
+  {
+    "part_code": "41201-KWW-651",
+    "avg_cost": 192
+  },
+  {
+    "part_code": "53178-KV0-000",
+    "avg_cost": 192
+  },
+  {
+    "part_code": "16707-KZV-T01",
+    "avg_cost": 195
+  },
+  {
+    "part_code": "13101-K03-H10",
+    "avg_cost": 196
+  },
+  {
+    "part_code": "13103-K03-H10",
+    "avg_cost": 196
+  },
+  {
+    "part_code": "22110-KWN-900",
+    "avg_cost": 196
+  },
+  {
+    "part_code": "13103-KWW-740",
+    "avg_cost": 199
+  },
+  {
+    "part_code": "35200-K35-V01",
+    "avg_cost": 205
+  },
+  {
+    "part_code": "35200-K35-V02",
+    "avg_cost": 205
+  },
+  {
+    "part_code": "41201-KWB-601",
+    "avg_cost": 208
+  },
+  {
+    "part_code": "22123-K97-B00",
+    "avg_cost": 209
+  },
+  {
+    "part_code": "13101-KWW-740",
+    "avg_cost": 217
+  },
+  {
+    "part_code": "13105-KWW-740",
+    "avg_cost": 217
+  },
+  {
+    "part_code": "23100-K0J-N01",
+    "avg_cost": 220
+  },
+  {
+    "part_code": "06430-KWN-900",
+    "avg_cost": 222
+  },
+  {
+    "part_code": "22110-KVB-900",
+    "avg_cost": 222
+  },
+  {
+    "part_code": "40530-KPP-T02",
+    "avg_cost": 223
+  },
+  {
+    "part_code": "23100-KVB-901",
+    "avg_cost": 225
+  },
+  {
+    "part_code": "23100-K35-V01",
+    "avg_cost": 227
+  },
+  {
+    "part_code": "23100-K44-V01",
+    "avg_cost": 227
+  },
+  {
+    "part_code": "06455-K94-T01",
+    "avg_cost": 234
+  },
+  {
+    "part_code": "22110-K1Z-J10",
+    "avg_cost": 236
+  },
+  {
+    "part_code": "23100-KYT-901",
+    "avg_cost": 240
+  },
+  {
+    "part_code": "31917-K0R-V01",
+    "avg_cost": 241
+  },
+  {
+    "part_code": "23100-K2F-T01",
+    "avg_cost": 243
+  },
+  {
+    "part_code": "06435-KPP-T01",
+    "avg_cost": 249
+  },
+  {
+    "part_code": "06435-KRE-G32",
+    "avg_cost": 249
+  },
+  {
+    "part_code": "06435-KSP-B02",
+    "avg_cost": 249
+  },
+  {
+    "part_code": "06455-K84-902",
+    "avg_cost": 249
+  },
+  {
+    "part_code": "H0640-KPH-900",
+    "avg_cost": 251
+  },
+  {
+    "part_code": "06455-KPP-N02",
+    "avg_cost": 252
+  },
+  {
+    "part_code": "41200-K26-901",
+    "avg_cost": 252
+  },
+  {
+    "part_code": "41200-K26-G01",
+    "avg_cost": 252
+  },
+  {
+    "part_code": "06455-KZL-932",
+    "avg_cost": 257
+  },
+  {
+    "part_code": "22102-KVY-900",
+    "avg_cost": 257
+  },
+  {
+    "part_code": "06435-KZZ-902",
+    "avg_cost": 260
+  },
+  {
+    "part_code": "06455-KRE-K02",
+    "avg_cost": 265
+  },
+  {
+    "part_code": "22100-K0J-N01",
+    "avg_cost": 270
+  },
+  {
+    "part_code": "22100-KWN-900",
+    "avg_cost": 273
+  },
+  {
+    "part_code": "23100-K2S-N01",
+    "avg_cost": 274
+  },
+  {
+    "part_code": "23100-KZL-931",
+    "avg_cost": 274
+  },
+  {
+    "part_code": "23100-KZR-601",
+    "avg_cost": 274
+  },
+  {
+    "part_code": "16707-KWW-641",
+    "avg_cost": 278
+  },
+  {
+    "part_code": "16450-KVB-S51",
+    "avg_cost": 284
+  },
+  {
+    "part_code": "23100-KWN-901",
+    "avg_cost": 289
+  },
+  {
+    "part_code": "23100-K1Z-J11",
+    "avg_cost": 292
+  },
+  {
+    "part_code": "23100-K36-J01",
+    "avg_cost": 292
+  },
+  {
+    "part_code": "23100-K97-T01",
+    "avg_cost": 292
+  },
+  {
+    "part_code": "23100-KZY-701",
+    "avg_cost": 292
+  },
+  {
+    "part_code": "06435-K26-901",
+    "avg_cost": 294
+  },
+  {
+    "part_code": "06455-KYJ-902",
+    "avg_cost": 312
+  },
+  {
+    "part_code": "41200-KPP-900",
+    "avg_cost": 312
+  },
+  {
+    "part_code": "41200-K0A-E10",
+    "avg_cost": 320
+  },
+  {
+    "part_code": "41200-K94-T01",
+    "avg_cost": 324
+  },
+  {
+    "part_code": "41200-KPP-T00",
+    "avg_cost": 324
+  },
+  {
+    "part_code": "41201-K33-D00",
+    "avg_cost": 327
+  },
+  {
+    "part_code": "41201-KYJ-900",
+    "avg_cost": 327
+  },
+  {
+    "part_code": "16450-K60-T71",
+    "avg_cost": 331
+  },
+  {
+    "part_code": "06435-KYJ-902",
+    "avg_cost": 340
+  },
+  {
+    "part_code": "22535-K35-V00",
+    "avg_cost": 343
+  },
+  {
+    "part_code": "16450-K35-V01",
+    "avg_cost": 353
+  },
+  {
+    "part_code": "16450-KZR-601",
+    "avg_cost": 363
+  },
+  {
+    "part_code": "16450-K0S-V01",
+    "avg_cost": 369
+  },
+  {
+    "part_code": "06435-K04-702",
+    "avg_cost": 370
+  },
+  {
+    "part_code": "16450-K36-J01",
+    "avg_cost": 374
+  },
+  {
+    "part_code": "06435-K97-N01",
+    "avg_cost": 381
+  },
+  {
+    "part_code": "15410-MFJ-D02",
+    "avg_cost": 382
+  },
+  {
+    "part_code": "06435-K0B-T01",
+    "avg_cost": 388
+  },
+  {
+    "part_code": "06455-K31-902",
+    "avg_cost": 398
+  },
+  {
+    "part_code": "40530-K45-N41",
+    "avg_cost": 427
+  },
+  {
+    "part_code": "22535-KWN-900",
+    "avg_cost": 434
+  },
+  {
+    "part_code": "33110-KWW-601",
+    "avg_cost": 443
+  },
+  {
+    "part_code": "16450-K76-T61",
+    "avg_cost": 446
+  },
+  {
+    "part_code": "16450-K03-H11",
+    "avg_cost": 453
+  },
+  {
+    "part_code": "16450-KSS-B31",
+    "avg_cost": 460
+  },
+  {
+    "part_code": "22110-K2S-N00",
+    "avg_cost": 476
+  },
+  {
+    "part_code": "16450-KVB-T01",
+    "avg_cost": 490
+  },
+  {
+    "part_code": "22102-KVB-901",
+    "avg_cost": 508
+  },
+  {
+    "part_code": "41200-K45-NA0",
+    "avg_cost": 535
+  },
+  {
+    "part_code": "22535-K12-V00",
+    "avg_cost": 600
+  },
+  {
+    "part_code": "22535-K81-N00",
+    "avg_cost": 683
+  },
+  {
+    "part_code": "06455-KYJ-912",
+    "avg_cost": 791
+  },
+  {
+    "part_code": "22535-KZL-A00",
+    "avg_cost": 802
+  },
+  {
+    "part_code": "23100-K04-932",
+    "avg_cost": 837
+  },
+  {
+    "part_code": "40540-KYJ-902",
+    "avg_cost": 849
+  },
+  {
+    "part_code": "23100-K1B-T02",
+    "avg_cost": 864
+  },
+  {
+    "part_code": "06455-K33-D52",
+    "avg_cost": 905
+  },
+  {
+    "part_code": "40530-KPP-901",
+    "avg_cost": 1061
+  },
+  {
+    "part_code": "16700-KWW-641",
+    "avg_cost": 1244
+  },
+  {
+    "part_code": "16700-KWW-603",
+    "avg_cost": 1333
+  },
+  {
+    "part_code": "06451-961-405",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "06451-GE2-405",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "06451-MA7-405",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "06451-MZ2-405",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "12391-KWW-600",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "13031-K36-T00",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "13042-KYZ-900",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "13103-KWB-305",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "14500-KWB-600",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "14721-KVB-900",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "15412-MGS-D21",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "15421-KSP-910",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "16700-H03-H01",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "41201-K76-T60",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "50710-K20-900",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "50711-KBP-900",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "50712-KBP-900",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "50714-KBA-930",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "50715-KE8-000",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "53178-KRS-780",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "88210-K26-900",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "88210-K26-C21",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "90131-883-000",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "91301-KPH-701",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "91301-PH8-005",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "94201-16150",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "95015-81000",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "APCHMB520ML4",
+    "avg_cost": 0
+  },
+  {
+    "part_code": "APCHMC400ML1",
+    "avg_cost": 0
+  }
+]

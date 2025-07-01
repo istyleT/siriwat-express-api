@@ -9,7 +9,6 @@ var xss = require("xss-clean");
 var hpp = require("hpp");
 var morgan = require("morgan");
 var cors = require("cors");
-const cron = require("node-cron");
 const globalErrorHandler = require("./controllers/errorController");
 const usersRouter = require("./routes/userRoutes");
 const cookieParser = require("cookie-parser");
