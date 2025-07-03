@@ -180,9 +180,10 @@ exports.separatePartSet = catchAsync(async (req, res, next) => {
 
 exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // console.log("This is setToCreateWork");
-  const { shop, sku_data } = req.body;
+  const { shop, sku_data, station } = req.body;
 
-  if (!shop || !sku_data || !Array.isArray(sku_data)) {
+  //ในการ upload 1 ครั้งจะมีค่าข้อมูล shop, station เพียง 1 ค่าเท่านั้น
+  if (!shop || !station || !sku_data || !Array.isArray(sku_data)) {
     return res.status(400).json({
       status: "fail",
       message: "ข้อมูลไม่ครบถ้วน",
@@ -201,6 +202,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
         order_date,
         order_no,
         shop,
+        station,
         parts_data: [],
       };
     }
@@ -279,17 +281,19 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 
   // console.dir(workDocuments, { depth: null });
 
-  //✅ 3.3 ตรวจสอบการจองอะไหล่ และอัปเดต reserve_qty ตามลำดับ
-  for (let i = 0; i < workDocuments.length; i++) {
-    const doc = workDocuments[i];
+  //✅ 3.3 ถ้าค่า station เป็น RM ตรวจสอบการจองอะไหล่ และอัปเดต reserve_qty ตามลำดับ
+  if (station === "RM") {
+    for (let i = 0; i < workDocuments.length; i++) {
+      const doc = workDocuments[i];
 
-    try {
-      await Skinventory.validateMockQtyUpdate("decrease", doc.parts_data);
-      doc.station = "RM";
-      await Skinventory.updateMockQty("decrease", doc.parts_data);
-    } catch (err) {
-      doc.station = "RSM";
-      // ไม่ต้อง throw error เพราะแค่เปลี่ยนสถานะ แล้วปล่อยผ่าน
+      try {
+        await Skinventory.validateMockQtyUpdate("decrease", doc.parts_data);
+        doc.station = "RM";
+        await Skinventory.updateMockQty("decrease", doc.parts_data);
+      } catch (err) {
+        doc.station = "RSM";
+        // ไม่ต้อง throw error เพราะแค่เปลี่ยนสถานะ แล้วปล่อยผ่าน
+      }
     }
   }
 
