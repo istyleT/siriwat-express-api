@@ -216,6 +216,60 @@ const findDuplicateTrackingCodes = async () => {
   }
 };
 
+//function ที่ใส่ค่า Array ของ tracking_code เข้าไปแล้วจะได้ค่าของ Array _id ออกมา
+const getPkworkIdsByTrackingCodes = async (trackingCodes) => {
+  try {
+    const ids = await Pkwork.find({ tracking_code: { $in: trackingCodes } })
+      .select("_id")
+      .lean();
+
+    const idArray = ids.map((doc) => doc._id.toString());
+
+    console.log(idArray);
+    return idArray;
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการดึง _id:", error);
+  } finally {
+    if (process.argv.includes("--getPkworkIdsByTrackingCodes")) {
+      process.exit();
+    }
+  }
+};
+
+const updateCancelledPkworkToComplete = async (ids) => {
+  try {
+    for (const id of ids) {
+      // ตรวจสอบว่า id เป็น ObjectId ที่ valid
+      // if (!mongoose.Types.ObjectId.isValid(id)) {
+      //   console.warn(`❌ _id ไม่ถูกต้อง: ${id}`);
+      //   continue;
+      // }
+
+      // ค้นหาเอกสารที่ status: "ยกเลิก"
+      const pk = await Pkwork.findOne({ _id: id, status: "ยกเลิก" });
+
+      if (!pk) {
+        console.log(`⏩ ไม่พบ หรือไม่อยู่ในสถานะ 'ยกเลิก': ${id}`);
+        continue;
+      }
+
+      // อัปเดตค่า
+      pk.status = "เสร็จสิ้น";
+      pk.cancel_status = "-";
+      pk.cancel_success_at = null;
+
+      await pk.save();
+      console.log(`✅ อัปเดตสำเร็จ: ${id}`);
+    }
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาด:", error);
+  } finally {
+    if (process.argv.includes("--updateCancelledPkworkToComplete")) {
+      process.exit();
+    }
+  }
+};
+
 //command in terminal
 if (process.argv[2] === "--updateQtyDeliverToOrder") {
   const orderId = "671614eb4b2c4bd6a37f093e";
@@ -234,7 +288,105 @@ if (process.argv[2] === "--findDuplicateTrackingCodes") {
 if (process.argv[2] === "--checkOrderNumbersInPkwork") {
   checkOrderNumbersInPkwork();
 }
+if (process.argv[2] === "--getPkworkIdsByTrackingCodes") {
+  const trackingCodes = [
+    "TH67017D4CCD1F",
+    "TH67017D4CCD1F",
+    "TH67017D4CCD1F",
+    "TH67017D4CCD1F",
+  ];
+  getPkworkIdsByTrackingCodes(trackingCodes);
+}
+
+if (process.argv[2] === "--updateCancelledPkworkToComplete") {
+  const ids = [
+    "685df13bc8ad4a759612807f",
+    "6858aa7119f05f86a9537c8a",
+    "685df13bc8ad4a7596128082",
+    "685c9e4e1911ac55a267d178",
+    "6858aa7119f05f86a9537c68",
+    "6858aa7119f05f86a9537c57",
+    "6858aa7119f05f86a9537c7a",
+    "6859fbe72461dfb852144cdc",
+    "685c9e4e1911ac55a267d1a8",
+    "6858aa7119f05f86a9537c5f",
+    "6858aa7119f05f86a9537c4d",
+    "6858aa7119f05f86a9537c69",
+    "6859fbe72461dfb852144cda",
+    "685c9e4e1911ac55a267d17f",
+    "685c9e4e1911ac55a267d1b5",
+    "6858aa7119f05f86a9537c89",
+    "6858aa7119f05f86a9537c56",
+    "685c9e4e1911ac55a267d186",
+    "6858aa7119f05f86a9537c92",
+    "6858aa7119f05f86a9537cb6",
+    "6858aa7119f05f86a9537c71",
+    "6858aa7119f05f86a9537c42",
+    "685c9e4e1911ac55a267d1c9",
+    "6859fbe72461dfb852144ca2",
+    "685c9e4e1911ac55a267d17d",
+    "6858aa7119f05f86a9537c6e",
+    "685c9e4e1911ac55a267d1bd",
+    "685c9e4e1911ac55a267d182",
+    "685c9e4e1911ac55a267d185",
+    "685b4dc2ecb743895ef57524",
+    "6858aa7119f05f86a9537c8e",
+    "6859fbe72461dfb852144cc7",
+    "685df13bc8ad4a7596128099",
+    "685df13bc8ad4a7596128097",
+    "685df13bc8ad4a759612808a",
+    "685df13bc8ad4a759612807a",
+    "685df13bc8ad4a7596128096",
+    "685df13bc8ad4a75961280c9",
+    "685df13bc8ad4a75961280aa",
+    "685df13bc8ad4a75961280be",
+    "685df13bc8ad4a75961280a8",
+    "685c9e4e1911ac55a267d192",
+    "685c9e4e1911ac55a267d1cc",
+    "6859fbe72461dfb852144cd6",
+    "685df13bc8ad4a75961280a6",
+    "685df13bc8ad4a7596128087",
+    "685df13bc8ad4a75961280bd",
+    "685df13bc8ad4a75961280bc",
+    "685df13bc8ad4a75961280bb",
+    "685df13bc8ad4a75961280c6",
+    "6858aa7119f05f86a9537cb9",
+    "685df13bc8ad4a759612808c",
+    "6859fbe72461dfb852144ce6",
+    "685c9e4e1911ac55a267d1aa",
+    "6858aa7119f05f86a9537cb2",
+    "685df13bc8ad4a759612807c",
+    "6859fbe72461dfb852144cbf",
+    "6858aa7119f05f86a9537ca8",
+    "6858aa7119f05f86a9537cbb",
+    "685df13bc8ad4a759612808e",
+    "685c9e4e1911ac55a267d19a",
+    "685df13bc8ad4a759612809a",
+    "6859fbe72461dfb852144c99",
+    "6859fbe72461dfb852144c9a",
+    "6858aa7119f05f86a9537c59",
+    "685b4dc2ecb743895ef574eb",
+    "6858aa7119f05f86a9537ca4",
+    "685c9e4e1911ac55a267d1ca",
+    "685c9e4e1911ac55a267d199",
+    "685c9e4e1911ac55a267d1b8",
+    "6858aa7119f05f86a9537c46",
+    "6858aa7119f05f86a9537cc3",
+    "6859fbe72461dfb852144c92",
+    "685b4dc2ecb743895ef574fa",
+    "685c9e4e1911ac55a267d175",
+    "6858aa7119f05f86a9537c48",
+    "685b4dc2ecb743895ef574f7",
+    "6858aa7119f05f86a9537c3f",
+    "685c9e4e1911ac55a267d1a5",
+    "6858aa7119f05f86a9537cb1",
+  ];
+
+  // console.log(`จำนวนรายการที่ต้องอัปเดต: ${ids.length} รายการ`);
+
+  updateCancelledPkworkToComplete(ids);
+}
 
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
-// node dev-data/method-dev-data.js --updateOrderNoInPkwork
+// node dev-data/method-dev-data.js --updateCancelledPkworkToComplete
