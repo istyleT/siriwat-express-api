@@ -8,6 +8,7 @@ const {
   getPartDetail,
   getPartsSugesst,
   getSuggestPricelist,
+  uploadPricelists,
   getPricelist,
 } = require("../../controllers/appController/pricelistController");
 const { protect, restrictTo } = require("../../controllers/authController");
@@ -17,6 +18,7 @@ router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllPricelist).post(createPricelist);
 router.route("/suggest").get(getSuggestPricelist);
+router.route("/upload").post(uploadPricelists);
 router.route("/sugesst/:partnum").get(getPartsSugesst);
 router.route("/part").get(getPartDetail);
 router

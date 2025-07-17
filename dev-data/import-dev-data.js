@@ -24,7 +24,7 @@ mongoose
 
 // READ JSON FILE
 const pricelists = JSON.parse(
-  fs.readFileSync(`${__dirname}/data/Parts_updated.json`, "utf-8")
+  fs.readFileSync(`${__dirname}/data/Pricelist.json`, "utf-8")
 );
 const provincelists = JSON.parse(
   fs.readFileSync(`${__dirname}/data/thai_provinces.json`, "utf-8")
