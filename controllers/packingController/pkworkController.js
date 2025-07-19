@@ -1,5 +1,6 @@
 const Pkwork = require("../../models/packingModel/pkworkModel");
 const Skinventory = require("../../models/stockModel/skinventoryModel");
+const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const { startOfDay, endOfDay } = require("date-fns");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
@@ -269,59 +270,6 @@ exports.returnUploadMockQtyToInventory = catchAsync(async (req, res, next) => {
 
     // ถ้าเป็นของร้าน RM ต้องเอาของไปคืนค่า mock_qty ใน inventory
     if (pkwork.station === "RM") {
-      await Skinventory.updateMockQty("increase", pkwork.parts_data);
-    }
-  }
-
-  next();
-});
-
-//จัดการข้อมูลของ work นั้นๆก่อนที่จะทำการลบ(กรณีที่มีการที upload_ref_no เข้ามาเป็น queryString)
-exports.returnMockQtyBeforeDeleteWork = catchAsync(async (req, res, next) => {
-  const { upload_ref_no } = req.query;
-
-  // ✅ ตรวจสอบข้อมูลเบื้องต้น
-  if (!upload_ref_no) {
-    return res.status(400).json({
-      status: "fail",
-      message: "upload_ref_no ไม่ถูกต้อง",
-    });
-  }
-
-  //หา work ที่มี upload_ref_no ที่ตรงกันและยังไม่ถูกยกเลิก
-  const pkworks = await Pkwork.find({
-    upload_ref_no: upload_ref_no.trim(),
-    status: { $ne: "ยกเลิก" },
-  });
-
-  for (const pkwork of pkworks) {
-    if (pkwork.station === "RM") {
-      if (pkwork.scan_data && pkwork.scan_data.length > 0) {
-        //โยกย้ายข้อมูลจาก scan_data ไปยัง parts_data
-        const partsMap = new Map();
-
-        pkwork.parts_data.forEach((item) => {
-          partsMap.set(item.partnumber, item);
-        });
-
-        pkwork.scan_data.forEach((scanItem) => {
-          const existing = partsMap.get(scanItem.partnumber);
-          if (existing) {
-            existing.qty += scanItem.qty;
-          } else {
-            const newItem = {
-              partnumber: scanItem.partnumber,
-              qty: scanItem.qty,
-            };
-            pkwork.parts_data.push(newItem);
-            partsMap.set(scanItem.partnumber, newItem);
-          }
-        });
-
-        pkwork.scan_data = [];
-
-        await pkwork.save();
-      }
       await Skinventory.updateMockQty("increase", pkwork.parts_data);
     }
   }
@@ -895,6 +843,94 @@ exports.movePartsToScanWorkSuccessMany = catchAsync(async (req, res, next) => {
     data: {
       message: `Work ที่เลือกแก้ไขสำเร็จ ${updatedCount} รายการ`,
     },
+  });
+});
+
+//จัดการข้อมูลของ work นั้นๆที่จะทำการลบ(กรณีที่มีการที upload_ref_no เข้ามาเป็น queryString)
+exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
+  const { upload_ref_no } = req.query;
+
+  // ✅ ตรวจสอบข้อมูลเบื้องต้น
+  if (!upload_ref_no) {
+    return res.status(400).json({
+      status: "fail",
+      message: "upload_ref_no ไม่ถูกต้อง",
+    });
+  }
+
+  //หา work ที่มี upload_ref_no ที่ตรงกันและยังไม่ถูกยกเลิก
+  const pkworks = await Pkwork.find({
+    upload_ref_no: upload_ref_no.trim(),
+    status: { $ne: "ยกเลิก" },
+  });
+
+  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+  const job = await Jobqueue.create({
+    status: "pending",
+    result: {
+      type: "pkdeletework",
+      upload_ref_no: upload_ref_no,
+    },
+  });
+
+  setTimeout(async () => {
+    //จัดการคืน mock_qty ใน inventory
+    for (const pkwork of pkworks) {
+      if (pkwork.station === "RM") {
+        if (pkwork.scan_data && pkwork.scan_data.length > 0) {
+          //โยกย้ายข้อมูลจาก scan_data ไปยัง parts_data
+          const partsMap = new Map();
+
+          pkwork.parts_data.forEach((item) => {
+            partsMap.set(item.partnumber, item);
+          });
+
+          pkwork.scan_data.forEach((scanItem) => {
+            const existing = partsMap.get(scanItem.partnumber);
+            if (existing) {
+              existing.qty += scanItem.qty;
+            } else {
+              const newItem = {
+                partnumber: scanItem.partnumber,
+                qty: scanItem.qty,
+              };
+              pkwork.parts_data.push(newItem);
+              partsMap.set(scanItem.partnumber, newItem);
+            }
+          });
+
+          pkwork.scan_data = [];
+
+          await pkwork.save();
+        }
+        await Skinventory.updateMockQty("increase", pkwork.parts_data);
+      }
+    }
+
+    //หลังจาก for loop เสร็จสิ้น ให้ลบเอกสาร pkwork ทั้งหมดที่มี upload_ref_no ตรงกัน
+    const result = await Pkwork.deleteMany({
+      upload_ref_no: upload_ref_no.trim(),
+    });
+
+    if (result.deletedCount === 0) {
+      return next(new AppError("ไม่พบข้อมูลที่ต้องการลบ", 404));
+    }
+
+    // อัปเดตสถานะของ Jobqueue เป็น "done"
+    await Jobqueue.findByIdAndUpdate(job._id, {
+      status: "done",
+      result: {
+        message: `ลบข้อมูลสำเร็จ ${result.deletedCount} รายการ`,
+      },
+    });
+  }, 0); // รันแยก thread
+
+  // ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
+  res.status(202).json({
+    status: "success",
+    message: `ได้รับคิวงานแล้ว ลบ Work เลขที่ Upload: ${upload_ref_no}`,
+    upload_ref_no: upload_ref_no,
+    jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
   });
 });
 

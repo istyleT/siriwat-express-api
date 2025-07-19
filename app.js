@@ -47,6 +47,9 @@ const skinventorymovementRouter = require("./routes/stockRoutes/skinventorymovem
 const skinventoryRouter = require("./routes/stockRoutes/skinventoryRoutes");
 const skreceiveRouter = require("./routes/stockRoutes/skreceiveRoutes");
 
+//Routes ของ ส่วนกลาง
+const jobqueueRouter = require("./routes/basedataRoutes/jobqueueRoutes");
+
 //Controller ที่ต้องการจะให้ cron ทำงาน
 const startAllJobs = require("./controllers/cronjobs/index");
 
@@ -144,6 +147,7 @@ app.get("/", (req, res) => {
 
 // Global Routes
 app.use("/users", usersRouter);
+app.use("/jobqueues", jobqueueRouter);
 // application routes
 app.use("/price", priceRouter);
 app.use("/quotation", quotationRouter);

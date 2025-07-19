@@ -1,5 +1,6 @@
 const Pkskudictionary = require("../../models/packingModel/pkskudictionaryModel");
 const Pkwork = require("../../models/packingModel/pkworkModel");
+const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const Skinventory = require("../../models/stockModel/skinventoryModel");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
@@ -114,6 +115,7 @@ exports.checkOrderCancel = catchAsync(async (req, res, next) => {
   });
 });
 
+//ส่วนที่ใช้ในการสร้าง Work
 exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
   // console.log("This is convertSkuToPartCode");
   const { sku_data } = req.body;
@@ -279,25 +281,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // ✅ 3.2 จัดเรียงตาม total_qty มากไปน้อย
   workDocuments.sort((a, b) => b.total_qty - a.total_qty);
 
-  // console.dir(workDocuments, { depth: null });
-
-  //✅ 3.3 ถ้าค่า station เป็น RM ตรวจสอบการจองอะไหล่ และอัปเดต reserve_qty ตามลำดับ
-  if (station === "RM") {
-    for (let i = 0; i < workDocuments.length; i++) {
-      const doc = workDocuments[i];
-
-      try {
-        await Skinventory.validateMockQtyUpdate("decrease", doc.parts_data);
-        doc.station = "RM";
-        await Skinventory.updateMockQty("decrease", doc.parts_data);
-      } catch (err) {
-        doc.station = "RSM";
-        // ไม่ต้อง throw error เพราะแค่เปลี่ยนสถานะ แล้วปล่อยผ่าน
-      }
-    }
-  }
-
-  // ✅ 4. สร้าง upload_ref_no
+  // ✅ สร้าง upload_ref_no เพื่อใช้ในการอ้างอิง
   const today = moment().format("YYMMDD");
   const shopPrefix = `${shop.charAt(0).toUpperCase()}${shop
     .charAt(shop.length - 1)
@@ -327,42 +311,87 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // กำหนด upload_ref_no ที่ใช้สำหรับทุกเอกสาร
   const uploadRefNo = `${refPrefix}${String(lastNumber + 1).padStart(2, "0")}`;
 
-  //✅ เตรียมข้อมูลสำหรับ bulkWrite
-  const bulkOps = workDocuments.map((doc) => ({
-    insertOne: {
-      document: {
-        ...doc,
-        upload_ref_no: uploadRefNo,
-      },
+  // console.dir(workDocuments, { depth: null });
+
+  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+  const job = await Jobqueue.create({
+    status: "pending",
+    result: {
+      type: "pkimportwork",
+      upload_ref_no: uploadRefNo,
     },
-  }));
+  });
 
-  try {
-    const result = await Pkwork.bulkWrite(bulkOps, { ordered: false });
+  // เริ่มประมวลผล async
+  setTimeout(async () => {
+    try {
+      //✅ ถ้าค่า station เป็น RM ตรวจสอบการจองอะไหล่ และอัปเดต reserve_qty ตามลำดับ
+      if (station === "RM") {
+        for (let i = 0; i < workDocuments.length; i++) {
+          const doc = workDocuments[i];
 
-    return res.status(201).json({
-      status: "success",
-      message: `สร้าง Work สำเร็จทั้งหมด (${result.insertedCount} รายการ)`,
-      insertedCount: result.insertedCount,
-      failedTrackingCodes: [], // ใส่ไว้เผื่ออนาคต
-    });
-  } catch (error) {
-    // ดึง tracking_code ที่ fail ออกมาจาก error.writeErrors
-    const failedTrackingCodes =
-      error.writeErrors?.map((err) => {
-        const index = err.index;
-        return bulkOps[index]?.insertOne?.document?.tracking_code || "ไม่ทราบ";
-      }) || [];
+          try {
+            await Skinventory.validateMockQtyUpdate("decrease", doc.parts_data);
+            doc.station = "RM";
+            await Skinventory.updateMockQty("decrease", doc.parts_data);
+          } catch (err) {
+            doc.station = "RSM";
+            // ไม่ต้อง throw error เพราะแค่เปลี่ยนสถานะ แล้วปล่อยผ่าน
+          }
+        }
+      }
 
-    return res.status(207).json({
-      // ใช้ 207 Multi-Status เพื่อสื่อว่าบางอย่างสำเร็จ บางอย่างล้มเหลว
-      status: "partial_success",
-      message: `สร้าง Work สำเร็จบางส่วน (${
-        bulkOps.length - failedTrackingCodes.length
-      } จาก ${bulkOps.length})`,
-      insertedCount: bulkOps.length - failedTrackingCodes.length,
-      failedTrackingCodes,
-      mongo_error: error.message,
-    });
-  }
+      //✅ เตรียมข้อมูลสำหรับ bulkWrite
+      const bulkOps = workDocuments.map((doc) => ({
+        insertOne: {
+          document: {
+            ...doc,
+            upload_ref_no: uploadRefNo,
+          },
+        },
+      }));
+
+      const result = await Pkwork.bulkWrite(bulkOps, { ordered: false });
+
+      // อัปเดตสถานะของ Jobqueue เป็น "done"
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "done",
+        result: {
+          message: `สร้าง Work สำเร็จทั้งหมด (${result.insertedCount} รายการ)`,
+          insertedCount: result.insertedCount,
+          failedTrackingCodes: [], // ใส่ไว้เผื่ออนาคต
+        },
+      });
+    } catch (error) {
+      // ดึง tracking_code ที่ fail ออกมาจาก error.writeErrors
+      const failedTrackingCodes =
+        error.writeErrors?.map((err) => {
+          const index = err.index;
+          return (
+            bulkOps[index]?.insertOne?.document?.tracking_code || "ไม่ทราบ"
+          );
+        }) || [];
+
+      // อัปเดตสถานะของ Jobqueue เป็น "error"
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "error",
+        result: {
+          message: `สร้าง Work สำเร็จบางส่วน (${
+            bulkOps.length - failedTrackingCodes.length
+          } จาก ${bulkOps.length})`,
+          insertedCount: bulkOps.length - failedTrackingCodes.length,
+          failedTrackingCodes,
+          mongo_error: error.message,
+        },
+      });
+    }
+  }, 0); // รันแยก thread
+
+  // ✅ 7. ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
+  res.status(202).json({
+    status: "success",
+    message: `ได้รับคิวงานแล้ว เลขที่ upload: ${uploadRefNo}`,
+    upload_ref_no: uploadRefNo,
+    jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
+  });
 });

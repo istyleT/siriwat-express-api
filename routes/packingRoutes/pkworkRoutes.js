@@ -8,7 +8,6 @@ const {
   updatePkwork,
   deletePkwork,
   getSuggestPkwork,
-  deleteManyPkwork,
   reviveOnePkwork,
   cancelOrder,
   getDataPartsInWorkUpload,
@@ -20,7 +19,7 @@ const {
   movePartsToScan,
   formatPartsInPickDoc,
   formatPartsInArrangeDoc,
-  returnMockQtyBeforeDeleteWork,
+  returnMockQtyAndDeleteWork,
   updatePartsDataInWork,
   movePartsToScanWorkSuccessMany,
   cancelWillReturnInventory,
@@ -47,9 +46,7 @@ router
   .get(getDataPartsInWorkCancel);
 router.route("/suggest").get(getSuggestPkwork);
 router.route("/report").get(getByDatePkwork);
-router
-  .route("/deletework")
-  .delete(returnMockQtyBeforeDeleteWork, deleteManyPkwork);
+router.route("/deletework").delete(returnMockQtyAndDeleteWork);
 router
   .route("/cancel-by-order")
   .patch(returnUploadMockQtyToInventory, cancelOrder);
