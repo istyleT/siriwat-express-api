@@ -36,6 +36,19 @@ const pkdefaultcolSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  //ค่า column ที่เอาไว้คำนวณ
+  col_variable_1: {
+    type: String,
+    default: null,
+  },
+  col_variable_2: {
+    type: String,
+    default: null,
+  },
+  col_variable_3: {
+    type: String,
+    default: null,
+  },
   //field พื้นฐาน
   updated_at: {
     type: Date,
