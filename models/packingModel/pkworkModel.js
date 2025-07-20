@@ -60,6 +60,10 @@ const pkworkSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  remark: {
+    type: String,
+    default: null,
+  },
   //field พื้นฐาน
   created_at: {
     type: Date,
