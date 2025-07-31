@@ -1,5 +1,6 @@
 const Pkwork = require("../../models/packingModel/pkworkModel");
 const Skinventory = require("../../models/stockModel/skinventoryModel");
+const Pkunitprice = require("../../models/packingModel/pkunitpriceModel");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const { startOfDay, endOfDay } = require("date-fns");
 const factory = require("../handlerFactory");
@@ -463,6 +464,142 @@ exports.deletePkwork = factory.deleteOne(Pkwork);
 exports.reviveOnePkwork = factory.reviveOne(Pkwork);
 exports.deleteManyPkwork = factory.deleteMany(Pkwork);
 
+exports.mergeUnitPriceToPkwork = catchAsync(async (req, res, next) => {
+  const { startdate, enddate, typedate } = req.query;
+  const docs = req.getByDateDocs || [];
+
+  if (!docs || docs.length === 0) {
+    return res.status(200).json({
+      status: "success",
+      data: docs,
+      message: "ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย",
+    });
+  }
+
+  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+  const job = await Jobqueue.create({
+    status: "pending",
+    job_source: "pkreportwork",
+    result: {
+      startdate,
+      enddate,
+      typedate,
+    },
+  });
+
+  // เริ่มประมวลผล async
+  setTimeout(async () => {
+    try {
+      // 1. รวม partnumber ทั้งหมด
+      const allPartnumbers = docs.flatMap((doc) =>
+        doc.scan_data.map((part) => part.partnumber)
+      );
+
+      // 2. ดึงข้อมูล Skinventory ที่เกี่ยวข้อง
+      const skinventoryDocs = await Skinventory.find({
+        part_code: { $in: allPartnumbers },
+      });
+
+      // 3. สร้าง map สำหรับ lookup part_name
+      const partNameMap = new Map();
+      skinventoryDocs.forEach((doc) => {
+        partNameMap.set(doc.part_code, doc.part_name);
+      });
+
+      const result = [];
+
+      for (const work of docs) {
+        const pkPriceDoc = await Pkunitprice.findOne({
+          tracking_code: work.tracking_code,
+          shop: work.shop,
+        });
+
+        const priceMap = new Map();
+        if (pkPriceDoc) {
+          pkPriceDoc.detail_price_per_unit.forEach((detail) => {
+            if (!priceMap.has(detail.partnumber)) {
+              priceMap.set(detail.partnumber, []);
+            }
+            const priceList = priceMap.get(detail.partnumber);
+            // เพิ่มเฉพาะราคาที่ไม่ซ้ำกันเท่านั้น
+            if (!priceList.includes(detail.price_per_unit)) {
+              priceList.push(detail.price_per_unit);
+            }
+          });
+        }
+
+        for (const part of work.scan_data) {
+          const priceList = priceMap.get(part.partnumber) || [0];
+
+          if (priceList.length === 1 || part.qty <= 1) {
+            // กรณีราคามีค่าเดียว หรือ qty = 1 ก็ใส่ตรงๆ
+            result.push({
+              upload_ref_no: work.upload_ref_no,
+              success_at: work.success_at,
+              created_at: work.created_at,
+              partnumber: part.partnumber,
+              qty: part.qty,
+              order_no: work.order_no,
+              price_per_unit: priceList[0],
+              part_name: partNameMap.get(part.partnumber) || "-",
+            });
+          } else if (priceList.length === 2) {
+            // กรณีราคาสองค่า ให้ใส่ qty-1 กับ qty 1 ตามลำดับ
+            const mainQty = part.qty - 1;
+            if (mainQty > 0) {
+              result.push({
+                upload_ref_no: work.upload_ref_no,
+                success_at: work.success_at,
+                created_at: work.created_at,
+                partnumber: part.partnumber,
+                qty: mainQty,
+                order_no: work.order_no,
+                price_per_unit: priceList[0],
+                part_name: partNameMap.get(part.partnumber) || "-",
+              });
+            }
+            result.push({
+              upload_ref_no: work.upload_ref_no,
+              success_at: work.success_at,
+              created_at: work.created_at,
+              partnumber: part.partnumber,
+              qty: 1,
+              order_no: work.order_no,
+              price_per_unit: priceList[1],
+              part_name: partNameMap.get(part.partnumber) || "-",
+            });
+          }
+        }
+      }
+      // อัปเดตสถานะของ Jobqueue เป็น "done"
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "done",
+        result: {
+          ...job.result,
+          message: `รวมราคาต่อหน่วยสำเร็จ ${result.length} รายการ`,
+          data: result,
+        },
+      });
+    } catch (error) {
+      // อัปเดตสถานะของ Jobqueue เป็น "error"
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "error",
+        result: {
+          ...job.result,
+          message: `เกิดข้อผิดพลาดในการรวมราคาต่อหน่วย: ${error.message}`,
+        },
+      });
+    }
+  }, 0); // รันแยก thread
+
+  // ✅ ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
+  res.status(202).json({
+    status: "success",
+    message: `ได้รับคิวงานแล้วกำลังประมวลผล`,
+    jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
+  });
+});
+
 exports.cancelOrder = catchAsync(async (req, res, next) => {
   const user = req.user;
   const currentTime = moment.tz(new Date(), "Asia/Bangkok").format();
@@ -867,13 +1004,15 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
   // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
   const job = await Jobqueue.create({
     status: "pending",
+    job_source: "pkdeletework",
     result: {
-      type: "pkdeletework",
       upload_ref_no: upload_ref_no,
     },
   });
 
   setTimeout(async () => {
+    const trackingCodes = [];
+
     //จัดการคืน mock_qty ใน inventory
     for (const pkwork of pkworks) {
       if (pkwork.station === "RM") {
@@ -905,6 +1044,11 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
         }
         await Skinventory.updateMockQty("increase", pkwork.parts_data);
       }
+
+      //เก็บ tracking_code ที่จะใช้ในการลบ
+      if (pkwork.tracking_code) {
+        trackingCodes.push(pkwork.tracking_code);
+      }
     }
 
     //หลังจาก for loop เสร็จสิ้น ให้ลบเอกสาร pkwork ทั้งหมดที่มี upload_ref_no ตรงกัน
@@ -920,8 +1064,18 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
     await Jobqueue.findByIdAndUpdate(job._id, {
       status: "done",
       result: {
+        ...job.result,
         message: `ลบข้อมูลสำเร็จ ${result.deletedCount} รายการ`,
       },
+    });
+
+    // 🔁 ลบ Pkunitprice แยก Thread หลังจาก Jobqueue อัปเดต
+    setImmediate(async () => {
+      try {
+        await Pkunitprice.deleteMany({ tracking_code: { $in: trackingCodes } });
+      } catch (err) {
+        console.error("ลบ Pkunitprice ไม่สำเร็จ:", err);
+      }
     });
   }, 0); // รันแยก thread
 

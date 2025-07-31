@@ -372,6 +372,12 @@ exports.getByDate = (Model) =>
 
     const docs = await Model.find(query).sort({ _id: 1 });
 
+    if (req.skipResNext) {
+      req.getByDateDocs = docs;
+      delete req.skipResNext;
+      return next();
+    }
+
     res.status(200).json({
       status: "success",
       results: docs.length,

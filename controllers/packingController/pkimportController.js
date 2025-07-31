@@ -155,12 +155,6 @@ exports.separatePartSet = catchAsync(async (req, res, next) => {
   // console.log("This is separatePartSet");
   const { sku_data } = req.body;
 
-  if (!Array.isArray(sku_data) || sku_data.length === 0) {
-    return res
-      .status(400)
-      .json({ status: "fail", message: "Invalid sku_data" });
-  }
-
   const processedData = sku_data.map((sku) => {
     const parts = sku.part_code.split("_").map((part, partIndex) => ({
       partnumber: part.trim(),
@@ -176,6 +170,7 @@ exports.separatePartSet = catchAsync(async (req, res, next) => {
   });
 
   req.body.sku_data = processedData;
+  // console.dir(processedData, { depth: null });
 
   next();
 });
@@ -316,8 +311,8 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
   const job = await Jobqueue.create({
     status: "pending",
+    job_source: "pkimportwork",
     result: {
-      type: "pkimportwork",
       upload_ref_no: uploadRefNo,
     },
   });
@@ -357,6 +352,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
       await Jobqueue.findByIdAndUpdate(job._id, {
         status: "done",
         result: {
+          ...job.result,
           message: `สร้าง Work สำเร็จทั้งหมด (${result.insertedCount} รายการ)`,
           insertedCount: result.insertedCount,
           failedTrackingCodes: [], // ใส่ไว้เผื่ออนาคต
@@ -376,6 +372,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
       await Jobqueue.findByIdAndUpdate(job._id, {
         status: "error",
         result: {
+          ...job.result,
           message: `สร้าง Work สำเร็จบางส่วน (${
             bulkOps.length - failedTrackingCodes.length
           } จาก ${bulkOps.length})`,

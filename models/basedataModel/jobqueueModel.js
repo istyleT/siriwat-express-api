@@ -8,6 +8,10 @@ const jobqueueSchema = new Schema(
       enum: ["pending", "done", "error"],
       default: "pending",
     },
+    job_source: {
+      type: String,
+      default: "",
+    },
     result: {
       type: mongoose.Schema.Types.Mixed,
       default: null,

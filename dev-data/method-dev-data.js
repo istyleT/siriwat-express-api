@@ -31,6 +31,28 @@ const ordernolist = JSON.parse(
   fs.readFileSync(`${__dirname}/data/checkorderno.json`, "utf-8")
 );
 
+// Function สำหรับ decode string ที่เป็น Unicode escape (ภาษาไทย)
+const decodeUnicodeEscape = (text) => {
+  if (typeof text !== "string") return text;
+  return text.replace(/\\u[\dA-F]{4}/gi, (match) =>
+    String.fromCharCode(parseInt(match.replace(/\\u/g, ""), 16))
+  );
+};
+
+// ใช้กับ object array เพื่อ decode ทุกฟิลด์ที่เป็น string
+const decodeUnicodeObjectArray = (dataArray) => {
+  return dataArray.map((item) => {
+    const decoded = {};
+    for (const key in item) {
+      decoded[key] =
+        typeof item[key] === "string"
+          ? decodeUnicodeEscape(item[key])
+          : item[key];
+    }
+    return decoded;
+  });
+};
+
 //function RMBKK เอาไว้แก้ไขข้อผิดพลาดบันทึกจัดส่งจำนวนที่จัดส่งไม่ไป update ที่ order
 const updateQtyDeliverToOrder = async (orderId, deliverId) => {
   try {
@@ -302,44 +324,6 @@ if (process.argv[2] === "--updateCancelledPkworkToComplete") {
   const ids = [
     "685df13bc8ad4a759612807f",
     "6858aa7119f05f86a9537c8a",
-    "685df13bc8ad4a7596128082",
-    "685c9e4e1911ac55a267d178",
-    "6858aa7119f05f86a9537c68",
-    "6858aa7119f05f86a9537c57",
-    "6858aa7119f05f86a9537c7a",
-    "6859fbe72461dfb852144cdc",
-    "685c9e4e1911ac55a267d1a8",
-    "6858aa7119f05f86a9537c5f",
-    "6858aa7119f05f86a9537c4d",
-    "6858aa7119f05f86a9537c69",
-    "6859fbe72461dfb852144cda",
-    "685c9e4e1911ac55a267d17f",
-    "685c9e4e1911ac55a267d1b5",
-    "6858aa7119f05f86a9537c89",
-    "6858aa7119f05f86a9537c56",
-    "685c9e4e1911ac55a267d186",
-    "6858aa7119f05f86a9537c92",
-    "6858aa7119f05f86a9537cb6",
-    "6858aa7119f05f86a9537c71",
-    "6858aa7119f05f86a9537c42",
-    "685c9e4e1911ac55a267d1c9",
-    "6859fbe72461dfb852144ca2",
-    "685c9e4e1911ac55a267d17d",
-    "6858aa7119f05f86a9537c6e",
-    "685c9e4e1911ac55a267d1bd",
-    "685c9e4e1911ac55a267d182",
-    "685c9e4e1911ac55a267d185",
-    "685b4dc2ecb743895ef57524",
-    "6858aa7119f05f86a9537c8e",
-    "6859fbe72461dfb852144cc7",
-    "685df13bc8ad4a7596128099",
-    "685df13bc8ad4a7596128097",
-    "685df13bc8ad4a759612808a",
-    "685df13bc8ad4a759612807a",
-    "685df13bc8ad4a7596128096",
-    "685df13bc8ad4a75961280c9",
-    "685df13bc8ad4a75961280aa",
-    "685df13bc8ad4a75961280be",
     "685df13bc8ad4a75961280a8",
     "685c9e4e1911ac55a267d192",
     "685c9e4e1911ac55a267d1cc",
@@ -350,36 +334,6 @@ if (process.argv[2] === "--updateCancelledPkworkToComplete") {
     "685df13bc8ad4a75961280bc",
     "685df13bc8ad4a75961280bb",
     "685df13bc8ad4a75961280c6",
-    "6858aa7119f05f86a9537cb9",
-    "685df13bc8ad4a759612808c",
-    "6859fbe72461dfb852144ce6",
-    "685c9e4e1911ac55a267d1aa",
-    "6858aa7119f05f86a9537cb2",
-    "685df13bc8ad4a759612807c",
-    "6859fbe72461dfb852144cbf",
-    "6858aa7119f05f86a9537ca8",
-    "6858aa7119f05f86a9537cbb",
-    "685df13bc8ad4a759612808e",
-    "685c9e4e1911ac55a267d19a",
-    "685df13bc8ad4a759612809a",
-    "6859fbe72461dfb852144c99",
-    "6859fbe72461dfb852144c9a",
-    "6858aa7119f05f86a9537c59",
-    "685b4dc2ecb743895ef574eb",
-    "6858aa7119f05f86a9537ca4",
-    "685c9e4e1911ac55a267d1ca",
-    "685c9e4e1911ac55a267d199",
-    "685c9e4e1911ac55a267d1b8",
-    "6858aa7119f05f86a9537c46",
-    "6858aa7119f05f86a9537cc3",
-    "6859fbe72461dfb852144c92",
-    "685b4dc2ecb743895ef574fa",
-    "685c9e4e1911ac55a267d175",
-    "6858aa7119f05f86a9537c48",
-    "685b4dc2ecb743895ef574f7",
-    "6858aa7119f05f86a9537c3f",
-    "685c9e4e1911ac55a267d1a5",
-    "6858aa7119f05f86a9537cb1",
   ];
 
   // console.log(`จำนวนรายการที่ต้องอัปเดต: ${ids.length} รายการ`);

@@ -7,6 +7,9 @@ const {
   checkDuplicateOrderNos,
   checkOrderCancel,
 } = require("../../controllers/packingController/pkimportController");
+const {
+  createPkunitpriceHandler,
+} = require("../../controllers/packingController/pkunitpriceController");
 const { protect, restrictTo } = require("../../controllers/authController");
 
 //Global
@@ -16,7 +19,12 @@ router.use(restrictTo("Owner", "Sale"));
 router.route("/check-duplicate-order").post(checkDuplicateOrderNos);
 router
   .route("/order")
-  .post(convertSkuToPartCode, separatePartSet, setToCreateWork);
+  .post(
+    convertSkuToPartCode,
+    createPkunitpriceHandler,
+    separatePartSet,
+    setToCreateWork
+  );
 
 router.route("/check-order-cancel").post(checkOrderCancel);
 
