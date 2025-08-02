@@ -9,24 +9,58 @@ exports.getOneJobqueue = factory.getOne(Jobqueue);
 exports.createJobqueue = factory.createOne(Jobqueue);
 exports.updateJobqueue = factory.updateOne(Jobqueue);
 
+exports.getJobqueueReportUnitPrice = catchAsync(async (req, res, next) => {
+  // console.log("Fetching jobqueue report unit price...");
+  const { startdate, enddate } = req.query;
+
+  if (!startdate || !enddate) {
+    return next(new AppError("กรุณาระบุ startdate และ enddate", 400));
+  }
+
+  // แปลงเป็นเวลาไทย (UTC+7)
+  const start = new Date(new Date(startdate + "T00:00:00+07:00").toISOString());
+  const end = new Date(new Date(enddate + "T23:59:59+07:00").toISOString());
+
+  const query = {
+    status: "done",
+    job_source: "pkdailyreportwork",
+    createdAt: {
+      $gte: start,
+      $lte: end,
+    },
+  };
+
+  const reportData = await Jobqueue.find(query).sort({ createdAt: -1 });
+
+  // รวมข้อมูลทั้งหมดจาก result.data ของแต่ละเอกสาร
+  const mergedData = reportData.flatMap((doc) => doc.result?.data || []);
+
+  res.status(200).json({
+    status: "success",
+    data: mergedData,
+  });
+});
+
 exports.deleteJobqueueUnUsed = catchAsync(async (req, res, next) => {
-  const date = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
+  const date_45 = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
+  const date_90 = moment().tz("Asia/Bangkok").subtract(90, "days").toDate();
 
   //ลบ Jobqueue ของ job_source  ที่เป็น "pkreportwork"(ทุกวัน)
   await Jobqueue.deleteMany({
     job_source: "pkreportwork",
+    createdAt: { $lt: date_90 },
   });
 
   //ลบ Jobqueue ของ job_source  ที่เป็น "pkdeletework"
   await Jobqueue.deleteMany({
     job_source: "pkdeletework",
-    createdAt: { $lt: date },
+    createdAt: { $lt: date_45 },
   });
 
   //ลบ Jobqueue ของ job_source  ที่เป็น "pkimportwork"
   await Jobqueue.deleteMany({
     job_source: "pkimportwork",
-    createdAt: { $lt: date },
+    createdAt: { $lt: date_45 },
   });
 
   res.status(204).json({

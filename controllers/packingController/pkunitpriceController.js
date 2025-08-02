@@ -154,7 +154,7 @@ const createPkunitprice = async (sku_data, shop) => {
   // console.log("createPkunitprice สำเร็จ");
 };
 
-//Method
+//Middleware
 exports.createPkunitpriceHandler = catchAsync(async (req, res, next) => {
   const { sku_data, shop } = req.body;
 
@@ -171,6 +171,8 @@ exports.createPkunitpriceHandler = catchAsync(async (req, res, next) => {
 
   next();
 });
+
+//Method
 
 //ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ
 exports.deletePkunitpriceOld = catchAsync(async (req, res, next) => {

@@ -464,6 +464,7 @@ exports.deletePkwork = factory.deleteOne(Pkwork);
 exports.reviveOnePkwork = factory.reviveOne(Pkwork);
 exports.deleteManyPkwork = factory.deleteMany(Pkwork);
 
+//ดึงข้อมูลเพื่อทำบัญชี
 exports.mergeUnitPriceToPkwork = catchAsync(async (req, res, next) => {
   const { startdate, enddate, typedate } = req.query;
   const docs = req.getByDateDocs || [];
@@ -1086,6 +1087,154 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
     upload_ref_no: upload_ref_no,
     jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
   });
+});
+
+//ส่วน function ที่ทำงานกับ cron job
+//ดึงข้อมูลเพื่อทำบัญชี
+exports.dailyReportUnitPriceInWork = catchAsync(async (req, res, next) => {
+  //ส่วนของการดึงข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย
+  //1. กำหนดค่าคงที่ต่างๆ
+  const statusJob = "เสร็จสิ้น";
+  const typeDate = "created_at"; // ใช้ created_at เป็นตัวกรอง
+  // กำหนดวันที่เป็นวันปัจจุบันเสมอ
+  // const today = moment.tz("Asia/Bangkok").startOf("day").toDate();
+  const today = moment
+    .tz("Asia/Bangkok")
+    .subtract(1, "day")
+    .startOf("day")
+    .toDate();
+
+  //2. ดึงข้อมูลเอกสารที่มีสถานะ "เสร็จสิ้น" และวันที่ตรงกับวันนี้
+  const docs = await Pkwork.find({
+    status: statusJob,
+    [typeDate]: {
+      $gte: today,
+      $lt: moment(today).endOf("day").toDate(),
+    },
+  }).sort({ _id: 1 });
+
+  //ส่วนของการ merge unit price เข้ากับ pkwork ที่ได้
+  if (!docs || docs.length === 0) {
+    return res.status(200).json({
+      status: "success",
+      data: docs,
+      message: "ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย",
+    });
+  }
+
+  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+  const job = await Jobqueue.create({
+    status: "pending",
+    job_source: "pkdailyreportwork",
+    result: {
+      typeDate,
+    },
+  });
+
+  // เริ่มประมวลผล
+  try {
+    // 1. รวม partnumber ทั้งหมด
+    const allPartnumbers = docs.flatMap((doc) =>
+      doc.scan_data.map((part) => part.partnumber)
+    );
+
+    // 2. ดึงข้อมูล Skinventory ที่เกี่ยวข้อง
+    const skinventoryDocs = await Skinventory.find({
+      part_code: { $in: allPartnumbers },
+    });
+
+    // 3. สร้าง map สำหรับ lookup part_name
+    const partNameMap = new Map();
+    skinventoryDocs.forEach((doc) => {
+      partNameMap.set(doc.part_code, doc.part_name);
+    });
+
+    const result = [];
+
+    for (const work of docs) {
+      const pkPriceDoc = await Pkunitprice.findOne({
+        tracking_code: work.tracking_code,
+        shop: work.shop,
+      });
+
+      const priceMap = new Map();
+      if (pkPriceDoc) {
+        pkPriceDoc.detail_price_per_unit.forEach((detail) => {
+          if (!priceMap.has(detail.partnumber)) {
+            priceMap.set(detail.partnumber, []);
+          }
+          const priceList = priceMap.get(detail.partnumber);
+          // เพิ่มเฉพาะราคาที่ไม่ซ้ำกันเท่านั้น
+          if (!priceList.includes(detail.price_per_unit)) {
+            priceList.push(detail.price_per_unit);
+          }
+        });
+      }
+
+      for (const part of work.scan_data) {
+        const priceList = priceMap.get(part.partnumber) || [0];
+
+        if (priceList.length === 1 || part.qty <= 1) {
+          // กรณีราคามีค่าเดียว หรือ qty = 1 ก็ใส่ตรงๆ
+          result.push({
+            upload_ref_no: work.upload_ref_no,
+            success_at: work.success_at,
+            created_at: work.created_at,
+            partnumber: part.partnumber,
+            qty: part.qty,
+            order_no: work.order_no,
+            price_per_unit: priceList[0],
+            part_name: partNameMap.get(part.partnumber) || "-",
+          });
+        } else if (priceList.length === 2) {
+          // กรณีราคาสองค่า ให้ใส่ qty-1 กับ qty 1 ตามลำดับ
+          const mainQty = part.qty - 1;
+          if (mainQty > 0) {
+            result.push({
+              upload_ref_no: work.upload_ref_no,
+              success_at: work.success_at,
+              created_at: work.created_at,
+              partnumber: part.partnumber,
+              qty: mainQty,
+              order_no: work.order_no,
+              price_per_unit: priceList[0],
+              part_name: partNameMap.get(part.partnumber) || "-",
+            });
+          }
+          result.push({
+            upload_ref_no: work.upload_ref_no,
+            success_at: work.success_at,
+            created_at: work.created_at,
+            partnumber: part.partnumber,
+            qty: 1,
+            order_no: work.order_no,
+            price_per_unit: priceList[1],
+            part_name: partNameMap.get(part.partnumber) || "-",
+          });
+        }
+      }
+    }
+    // อัปเดตสถานะของ Jobqueue เป็น "done"
+    await Jobqueue.findByIdAndUpdate(job._id, {
+      status: "done",
+      result: {
+        ...job.result,
+        message: `รวมราคาต่อหน่วยสำเร็จ ${result.length} รายการ`,
+        data: result,
+      },
+    });
+  } catch (error) {
+    // อัปเดตสถานะของ Jobqueue เป็น "error"
+    await Jobqueue.findByIdAndUpdate(job._id, {
+      status: "error",
+      result: {
+        ...job.result,
+        message: `เกิดข้อผิดพลาดในการรวมราคาต่อหน่วย: ${error.message}`,
+      },
+    });
+  }
+
+  return;
 });
 
 //ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ
