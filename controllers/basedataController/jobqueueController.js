@@ -1,4 +1,5 @@
 Jobqueue = require("../../models/basedataModel/jobqueueModel");
+const { format } = require("date-fns");
 const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
 const moment = require("moment-timezone");
@@ -37,10 +38,15 @@ exports.getJobqueueReportUnitPrice = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
+    message: `รายงานจาก ${format(startdate, "dd/MM/yyyy")} ถึง ${format(
+      enddate,
+      "dd/MM/yyyy"
+    )}`,
     data: mergedData,
   });
 });
 
+//ใช้กับ cronjob
 exports.deleteJobqueueUnUsed = catchAsync(async (req, res, next) => {
   const date_45 = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
   const date_90 = moment().tz("Asia/Bangkok").subtract(90, "days").toDate();

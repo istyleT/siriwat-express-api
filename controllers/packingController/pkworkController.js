@@ -1097,12 +1097,12 @@ exports.dailyReportUnitPriceInWork = catchAsync(async (req, res, next) => {
   const statusJob = "เสร็จสิ้น";
   const typeDate = "created_at"; // ใช้ created_at เป็นตัวกรอง
   // กำหนดวันที่เป็นวันปัจจุบันเสมอ
-  // const today = moment.tz("Asia/Bangkok").startOf("day").toDate();
-  const today = moment
-    .tz("Asia/Bangkok")
-    .subtract(1, "day")
-    .startOf("day")
-    .toDate();
+  const today = moment.tz("Asia/Bangkok").startOf("day").toDate();
+  // const today = moment
+  //   .tz("Asia/Bangkok")
+  //   .subtract(1, "day")
+  //   .startOf("day")
+  //   .toDate();
 
   //2. ดึงข้อมูลเอกสารที่มีสถานะ "เสร็จสิ้น" และวันที่ตรงกับวันนี้
   const docs = await Pkwork.find({

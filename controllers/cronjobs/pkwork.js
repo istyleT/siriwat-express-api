@@ -1,13 +1,23 @@
 const cron = require("node-cron");
 const pkworkController = require("../packingController/pkworkController");
 
-const pkworkJob = cron.schedule(
-  //run ตอน 1.30 น. ทุกวัน
-  "30 1 * * *",
-  // "* * * * *",
+// ลบข้อมูลเก่าเวลา 00:30
+const deletePkworkJob = cron.schedule(
+  "30 0 * * *",
   () => {
-    console.log("Running pkwork job...");
+    console.log("Running deletePkworkOld job...");
     pkworkController.deletePkworkOld();
+  },
+  {
+    timezone: "Asia/Bangkok",
+  }
+);
+
+// สรุปรายงานราคาต่อหน่วยเวลา 00:45
+const reportUnitPriceJob = cron.schedule(
+  "45 0 * * *",
+  () => {
+    console.log("Running dailyReportUnitPriceInWork job...");
     pkworkController.dailyReportUnitPriceInWork();
   },
   {
@@ -15,4 +25,4 @@ const pkworkJob = cron.schedule(
   }
 );
 
-module.exports = pkworkJob;
+module.exports = { deletePkworkJob, reportUnitPriceJob };
