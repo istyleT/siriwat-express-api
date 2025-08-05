@@ -18,9 +18,20 @@ exports.getJobqueueReportUnitPrice = catchAsync(async (req, res, next) => {
     return next(new AppError("กรุณาระบุ startdate และ enddate", 400));
   }
 
-  // แปลงเป็นเวลาไทย (UTC+7)
-  const start = new Date(new Date(startdate + "T00:00:00+07:00").toISOString());
-  const end = new Date(new Date(enddate + "T23:59:59+07:00").toISOString());
+  // แปลงเป็นเวลาไทย (UTC+7) และเพิ่มไปอีก 1 วัน พร้อมตั้งค่าเวลาให้ครบช่วงวัน
+  const oneDay = 24 * 60 * 60 * 1000; // หนึ่งวันในหน่วยมิลลิวินาที
+
+  const start = new Date(
+    new Date(
+      new Date(startdate + "T00:00:00+07:00").getTime() + oneDay
+    ).toISOString()
+  );
+
+  const end = new Date(
+    new Date(
+      new Date(enddate + "T23:59:59+07:00").getTime() + oneDay
+    ).toISOString()
+  );
 
   const query = {
     status: "done",
@@ -47,7 +58,7 @@ exports.getJobqueueReportUnitPrice = catchAsync(async (req, res, next) => {
 });
 
 //ใช้กับ cronjob
-exports.deleteJobqueueUnUsed = catchAsync(async (req, res, next) => {
+exports.deleteJobqueueUnUsed = async () => {
   const date_45 = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
   const date_90 = moment().tz("Asia/Bangkok").subtract(90, "days").toDate();
 
@@ -68,9 +79,4 @@ exports.deleteJobqueueUnUsed = catchAsync(async (req, res, next) => {
     job_source: "pkimportwork",
     createdAt: { $lt: date_45 },
   });
-
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
+};

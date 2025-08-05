@@ -1091,7 +1091,7 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
 
 //ส่วน function ที่ทำงานกับ cron job
 //ดึงข้อมูลเพื่อทำบัญชี
-exports.dailyReportUnitPriceInWork = catchAsync(async (req, res, next) => {
+exports.dailyReportUnitPriceInWork = async () => {
   //ส่วนของการดึงข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย
   //1. กำหนดค่าคงที่ต่างๆ
   const statusJob = "เสร็จสิ้น";
@@ -1104,6 +1104,12 @@ exports.dailyReportUnitPriceInWork = catchAsync(async (req, res, next) => {
   //   .startOf("day")
   //   .toDate();
 
+  console.log(
+    `ประมวลผลรายงานราคาต่อหน่วยในเอกสารที่สร้างเมื่อ: ${moment(today).format(
+      "YYYY-MM-DD"
+    )}`
+  );
+
   //2. ดึงข้อมูลเอกสารที่มีสถานะ "เสร็จสิ้น" และวันที่ตรงกับวันนี้
   const docs = await Pkwork.find({
     status: statusJob,
@@ -1115,11 +1121,8 @@ exports.dailyReportUnitPriceInWork = catchAsync(async (req, res, next) => {
 
   //ส่วนของการ merge unit price เข้ากับ pkwork ที่ได้
   if (!docs || docs.length === 0) {
-    return res.status(200).json({
-      status: "success",
-      data: docs,
-      message: "ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย",
-    });
+    console.log("ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย");
+    return;
   }
 
   // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
@@ -1223,7 +1226,10 @@ exports.dailyReportUnitPriceInWork = catchAsync(async (req, res, next) => {
         data: result,
       },
     });
+
+    console.log("รวมราคาต่อหน่วยสำเร็จ");
   } catch (error) {
+    console.error("Job queue update error:", error);
     // อัปเดตสถานะของ Jobqueue เป็น "error"
     await Jobqueue.findByIdAndUpdate(job._id, {
       status: "error",
@@ -1233,12 +1239,10 @@ exports.dailyReportUnitPriceInWork = catchAsync(async (req, res, next) => {
       },
     });
   }
-
-  return;
-});
+};
 
 //ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ
-exports.deletePkworkOld = catchAsync(async (req, res, next) => {
+exports.deletePkworkOld = async () => {
   const date = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
 
   //ลบเอกสารที่เสร็จสิ้นไปเเล้วทั้ง 2 ร้าน
@@ -1259,8 +1263,9 @@ exports.deletePkworkOld = catchAsync(async (req, res, next) => {
     ],
   });
 
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
+  console.log(
+    `ลบเอกสารที่มีอายุเกินกว่า 45 วันสำเร็จ ณ วันที่ ${moment()
+      .tz("Asia/Bangkok")
+      .format("YYYY-MM-DD")}`
+  );
+};

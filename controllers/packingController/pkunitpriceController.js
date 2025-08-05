@@ -175,16 +175,11 @@ exports.createPkunitpriceHandler = catchAsync(async (req, res, next) => {
 //Method
 
 //ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ
-exports.deletePkunitpriceOld = catchAsync(async (req, res, next) => {
+exports.deletePkunitpriceOld = async () => {
   const date = moment().tz("Asia/Bangkok").subtract(60, "days").toDate();
 
   //ลบเอกสารที่มีอายุมากว่า 60 วัน
   await Pkunitprice.deleteMany({
     createdAt: { $lt: date },
   });
-
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
+};
