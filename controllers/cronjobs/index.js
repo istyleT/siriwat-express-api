@@ -8,13 +8,13 @@ const jobqueueJob = require("./jobqueue");
 
 // start ทุก cron job
 function startAllJobs() {
+  jobqueueJob.start();
   skinventoryJob.start();
   deletePkworkJob.start();
   reportUnitPriceJob.start();
   quotationJob.start();
   swquotationJob.start();
   pkunitpriceJob.start();
-  jobqueueJob.start();
 }
 
 module.exports = startAllJobs;

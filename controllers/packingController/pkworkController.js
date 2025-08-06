@@ -1094,7 +1094,6 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
 exports.dailyReportUnitPriceInWork = async () => {
   //ส่วนของการดึงข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย
   //1. กำหนดค่าคงที่ต่างๆ
-  const statusJob = "เสร็จสิ้น";
   const typeDate = "created_at"; // ใช้ created_at เป็นตัวกรอง
   // กำหนดวันที่เป็นวันปัจจุบันเสมอ
   const today = moment.tz("Asia/Bangkok").startOf("day").toDate();
@@ -1112,7 +1111,6 @@ exports.dailyReportUnitPriceInWork = async () => {
 
   //2. ดึงข้อมูลเอกสารที่มีสถานะ "เสร็จสิ้น" และวันที่ตรงกับวันนี้
   const docs = await Pkwork.find({
-    status: statusJob,
     [typeDate]: {
       $gte: today,
       $lt: moment(today).endOf("day").toDate(),
