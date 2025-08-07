@@ -16,7 +16,7 @@ const deletePkworkJob = cron.schedule(
 
 // สรุปรายงานราคาต่อหน่วยเวลา 00:45
 const reportUnitPriceJob = cron.schedule(
-  "45 0 * * *",
+  "* * * * *",
   () => {
     console.log("Running dailyReportUnitPriceInWork job...");
     pkworkController.dailyReportUnitPriceInWork();
