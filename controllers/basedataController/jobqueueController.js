@@ -19,19 +19,8 @@ exports.getJobqueueReportUnitPrice = catchAsync(async (req, res, next) => {
   }
 
   // แปลงเป็นเวลาไทย (UTC+7) และเพิ่มไปอีก 1 วัน พร้อมตั้งค่าเวลาให้ครบช่วงวัน
-  const oneDay = 24 * 60 * 60 * 1000; // หนึ่งวันในหน่วยมิลลิวินาที
-
-  const start = new Date(
-    new Date(
-      new Date(startdate + "T00:00:00+07:00").getTime() + oneDay
-    ).toISOString()
-  );
-
-  const end = new Date(
-    new Date(
-      new Date(enddate + "T23:59:59+07:00").getTime() + oneDay
-    ).toISOString()
-  );
+  const start = new Date(`${startdate}T00:00:00+07:00`);
+  const end = new Date(`${enddate}T23:59:59+07:00`);
 
   const query = {
     status: "done",

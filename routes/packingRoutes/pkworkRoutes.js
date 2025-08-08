@@ -23,7 +23,6 @@ const {
   updatePartsDataInWork,
   movePartsToScanWorkSuccessMany,
   cancelWillReturnInventory,
-  mergeUnitPriceToPkwork,
 } = require("../../controllers/packingController/pkworkController");
 const {
   cancelData,
@@ -47,9 +46,6 @@ router
   .get(getDataPartsInWorkCancel);
 router.route("/suggest").get(getSuggestPkwork);
 router.route("/report").get(getByDatePkwork);
-router
-  .route("/report-with-unit-price")
-  .get(setSkipResNext(true), getByDatePkwork, mergeUnitPriceToPkwork);
 router.route("/deletework").delete(returnMockQtyAndDeleteWork);
 router
   .route("/cancel-by-order")

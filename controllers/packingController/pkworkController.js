@@ -464,142 +464,142 @@ exports.deletePkwork = factory.deleteOne(Pkwork);
 exports.reviveOnePkwork = factory.reviveOne(Pkwork);
 exports.deleteManyPkwork = factory.deleteMany(Pkwork);
 
-//ดึงข้อมูลเพื่อทำบัญชี
-exports.mergeUnitPriceToPkwork = catchAsync(async (req, res, next) => {
-  const { startdate, enddate, typedate } = req.query;
-  const docs = req.getByDateDocs || [];
+//
+// exports.mergeUnitPriceToPkwork = catchAsync(async (req, res, next) => {
+//   const { startdate, enddate, typedate } = req.query;
+//   const docs = req.getByDateDocs || [];
 
-  if (!docs || docs.length === 0) {
-    return res.status(200).json({
-      status: "success",
-      data: docs,
-      message: "ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย",
-    });
-  }
+//   if (!docs || docs.length === 0) {
+//     return res.status(200).json({
+//       status: "success",
+//       data: docs,
+//       message: "ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย",
+//     });
+//   }
 
-  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
-  const job = await Jobqueue.create({
-    status: "pending",
-    job_source: "pkreportwork",
-    result: {
-      startdate,
-      enddate,
-      typedate,
-    },
-  });
+//   // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+//   const job = await Jobqueue.create({
+//     status: "pending",
+//     job_source: "pkreportwork",
+//     result: {
+//       startdate,
+//       enddate,
+//       typedate,
+//     },
+//   });
 
-  // เริ่มประมวลผล async
-  setTimeout(async () => {
-    try {
-      // 1. รวม partnumber ทั้งหมด
-      const allPartnumbers = docs.flatMap((doc) =>
-        doc.scan_data.map((part) => part.partnumber)
-      );
+//   // เริ่มประมวลผล async
+//   setTimeout(async () => {
+//     try {
+//       // 1. รวม partnumber ทั้งหมด
+//       const allPartnumbers = docs.flatMap((doc) =>
+//         doc.scan_data.map((part) => part.partnumber)
+//       );
 
-      // 2. ดึงข้อมูล Skinventory ที่เกี่ยวข้อง
-      const skinventoryDocs = await Skinventory.find({
-        part_code: { $in: allPartnumbers },
-      });
+//       // 2. ดึงข้อมูล Skinventory ที่เกี่ยวข้อง
+//       const skinventoryDocs = await Skinventory.find({
+//         part_code: { $in: allPartnumbers },
+//       });
 
-      // 3. สร้าง map สำหรับ lookup part_name
-      const partNameMap = new Map();
-      skinventoryDocs.forEach((doc) => {
-        partNameMap.set(doc.part_code, doc.part_name);
-      });
+//       // 3. สร้าง map สำหรับ lookup part_name
+//       const partNameMap = new Map();
+//       skinventoryDocs.forEach((doc) => {
+//         partNameMap.set(doc.part_code, doc.part_name);
+//       });
 
-      const result = [];
+//       const result = [];
 
-      for (const work of docs) {
-        const pkPriceDoc = await Pkunitprice.findOne({
-          tracking_code: work.tracking_code,
-          shop: work.shop,
-        });
+//       for (const work of docs) {
+//         const pkPriceDoc = await Pkunitprice.findOne({
+//           tracking_code: work.tracking_code,
+//           shop: work.shop,
+//         });
 
-        const priceMap = new Map();
-        if (pkPriceDoc) {
-          pkPriceDoc.detail_price_per_unit.forEach((detail) => {
-            if (!priceMap.has(detail.partnumber)) {
-              priceMap.set(detail.partnumber, []);
-            }
-            const priceList = priceMap.get(detail.partnumber);
-            // เพิ่มเฉพาะราคาที่ไม่ซ้ำกันเท่านั้น
-            if (!priceList.includes(detail.price_per_unit)) {
-              priceList.push(detail.price_per_unit);
-            }
-          });
-        }
+//         const priceMap = new Map();
+//         if (pkPriceDoc) {
+//           pkPriceDoc.detail_price_per_unit.forEach((detail) => {
+//             if (!priceMap.has(detail.partnumber)) {
+//               priceMap.set(detail.partnumber, []);
+//             }
+//             const priceList = priceMap.get(detail.partnumber);
+//             // เพิ่มเฉพาะราคาที่ไม่ซ้ำกันเท่านั้น
+//             if (!priceList.includes(detail.price_per_unit)) {
+//               priceList.push(detail.price_per_unit);
+//             }
+//           });
+//         }
 
-        for (const part of work.scan_data) {
-          const priceList = priceMap.get(part.partnumber) || [0];
+//         for (const part of work.scan_data) {
+//           const priceList = priceMap.get(part.partnumber) || [0];
 
-          if (priceList.length === 1 || part.qty <= 1) {
-            // กรณีราคามีค่าเดียว หรือ qty = 1 ก็ใส่ตรงๆ
-            result.push({
-              upload_ref_no: work.upload_ref_no,
-              success_at: work.success_at,
-              created_at: work.created_at,
-              partnumber: part.partnumber,
-              qty: part.qty,
-              order_no: work.order_no,
-              price_per_unit: priceList[0],
-              part_name: partNameMap.get(part.partnumber) || "-",
-            });
-          } else if (priceList.length === 2) {
-            // กรณีราคาสองค่า ให้ใส่ qty-1 กับ qty 1 ตามลำดับ
-            const mainQty = part.qty - 1;
-            if (mainQty > 0) {
-              result.push({
-                upload_ref_no: work.upload_ref_no,
-                success_at: work.success_at,
-                created_at: work.created_at,
-                partnumber: part.partnumber,
-                qty: mainQty,
-                order_no: work.order_no,
-                price_per_unit: priceList[0],
-                part_name: partNameMap.get(part.partnumber) || "-",
-              });
-            }
-            result.push({
-              upload_ref_no: work.upload_ref_no,
-              success_at: work.success_at,
-              created_at: work.created_at,
-              partnumber: part.partnumber,
-              qty: 1,
-              order_no: work.order_no,
-              price_per_unit: priceList[1],
-              part_name: partNameMap.get(part.partnumber) || "-",
-            });
-          }
-        }
-      }
-      // อัปเดตสถานะของ Jobqueue เป็น "done"
-      await Jobqueue.findByIdAndUpdate(job._id, {
-        status: "done",
-        result: {
-          ...job.result,
-          message: `รวมราคาต่อหน่วยสำเร็จ ${result.length} รายการ`,
-          data: result,
-        },
-      });
-    } catch (error) {
-      // อัปเดตสถานะของ Jobqueue เป็น "error"
-      await Jobqueue.findByIdAndUpdate(job._id, {
-        status: "error",
-        result: {
-          ...job.result,
-          message: `เกิดข้อผิดพลาดในการรวมราคาต่อหน่วย: ${error.message}`,
-        },
-      });
-    }
-  }, 0); // รันแยก thread
+//           if (priceList.length === 1 || part.qty <= 1) {
+//             // กรณีราคามีค่าเดียว หรือ qty = 1 ก็ใส่ตรงๆ
+//             result.push({
+//               upload_ref_no: work.upload_ref_no,
+//               success_at: work.success_at,
+//               created_at: work.created_at,
+//               partnumber: part.partnumber,
+//               qty: part.qty,
+//               order_no: work.order_no,
+//               price_per_unit: priceList[0],
+//               part_name: partNameMap.get(part.partnumber) || "-",
+//             });
+//           } else if (priceList.length === 2) {
+//             // กรณีราคาสองค่า ให้ใส่ qty-1 กับ qty 1 ตามลำดับ
+//             const mainQty = part.qty - 1;
+//             if (mainQty > 0) {
+//               result.push({
+//                 upload_ref_no: work.upload_ref_no,
+//                 success_at: work.success_at,
+//                 created_at: work.created_at,
+//                 partnumber: part.partnumber,
+//                 qty: mainQty,
+//                 order_no: work.order_no,
+//                 price_per_unit: priceList[0],
+//                 part_name: partNameMap.get(part.partnumber) || "-",
+//               });
+//             }
+//             result.push({
+//               upload_ref_no: work.upload_ref_no,
+//               success_at: work.success_at,
+//               created_at: work.created_at,
+//               partnumber: part.partnumber,
+//               qty: 1,
+//               order_no: work.order_no,
+//               price_per_unit: priceList[1],
+//               part_name: partNameMap.get(part.partnumber) || "-",
+//             });
+//           }
+//         }
+//       }
+//       // อัปเดตสถานะของ Jobqueue เป็น "done"
+//       await Jobqueue.findByIdAndUpdate(job._id, {
+//         status: "done",
+//         result: {
+//           ...job.result,
+//           message: `รวมราคาต่อหน่วยสำเร็จ ${result.length} รายการ`,
+//           data: result,
+//         },
+//       });
+//     } catch (error) {
+//       // อัปเดตสถานะของ Jobqueue เป็น "error"
+//       await Jobqueue.findByIdAndUpdate(job._id, {
+//         status: "error",
+//         result: {
+//           ...job.result,
+//           message: `เกิดข้อผิดพลาดในการรวมราคาต่อหน่วย: ${error.message}`,
+//         },
+//       });
+//     }
+//   }, 0); // รันแยก thread
 
-  // ✅ ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
-  res.status(202).json({
-    status: "success",
-    message: `ได้รับคิวงานแล้วกำลังประมวลผล`,
-    jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
-  });
-});
+//   // ✅ ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
+//   res.status(202).json({
+//     status: "success",
+//     message: `ได้รับคิวงานแล้วกำลังประมวลผล`,
+//     jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
+//   });
+// });
 
 exports.cancelOrder = catchAsync(async (req, res, next) => {
   const user = req.user;
@@ -1093,23 +1093,23 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
 //ดึงข้อมูลเพื่อทำบัญชี
 exports.dailyReportUnitPriceInWork = async () => {
   //ส่วนของการดึงข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย
-  //1. กำหนดค่าคงที่ต่างๆ
   const typeDate = "created_at"; // ใช้ created_at เป็นตัวกรอง
+
   // กำหนดวันที่เป็นวันปัจจุบันเสมอ
   const today = moment.tz("Asia/Bangkok").startOf("day").toDate();
   // const today = moment
   //   .tz("Asia/Bangkok")
-  //   .subtract(1, "day")
+  //   .subtract(7, "day")
   //   .startOf("day")
   //   .toDate();
 
   console.log(
-    `ประมวลผลรายงานราคาต่อหน่วยในเอกสารที่สร้างเมื่อ: ${moment(today).format(
+    `ประมวลผลราคาต่อหน่วยในเอกสารที่สร้างเมื่อ: ${moment(today).format(
       "YYYY-MM-DD"
     )}`
   );
 
-  //2. ดึงข้อมูลเอกสารที่มีสถานะ "เสร็จสิ้น" และวันที่ตรงกับวันนี้
+  //2. ดึงข้อมูลเอกสารที่มีการสร้างในวันนั้นๆ
   const docs = await Pkwork.find({
     [typeDate]: {
       $gte: today,
@@ -1120,6 +1120,16 @@ exports.dailyReportUnitPriceInWork = async () => {
   //ส่วนของการ merge unit price เข้ากับ pkwork ที่ได้
   if (!docs || docs.length === 0) {
     console.log("ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย");
+    // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+    Jobqueue.create({
+      status: "done",
+      job_source: "pkdailyreportwork",
+      result: {
+        typeDate,
+        data: [],
+        message: "ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย",
+      },
+    });
     return;
   }
 
@@ -1132,19 +1142,23 @@ exports.dailyReportUnitPriceInWork = async () => {
     },
   });
 
-  // เริ่มประมวลผล
   try {
-    // 1. รวม partnumber ทั้งหมด
-    const allPartnumbers = docs.flatMap((doc) =>
-      doc.scan_data.map((part) => part.partnumber)
-    );
+    // ✅ รวม partnumber จาก scan_data และ parts_data แบบไม่ซ้ำ
+    const allPartnumbers = [
+      ...new Set(
+        docs.flatMap((doc) => [
+          ...(doc.scan_data?.map((part) => part.partnumber) || []),
+          ...(doc.parts_data?.map((part) => part.partnumber) || []),
+        ])
+      ),
+    ];
 
-    // 2. ดึงข้อมูล Skinventory ที่เกี่ยวข้อง
+    // ✅ ดึงข้อมูลเพื่อเอาค่า part_name จาก Skinventory
     const skinventoryDocs = await Skinventory.find({
       part_code: { $in: allPartnumbers },
     });
 
-    // 3. สร้าง map สำหรับ lookup part_name
+    // ✅  สร้าง map สำหรับ lookup part_name
     const partNameMap = new Map();
     skinventoryDocs.forEach((doc) => {
       partNameMap.set(doc.part_code, doc.part_name);
@@ -1172,7 +1186,9 @@ exports.dailyReportUnitPriceInWork = async () => {
         });
       }
 
-      for (const part of work.scan_data) {
+      const allParts = [...(work.scan_data || []), ...(work.parts_data || [])];
+
+      for (const part of allParts) {
         const priceList = priceMap.get(part.partnumber) || [0];
 
         if (priceList.length === 1 || part.qty <= 1) {

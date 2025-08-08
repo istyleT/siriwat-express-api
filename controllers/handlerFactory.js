@@ -357,7 +357,7 @@ exports.getAll = (Model) =>
 
 exports.getByDate = (Model) =>
   catchAsync(async (req, res, next) => {
-    const { startdate, enddate, typedate, ...filters } = req.query;
+    const { startdate, enddate, typedate, fields, ...filters } = req.query;
 
     if (!startdate || !enddate || !typedate) {
       return next(new Error("กรุณาระบุวันที่ใน query string", 400));
@@ -370,7 +370,13 @@ exports.getByDate = (Model) =>
     const query = { ...filters };
     query[typedate] = { $gte: startDate, $lt: endDate };
 
-    const docs = await Model.find(query).sort({ _id: 1 });
+    // แปลง fields จาก query string ให้เป็นรูปแบบที่ Mongoose ใช้
+    let selectFields = "";
+    if (fields) {
+      selectFields = fields.split(",").join(" ");
+    }
+
+    const docs = await Model.find(query).select(selectFields).sort({ _id: 1 });
 
     if (req.skipResNext) {
       req.getByDateDocs = docs;
