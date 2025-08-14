@@ -787,8 +787,11 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
     }
   });
 
-  const sortedData = Array.from(qtyMap.values()).sort((a, b) =>
-    a.location.localeCompare(b.location)
+  //เรียงตาม location ก่อนแล้วก็เรียงตาม partnumber
+  const sortedData = Array.from(qtyMap.values()).sort(
+    (a, b) =>
+      a.location.localeCompare(b.location) ||
+      a.partnumber.localeCompare(b.partnumber)
   );
 
   res.status(200).json({
