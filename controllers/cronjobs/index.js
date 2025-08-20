@@ -3,18 +3,18 @@ const skinventoryJob = require("./skinventory");
 const { deletePkworkJob, reportUnitPriceJob } = require("./pkwork");
 const quotationJob = require("./quotation");
 const swquotationJob = require("./swquotation");
-const pkunitpriceJob = require("./pkunitprice");
+// const pkunitpriceJob = require("./pkunitprice");
 const jobqueueJob = require("./jobqueue");
 
 // start ทุก cron job
 function startAllJobs() {
-  reportUnitPriceJob.start();
-  jobqueueJob.start();
+  // reportUnitPriceJob.start();
+  // jobqueueJob.start();
   skinventoryJob.start();
   deletePkworkJob.start();
   quotationJob.start();
   swquotationJob.start();
-  pkunitpriceJob.start();
+  // pkunitpriceJob.start();
 }
 
 module.exports = startAllJobs;

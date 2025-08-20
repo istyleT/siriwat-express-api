@@ -5,7 +5,7 @@ const { Parser } = require("json2csv");
 // นำเข้า JSON ต้นทาง
 const rawData = JSON.parse(
   fs.readFileSync(
-    path.join(__dirname, "../dev-data/data/pricelist28072025.json"),
+    path.join(__dirname, "../dev-data/data/pkworks.json"),
     "utf-8"
   )
 );

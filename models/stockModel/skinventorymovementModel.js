@@ -1,3 +1,4 @@
+//skinventorymovementModel.js
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
@@ -37,6 +38,11 @@ const skinventorymovementSchema = new mongoose.Schema({
     default: 0,
     min: 0,
   },
+  //จำนวนสินค้าในคลังหลังจากที่ความเคลื่อนไหวนี้เกิดขึ้นแล้ว
+  stock_balance: {
+    type: Number,
+    default: 0,
+  },
   //field พื้นฐาน
   created_at: {
     type: Date,
@@ -63,6 +69,7 @@ skinventorymovementSchema.statics.createMovement = async function ({
   document_ref,
   user_created,
   order_qty = 0, // ค่าพื้นฐานสำหรับ order_qty
+  stock_balance = 0, //ยอดในสต็อคหลังเกิดการเคลื่อนไหวแล้ว
 }) {
   // ตรวจสอบข้อมูลที่จำเป็น
   if (
@@ -88,6 +95,7 @@ skinventorymovementSchema.statics.createMovement = async function ({
     cost_movement,
     document_ref,
     user_created,
+    stock_balance,
     created_at: moment().tz("Asia/Bangkok").toDate(), // กันไว้เผื่อกรณีมี override
   });
 

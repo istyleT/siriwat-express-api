@@ -6,6 +6,7 @@ const catchAsync = require("../../utils/catchAsync");
 //function
 const createPkunitprice = async (sku_data, shop) => {
   // console.log("createPkunitprice");
+  // console.log("SKU Data:", sku_data);
 
   // ✅ 1. ดึง avg_cost สำหรับรหัสชุด
   const allPartCodes = sku_data
@@ -18,6 +19,7 @@ const createPkunitprice = async (sku_data, shop) => {
     { part_code: 1, avg_cost: 1 }
   );
 
+  //สร้าง Map เพื่อเก็บค่า avg_cost
   const costMap = new Map(
     skinvData.map((d) => [d.part_code, Number(d.avg_cost || 0)])
   );

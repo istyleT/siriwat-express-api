@@ -23,6 +23,10 @@ const pkunitpriceSchema = new mongoose.Schema(
             type: Number,
             default: 0,
           },
+          qty: {
+            type: Number,
+            default: 1,
+          },
         },
       ],
       default: [],

@@ -1,3 +1,4 @@
+//pkworkModel.js
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
@@ -101,6 +102,11 @@ const populateFields = [
   { path: "user_updated", select: "firstname" },
 ];
 pkworkSchema.pre(/^find/, function (next) {
+  // ตรวจสอบว่า query มี option ที่ชื่อว่า noPopulate หรือไม่
+  if (this.getOptions().noPopulate) {
+    return next();
+  }
+
   populateFields.forEach((field) => {
     this.populate({ ...field, options: { lean: true } });
   });

@@ -95,33 +95,62 @@ exports.uploadReceivePart = catchAsync(async (req, res, next) => {
     });
   }
 
-  // ถ้ามีครบทุก part_code แล้ว ทำการ update qty และ mock_qty
-  const bulkUpdateOps = receive_parts.map((part) => ({
-    updateOne: {
-      filter: { part_code: part.partnumber },
-      update: { $inc: { qty: part.qty, mock_qty: part.qty } },
-    },
-  }));
+  let successCount = 0;
 
-  await Skinventory.bulkWrite(bulkUpdateOps);
+  for (const part of receive_parts) {
+    const { partnumber, qty, cost_per_unit = 0, document_ref = null } = part;
 
-  // สร้าง movement log สำหรับการรับสินค้าเข้าคลัง
-  const movementLogs = receive_parts.map((part) => ({
-    partnumber: part.partnumber,
-    qty: part.qty,
-    movement_type: "in",
-    cost_movement: part.cost_per_unit || 0,
-    document_ref: part.document_ref || null,
-    user_created: req.user._id,
-    created_at: moment().tz("Asia/Bangkok").toDate(),
-  }));
+    const inventoryItem = inventoryParts.find(
+      (i) => i.part_code === partnumber
+    );
+    if (!inventoryItem) continue;
 
-  // บันทึก movement log
-  await Skinventorymovement.insertMany(movementLogs);
+    // อัปเดต stock
+    inventoryItem.qty += qty;
+    inventoryItem.mock_qty += qty;
+    await inventoryItem.save();
+
+    // บันทึก movement พร้อม stock_balance ที่ถูกต้อง
+    await Skinventorymovement.createMovement({
+      partnumber,
+      qty,
+      movement_type: "in",
+      cost_movement: cost_per_unit,
+      document_ref,
+      user_created: req.user._id,
+      stock_balance: inventoryItem.qty,
+    });
+
+    successCount++;
+  }
+
+  // // ถ้ามีครบทุก part_code แล้ว ทำการ update qty และ mock_qty
+  // const bulkUpdateOps = receive_parts.map((part) => ({
+  //   updateOne: {
+  //     filter: { part_code: part.partnumber },
+  //     update: { $inc: { qty: part.qty, mock_qty: part.qty } },
+  //   },
+  // }));
+
+  // await Skinventory.bulkWrite(bulkUpdateOps);
+
+  // // สร้าง movement log สำหรับการรับสินค้าเข้าคลัง
+  // const movementLogs = receive_parts.map((part) => ({
+  //   partnumber: part.partnumber,
+  //   qty: part.qty,
+  //   movement_type: "in",
+  //   cost_movement: part.cost_per_unit || 0,
+  //   document_ref: part.document_ref || null,
+  //   user_created: req.user._id,
+  //   created_at: moment().tz("Asia/Bangkok").toDate(),
+  // }));
+
+  // // บันทึก movement log
+  // await Skinventorymovement.insertMany(movementLogs);
 
   res.status(200).json({
     status: "success",
-    message: `รับสินค้าเข้าคลังสำเร็จ ${receive_parts.length} รายการ`,
+    message: `รับสินค้าเข้าคลังสำเร็จ ${successCount} รายการ`,
   });
 });
 
@@ -168,33 +197,70 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
     });
   }
 
-  // ถ้ามีครบทุก part_code แล้ว ทำการ update qty และ mock_qty
-  const bulkUpdateOps = moveout_parts.map((part) => ({
-    updateOne: {
-      filter: { part_code: part.partnumber },
-      update: { $inc: { qty: -part.qty, mock_qty: -part.qty } },
-    },
-  }));
+  let successCount = 0;
 
-  await Skinventory.bulkWrite(bulkUpdateOps);
+  for (const part of moveout_parts) {
+    const { partnumber, qty, cost_per_unit = 0, document_ref = null } = part;
 
-  // สร้าง movement log สำหรับการรับสินค้าเข้าคลัง
-  const movementLogs = moveout_parts.map((part) => ({
-    partnumber: part.partnumber,
-    qty: part.qty,
-    movement_type: "out",
-    cost_movement: part.cost_per_unit || 0,
-    document_ref: part.document_ref || null,
-    user_created: req.user._id,
-    created_at: moment().tz("Asia/Bangkok").toDate(),
-  }));
+    const inventoryItem = inventoryParts.find(
+      (i) => i.part_code === partnumber
+    );
+    if (!inventoryItem) continue;
 
-  // บันทึก movement log
-  await Skinventorymovement.insertMany(movementLogs);
+    // เช็คว่า stock เพียงพอ (ยังไม่ตรวจสอบในตอนนี้)
+    // if (inventoryItem.qty < qty || inventoryItem.mock_qty < qty) {
+    //   return res.status(400).json({
+    //     status: "fail",
+    //     message: `สินค้า ${partnumber} มีจำนวนไม่เพียงพอ`,
+    //   });
+    // }
+
+    // อัปเดต stock
+    inventoryItem.qty -= qty;
+    inventoryItem.mock_qty -= qty;
+    await inventoryItem.save();
+
+    // บันทึก movement
+    await Skinventorymovement.createMovement({
+      partnumber,
+      qty,
+      movement_type: "out",
+      cost_movement: cost_per_unit,
+      document_ref,
+      user_created: req.user._id,
+      stock_balance: inventoryItem.qty,
+    });
+
+    successCount++;
+  }
+
+  // // ถ้ามีครบทุก part_code แล้ว ทำการ update qty และ mock_qty
+  // const bulkUpdateOps = moveout_parts.map((part) => ({
+  //   updateOne: {
+  //     filter: { part_code: part.partnumber },
+  //     update: { $inc: { qty: -part.qty, mock_qty: -part.qty } },
+  //   },
+  // }));
+
+  // await Skinventory.bulkWrite(bulkUpdateOps);
+
+  // // สร้าง movement log สำหรับการรับสินค้าเข้าคลัง
+  // const movementLogs = moveout_parts.map((part) => ({
+  //   partnumber: part.partnumber,
+  //   qty: part.qty,
+  //   movement_type: "out",
+  //   cost_movement: part.cost_per_unit || 0,
+  //   document_ref: part.document_ref || null,
+  //   user_created: req.user._id,
+  //   created_at: moment().tz("Asia/Bangkok").toDate(),
+  // }));
+
+  // // บันทึก movement log
+  // await Skinventorymovement.insertMany(movementLogs);
 
   res.status(200).json({
     status: "success",
-    message: `ตัดสินค้าออกจากคลังสำเร็จ ${moveout_parts.length} รายการ`,
+    message: `ตัดสินค้าออกจากคลังสำเร็จ ${successCount} รายการ`,
   });
 });
 
@@ -202,6 +268,7 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
 exports.confirmReceivePart = catchAsync(async (req, res, next) => {
   const { partnumber, qty_in, cost_per_unit, upload_ref_no } = req.body;
 
+  //ตรวจสอบข้อมูล
   if (
     !partnumber ||
     qty_in == null ||
@@ -258,6 +325,7 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     order_qty: Number(rawOrderQty),
     document_ref: upload_ref_no,
     user_created: req.user._id,
+    stock_balance: newQty, //หลังจากรับเข้า
   });
 
   //เปลี่ยนสถานะใน Skreceive
@@ -364,45 +432,73 @@ exports.fromWorkUploadMoveOutPart = catchAsync(async (req, res, next) => {
     inventoryMap.set(item.part_code, item);
   }
 
-  // 4. เตรียม bulk update และ log movement
-  const bulkOperations = [];
-  const movementLogs = [];
+  // 4. เตรียม update ทีละตัวและสร้าง movement
+  let successCount = 0;
 
   for (const [key, { partnumber, qty, document_ref }] of mergedMap.entries()) {
     const inventoryItem = inventoryMap.get(partnumber);
     if (!inventoryItem) continue;
 
-    bulkOperations.push({
-      updateOne: {
-        filter: { _id: inventoryItem._id },
-        update: { $inc: { qty: -qty } },
-      },
-    });
+    // คำนวณ stock หลังหัก
+    const newStockBalance = inventoryItem.qty - qty;
 
-    movementLogs.push({
+    // อัพเดท stock ของ inventory
+    inventoryItem.qty = newStockBalance;
+    await inventoryItem.save();
+
+    // สร้าง movement log
+    await Skinventorymovement.createMovement({
       partnumber,
       qty,
       movement_type: "out",
       cost_movement: inventoryItem.avg_cost || 0,
-      document_ref: document_ref,
+      document_ref,
       user_created: req.user._id,
-      created_at: moment().tz("Asia/Bangkok").toDate(),
+      stock_balance: newStockBalance, // ✅ เพิ่มตรงนี้
     });
+
+    successCount++;
   }
 
-  // 5. ทำ bulk update
-  if (bulkOperations.length > 0) {
-    await Skinventory.bulkWrite(bulkOperations);
-  }
+  // // 4. เตรียม bulk update และ log movement
+  // const bulkOperations = [];
+  // const movementLogs = [];
 
-  // 6. บันทึก movement log
-  if (movementLogs.length > 0) {
-    await Skinventorymovement.insertMany(movementLogs);
-  }
+  // for (const [key, { partnumber, qty, document_ref }] of mergedMap.entries()) {
+  //   const inventoryItem = inventoryMap.get(partnumber);
+  //   if (!inventoryItem) continue;
+
+  //   bulkOperations.push({
+  //     updateOne: {
+  //       filter: { _id: inventoryItem._id },
+  //       update: { $inc: { qty: -qty } },
+  //     },
+  //   });
+
+  //   movementLogs.push({
+  //     partnumber,
+  //     qty,
+  //     movement_type: "out",
+  //     cost_movement: inventoryItem.avg_cost || 0,
+  //     document_ref: document_ref,
+  //     user_created: req.user._id,
+  //     created_at: moment().tz("Asia/Bangkok").toDate(),
+  //   });
+  // }
+
+  // // 5. ทำ bulk update
+  // if (bulkOperations.length > 0) {
+  //   await Skinventory.bulkWrite(bulkOperations);
+  // }
+
+  // // 6. บันทึก movement log
+  // if (movementLogs.length > 0) {
+  //   await Skinventorymovement.insertMany(movementLogs);
+  // }
 
   res.status(200).json({
     status: "success",
-    message: `ตัดสินค้าออกจากคลังสำเร็จ จำนวน ${bulkOperations.length} รายการ`,
+    message: `ตัดสินค้าออกจากคลังสำเร็จ จำนวน ${successCount} รายการ`,
   });
 });
 
@@ -492,45 +588,73 @@ exports.fromWorkCancelDoneMoveInPart = catchAsync(async (req, res, next) => {
     inventoryMap.set(item.part_code, item);
   }
 
-  // 4. เตรียม bulk update และ log movement
-  const bulkOperations = [];
-  const movementLogs = [];
+  // 4. เตรียม update ทีละตัวและสร้าง movement
+  let successCount = 0;
 
   for (const [key, { partnumber, qty, document_ref }] of mergedMap.entries()) {
     const inventoryItem = inventoryMap.get(partnumber);
     if (!inventoryItem) continue;
 
-    bulkOperations.push({
-      updateOne: {
-        filter: { _id: inventoryItem._id },
-        update: { $inc: { qty: qty } },
-      },
-    });
+    // คำนวณ stock หลังหัก
+    const newStockBalance = inventoryItem.qty + qty;
 
-    movementLogs.push({
+    // อัพเดท stock ของ inventory
+    inventoryItem.qty = newStockBalance;
+    await inventoryItem.save();
+
+    // สร้าง movement log
+    await Skinventorymovement.createMovement({
       partnumber,
       qty,
       movement_type: "in",
       cost_movement: inventoryItem.avg_cost || 0,
-      document_ref: document_ref,
+      document_ref,
       user_created: req.user._id,
-      created_at: moment().tz("Asia/Bangkok").toDate(),
+      stock_balance: newStockBalance, // ✅ เพิ่มตรงนี้
     });
+
+    successCount++;
   }
 
-  // 5. ทำ bulk update
-  if (bulkOperations.length > 0) {
-    await Skinventory.bulkWrite(bulkOperations);
-  }
+  // // 4. เตรียม bulk update และ log movement
+  // const bulkOperations = [];
+  // const movementLogs = [];
 
-  // 6. บันทึก movement log
-  if (movementLogs.length > 0) {
-    await Skinventorymovement.insertMany(movementLogs);
-  }
+  // for (const [key, { partnumber, qty, document_ref }] of mergedMap.entries()) {
+  //   const inventoryItem = inventoryMap.get(partnumber);
+  //   if (!inventoryItem) continue;
+
+  //   bulkOperations.push({
+  //     updateOne: {
+  //       filter: { _id: inventoryItem._id },
+  //       update: { $inc: { qty: qty } },
+  //     },
+  //   });
+
+  //   movementLogs.push({
+  //     partnumber,
+  //     qty,
+  //     movement_type: "in",
+  //     cost_movement: inventoryItem.avg_cost || 0,
+  //     document_ref: document_ref,
+  //     user_created: req.user._id,
+  //     created_at: moment().tz("Asia/Bangkok").toDate(),
+  //   });
+  // }
+
+  // // 5. ทำ bulk update
+  // if (bulkOperations.length > 0) {
+  //   await Skinventory.bulkWrite(bulkOperations);
+  // }
+
+  // // 6. บันทึก movement log
+  // if (movementLogs.length > 0) {
+  //   await Skinventorymovement.insertMany(movementLogs);
+  // }
 
   res.status(200).json({
     status: "success",
-    message: `เพิ่มสินค้าเข้าคลังสำเร็จ จำนวน ${bulkOperations.length} รายการ`,
+    message: `เพิ่มสินค้าเข้าคลังสำเร็จ จำนวน ${successCount} รายการ`,
   });
 });
 
