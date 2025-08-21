@@ -31,6 +31,10 @@ const ordernolist = JSON.parse(
   fs.readFileSync(`${__dirname}/data/checkorderno.json`, "utf-8")
 );
 
+const stock_init = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/stock_init_210825.json`, "utf-8")
+);
+
 // Function สำหรับ decode string ที่เป็น Unicode escape (ภาษาไทย)
 const decodeUnicodeEscape = (text) => {
   if (typeof text !== "string") return text;
@@ -51,6 +55,35 @@ const decodeUnicodeObjectArray = (dataArray) => {
     }
     return decoded;
   });
+};
+
+//function เพื่อเปลี่ยนแปลงค่าใน inventory ให้เป็นตามยอดที่กำหนด
+const updateQtyInventory = async (data) => {
+  try {
+    for (const item of data) {
+      const { part, value } = item;
+      if (!part || value === undefined) continue;
+
+      const updatedInventory = await Skinventory.findOneAndUpdate(
+        { part_code: part },
+        { qty: value },
+        { new: true }
+      );
+
+      if (updatedInventory) {
+        console.log(`${part} to ${value}`);
+      } else {
+        console.log(`Failed to update inventory for ${part}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error updating inventory quantities:", error);
+  } finally {
+    // Ensure process does not hang if used in CLI
+    if (process.argv.includes("--updateQtyInventory")) {
+      process.exit();
+    }
+  }
 };
 
 //function RMBKK เอาไว้แก้ไขข้อผิดพลาดบันทึกจัดส่งจำนวนที่จัดส่งไม่ไป update ที่ order
@@ -310,6 +343,11 @@ if (process.argv[2] === "--findDuplicateTrackingCodes") {
 if (process.argv[2] === "--checkOrderNumbersInPkwork") {
   checkOrderNumbersInPkwork();
 }
+
+if (process.argv[2] === "--updateQtyInventory") {
+  updateQtyInventory(stock_init);
+}
+
 if (process.argv[2] === "--getPkworkIdsByTrackingCodes") {
   const trackingCodes = [
     "TH67017D4CCD1F",
@@ -325,15 +363,6 @@ if (process.argv[2] === "--updateCancelledPkworkToComplete") {
     "685df13bc8ad4a759612807f",
     "6858aa7119f05f86a9537c8a",
     "685df13bc8ad4a75961280a8",
-    "685c9e4e1911ac55a267d192",
-    "685c9e4e1911ac55a267d1cc",
-    "6859fbe72461dfb852144cd6",
-    "685df13bc8ad4a75961280a6",
-    "685df13bc8ad4a7596128087",
-    "685df13bc8ad4a75961280bd",
-    "685df13bc8ad4a75961280bc",
-    "685df13bc8ad4a75961280bb",
-    "685df13bc8ad4a75961280c6",
   ];
 
   // console.log(`จำนวนรายการที่ต้องอัปเดต: ${ids.length} รายการ`);
@@ -343,4 +372,4 @@ if (process.argv[2] === "--updateCancelledPkworkToComplete") {
 
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
-// node dev-data/method-dev-data.js --updateCancelledPkworkToComplete
+// node dev-data/method-dev-data.js --updateQtyInventory

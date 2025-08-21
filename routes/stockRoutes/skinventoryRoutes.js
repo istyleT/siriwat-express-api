@@ -25,9 +25,9 @@ router.use(protect);
 //Routes
 router.route("/").get(getAllSkinventory).post(createSkinventory);
 //upload สินค้าเข้าคลังโดยไม่ต้องผ่านการสแกน
-router.route("/upload/parts-in").post(uploadReceivePart);
+router.route("/upload/parts-in").patch(uploadReceivePart);
 //upload สินค้าออกจากคลังโดยไม่ต้องผ่านการสแกน
-router.route("/upload/parts-out").post(uploadMoveOutPart);
+router.route("/upload/parts-out").patch(uploadMoveOutPart);
 //ตัดสินค้าออกจากคลังโดย work ที่ upload
 router.route("/from-work-uplaod/partmoveout").patch(fromWorkUploadMoveOutPart);
 //เพิ่มสินค้าออกจากคลังโดย work ที่ยกเลิกเสร็จสิ้น
