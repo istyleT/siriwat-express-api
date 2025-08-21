@@ -20,7 +20,7 @@ fs.createReadStream(inputFile)
   )
   .on("data", (row) => {
     const orderNo = row.order_no?.trim();
-    console.log(`order_no=${orderNo}, length=${orderNo?.length}`);
+    // console.log(`order_no=${orderNo}, length=${orderNo?.length}`);
 
     if (orderNo && orderNo.length > 15) {
       row.order_no = `'${orderNo}`;

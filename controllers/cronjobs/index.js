@@ -4,7 +4,7 @@ const { deletePkworkJob, reportUnitPriceJob } = require("./pkwork");
 const quotationJob = require("./quotation");
 const swquotationJob = require("./swquotation");
 // const pkunitpriceJob = require("./pkunitprice");
-const jobqueueJob = require("./jobqueue");
+// const jobqueueJob = require("./jobqueue");
 
 // start ทุก cron job
 function startAllJobs() {
