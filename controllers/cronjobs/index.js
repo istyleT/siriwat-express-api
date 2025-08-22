@@ -1,6 +1,6 @@
 //รวม cron job ที่จะทำงานเป็นประจำ
 const skinventoryJob = require("./skinventory");
-const { deletePkworkJob, reportUnitPriceJob } = require("./pkwork");
+const { deletePkworkJob } = require("./pkwork");
 const quotationJob = require("./quotation");
 const swquotationJob = require("./swquotation");
 // const pkunitpriceJob = require("./pkunitprice");

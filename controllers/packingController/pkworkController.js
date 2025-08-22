@@ -443,8 +443,19 @@ exports.movePartsToScan = catchAsync(async (req, res, next) => {
 
   if (pkwork.station === "RSM") {
     if (pkwork.parts_data && pkwork.parts_data.length > 0) {
-      // ย้ายข้อมูลจาก parts_data ไปยัง scan_data
-      pkwork.scan_data.push(...pkwork.parts_data);
+      // ✅ ป้องกัน partnumber ซ้ำ
+      const existingPartNumbers = pkwork.scan_data.map((p) => p.partnumber);
+
+      // ✅ ย้ายเฉพาะ part ที่ยังไม่มีใน scan_data
+      const newParts = pkwork.parts_data.filter(
+        (p) => !existingPartNumbers.includes(p.partnumber)
+      );
+
+      if (newParts.length > 0) {
+        pkwork.scan_data.push(...newParts);
+      }
+
+      // ✅ ล้าง parts_data เสมอ ไม่ว่าจะมีของใหม่หรือไม่
       pkwork.parts_data = [];
       await pkwork.save();
     }
@@ -825,11 +836,16 @@ exports.movePartsToScanWorkSuccessMany = catchAsync(async (req, res, next) => {
       Array.isArray(pkwork.parts_data) &&
       pkwork.parts_data.length > 0
     ) {
-      // ย้ายข้อมูลโดยใช้ findOneAndUpdate เพื่อให้ trigger
+      // เอาเฉพาะ field ที่จำเป็นเพื่อให้ตรวจซ้ำได้
+      const cleanedParts = pkwork.parts_data.map((p) => ({
+        partnumber: p.partnumber,
+        qty: p.qty,
+      }));
+
       await Pkwork.findOneAndUpdate(
         { _id: pkwork._id },
         {
-          $push: { scan_data: { $each: pkwork.parts_data } },
+          $addToSet: { scan_data: { $each: cleanedParts } }, // ป้องกันซ้ำโดย MongoDB
           $set: {
             parts_data: [],
             user_updated: user._id,
