@@ -269,10 +269,11 @@ exports.returnUploadMockQtyToInventory = catchAsync(async (req, res, next) => {
 
     await pkwork.save();
 
+    // ส่วนใหญ่แล้ว order ที่ cancel มักจะถูกส่งออกไปแล้วจึงไม่ควรคืนค่า mock_qty เพราะของจริงยังไม่มา
     // ถ้าเป็นของร้าน RM ต้องเอาของไปคืนค่า mock_qty ใน inventory
-    if (pkwork.station === "RM") {
-      await Skinventory.updateMockQty("increase", pkwork.parts_data);
-    }
+    // if (pkwork.station === "RM") {
+    //   await Skinventory.updateMockQty("increase", pkwork.parts_data);
+    // }
   }
 
   next();
@@ -494,16 +495,28 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
   }
 
   // ✅ แปลงเป็น array ของ order_no ที่ไม่ซ้ำ
-  const uniqueOrderNos = [
+  const allOrderNos = [
     ...new Set(order_cancel.map((item) => item.order_no.trim())),
   ];
 
-  // ✅ อัปเดตเอกสารที่ตรงกับ shop + order_no
+  // ✅ ดึงเฉพาะรายการที่ยังไม่ถูกยกเลิก
+  const validOrders = await Pkwork.find(
+    {
+      order_no: { $in: allOrderNos },
+      shop: shop.trim(),
+      status: { $ne: "ยกเลิก" },
+    },
+    "order_no" // เอาเฉพาะ order_no พอ
+  );
+
+  //เอาเฉพาะ order_no ที่ไม่ซ้ำและสามารถยกเลิกได้
+  const uniqueOrderNos = validOrders.map((order) => order.order_no);
+
+  // ✅ อัปเดตเฉพาะรายการที่ยังไม่ถูกยกเลิก
   const updateResult = await Pkwork.updateMany(
     {
       order_no: { $in: uniqueOrderNos },
       shop: shop.trim(),
-      status: { $ne: "ยกเลิก" },
     },
     {
       $set: {
@@ -974,14 +987,14 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
 //ส่วน function ที่ทำงานกับ cron job
 //ดึงข้อมูลเพื่อทำบัญชี
 exports.dailyReportUnitPriceInWork = async () => {
-  //ส่วนของการดึงข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย
   const typeDate = "created_at"; // ใช้ created_at เป็นตัวกรอง
 
-  // กำหนดวันที่เป็นวันปัจจุบันเสมอ
+  //กำหนดวันที่เป็นวันปัจจุบันเสมอ
   const today = moment.tz("Asia/Bangkok").startOf("day").toDate();
+  // แบบ run ย้อนหลัง
   // const today = moment
   //   .tz("Asia/Bangkok")
-  //   .subtract(7, "day")
+  //   .subtract(1, "day")
   //   .startOf("day")
   //   .toDate();
 
@@ -999,7 +1012,7 @@ exports.dailyReportUnitPriceInWork = async () => {
     },
   }).sort({ _id: 1 });
 
-  //ส่วนของการ merge unit price เข้ากับ pkwork ที่ได้
+  //ถ้าไม่มี pkwork ที่ถูกสร้างในวันนั้นๆ
   if (!docs || docs.length === 0) {
     console.log("ไม่พบข้อมูลเอกสารที่ต้องการรวมราคาต่อหน่วย");
     // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
@@ -1046,73 +1059,36 @@ exports.dailyReportUnitPriceInWork = async () => {
       partNameMap.set(doc.part_code, doc.part_name);
     });
 
+    //ส่วนของการ merge unit_price เข้ากับ pkwork ที่ได้
     const result = [];
 
     for (const work of docs) {
+      // ดึงเอกสารราคาต่อหน่วยที่ตรงกับงานนี้
       const pkPriceDoc = await Pkunitprice.findOne({
         tracking_code: work.tracking_code,
         shop: work.shop,
       });
 
-      const priceMap = new Map();
-      if (pkPriceDoc) {
+      if (pkPriceDoc && Array.isArray(pkPriceDoc.detail_price_per_unit)) {
         pkPriceDoc.detail_price_per_unit.forEach((detail) => {
-          if (!priceMap.has(detail.partnumber)) {
-            priceMap.set(detail.partnumber, []);
-          }
-          const priceList = priceMap.get(detail.partnumber);
-          // เพิ่มเฉพาะราคาที่ไม่ซ้ำกันเท่านั้น
-          if (!priceList.includes(detail.price_per_unit)) {
-            priceList.push(detail.price_per_unit);
-          }
+          result.push({
+            upload_ref_no: work.upload_ref_no,
+            success_at: work.success_at,
+            created_at: work.created_at,
+            order_no: work.order_no,
+
+            // มาจาก detail ของ Pkunitprice
+            partnumber: detail.partnumber,
+            qty: detail.qty,
+            price_per_unit: detail.price_per_unit,
+
+            // lookup ชื่อ part จาก Skinventory
+            part_name: partNameMap.get(detail.partnumber) || "-",
+          });
         });
       }
-
-      const allParts = [...(work.scan_data || []), ...(work.parts_data || [])];
-
-      for (const part of allParts) {
-        const priceList = priceMap.get(part.partnumber) || [0];
-
-        if (priceList.length === 1 || part.qty <= 1) {
-          // กรณีราคามีค่าเดียว หรือ qty = 1 ก็ใส่ตรงๆ
-          result.push({
-            upload_ref_no: work.upload_ref_no,
-            success_at: work.success_at,
-            created_at: work.created_at,
-            partnumber: part.partnumber,
-            qty: part.qty,
-            order_no: work.order_no,
-            price_per_unit: priceList[0],
-            part_name: partNameMap.get(part.partnumber) || "-",
-          });
-        } else if (priceList.length === 2) {
-          // กรณีราคาสองค่า ให้ใส่ qty-1 กับ qty 1 ตามลำดับ
-          const mainQty = part.qty - 1;
-          if (mainQty > 0) {
-            result.push({
-              upload_ref_no: work.upload_ref_no,
-              success_at: work.success_at,
-              created_at: work.created_at,
-              partnumber: part.partnumber,
-              qty: mainQty,
-              order_no: work.order_no,
-              price_per_unit: priceList[0],
-              part_name: partNameMap.get(part.partnumber) || "-",
-            });
-          }
-          result.push({
-            upload_ref_no: work.upload_ref_no,
-            success_at: work.success_at,
-            created_at: work.created_at,
-            partnumber: part.partnumber,
-            qty: 1,
-            order_no: work.order_no,
-            price_per_unit: priceList[1],
-            part_name: partNameMap.get(part.partnumber) || "-",
-          });
-        }
-      }
     }
+
     // อัปเดตสถานะของ Jobqueue เป็น "done"
     await Jobqueue.findByIdAndUpdate(job._id, {
       status: "done",
@@ -1135,6 +1111,74 @@ exports.dailyReportUnitPriceInWork = async () => {
       },
     });
   }
+
+  // Logic เดิม
+  // for (const work of docs) {
+  //   //docs คือ pkwork ที่สร้างเสร็จในวันนั้นแล้ว for loop หา pkunitprice ที่ตรงกัน
+  //   const pkPriceDoc = await Pkunitprice.findOne({
+  //     tracking_code: work.tracking_code,
+  //     shop: work.shop,
+  //   });
+
+  //   const priceMap = new Map();
+  //   if (pkPriceDoc) {
+  //     pkPriceDoc.detail_price_per_unit.forEach((detail) => {
+  //       if (!priceMap.has(detail.partnumber)) {
+  //         priceMap.set(detail.partnumber, []);
+  //       }
+  //       const priceList = priceMap.get(detail.partnumber);
+  //       // เพิ่มเฉพาะราคาที่ไม่ซ้ำกันเท่านั้น
+  //       if (!priceList.includes(detail.price_per_unit)) {
+  //         priceList.push(detail.price_per_unit);
+  //       }
+  //     });
+  //   }
+
+  //   const allParts = [...(work.scan_data || []), ...(work.parts_data || [])];
+
+  //   for (const part of allParts) {
+  //     const priceList = priceMap.get(part.partnumber) || [0];
+
+  //     if (priceList.length === 1 || part.qty <= 1) {
+  //       // กรณีราคามีค่าเดียว หรือ qty = 1 ก็ใส่ตรงๆ
+  //       result.push({
+  //         upload_ref_no: work.upload_ref_no,
+  //         success_at: work.success_at,
+  //         created_at: work.created_at,
+  //         partnumber: part.partnumber,
+  //         qty: part.qty,
+  //         order_no: work.order_no,
+  //         price_per_unit: priceList[0],
+  //         part_name: partNameMap.get(part.partnumber) || "-",
+  //       });
+  //     } else if (priceList.length === 2) {
+  //       // กรณีราคาสองค่า ให้ใส่ qty-1 กับ qty 1 ตามลำดับ
+  //       const mainQty = part.qty - 1;
+  //       if (mainQty > 0) {
+  //         result.push({
+  //           upload_ref_no: work.upload_ref_no,
+  //           success_at: work.success_at,
+  //           created_at: work.created_at,
+  //           partnumber: part.partnumber,
+  //           qty: mainQty,
+  //           order_no: work.order_no,
+  //           price_per_unit: priceList[0],
+  //           part_name: partNameMap.get(part.partnumber) || "-",
+  //         });
+  //       }
+  //       result.push({
+  //         upload_ref_no: work.upload_ref_no,
+  //         success_at: work.success_at,
+  //         created_at: work.created_at,
+  //         partnumber: part.partnumber,
+  //         qty: 1,
+  //         order_no: work.order_no,
+  //         price_per_unit: priceList[1],
+  //         part_name: partNameMap.get(part.partnumber) || "-",
+  //       });
+  //     }
+  //   }
+  // }
 };
 
 //ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ

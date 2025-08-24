@@ -57,6 +57,7 @@ const createPkunitprice = async (sku_data, shop) => {
     let parts;
 
     if (partCodes.length === 1) {
+      //กรณีที่มี part ตัวเดียว
       parts = [
         {
           partnumber: partCodes[0],
@@ -64,9 +65,11 @@ const createPkunitprice = async (sku_data, shop) => {
         },
       ];
     } else {
+      //กรณีที่มี part หลายตัว (เบอร์ชุด)
       const costList = partCodes.map((p) => costMap.get(p) || 0);
 
       if (costList.every((c) => c === 0)) {
+        //ต้นทุนเฉลี่ยทุกตัวได้ 0 ให้เฉลี่ยราคาเท่ากัน
         const equal = Number((baseUnitPrice / partCodes.length).toFixed(2));
         parts = partCodes.map((p) => ({
           partnumber: p,
@@ -74,6 +77,7 @@ const createPkunitprice = async (sku_data, shop) => {
         }));
         parts = adjustDecimalRounding(parts, baseUnitPrice);
       } else {
+        //กรณีที่มีต้นทุนเฉลี่ยไม่เป็น 0 ทั้งหมด หาค่าเฉลี่ยตามน้ำหนัก
         const totalCost = costList.reduce((sum, c) => sum + c, 0) || 1;
         parts = partCodes.map((p, i) => ({
           partnumber: p,
@@ -95,7 +99,7 @@ const createPkunitprice = async (sku_data, shop) => {
       shop,
       detail_price_per_unit: parts.map((p) => ({
         ...p,
-        qty: 1,
+        qty: Number(sku.qty || 1), //เก็บจำนวนที่คำนวนราคาบรรทัดนั้นได้
       })),
     };
   });
