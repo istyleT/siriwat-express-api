@@ -240,6 +240,7 @@ exports.returnUploadMockQtyToInventory = catchAsync(async (req, res, next) => {
     order_no: { $in: uniqueOrderNos },
     shop: shop.trim(),
     status: { $ne: "ยกเลิก" },
+    transport_waranty: false,
   });
 
   for (const pkwork of pkworks) {
@@ -505,6 +506,7 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
       order_no: { $in: allOrderNos },
       shop: shop.trim(),
       status: { $ne: "ยกเลิก" },
+      transport_waranty: false,
     },
     "order_no" // เอาเฉพาะ order_no พอ
   );

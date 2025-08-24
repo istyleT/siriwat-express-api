@@ -65,6 +65,10 @@ const pkworkSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  transport_waranty: {
+    type: Boolean,
+    default: false,
+  },
   //field พื้นฐาน
   created_at: {
     type: Date,
