@@ -162,8 +162,6 @@ exports.updatePartsDataInWork = catchAsync(async (req, res, next) => {
     });
   }
 
-  // console.log("req.body", req.body);
-
   next();
 });
 
@@ -243,12 +241,16 @@ exports.returnUploadMockQtyToInventory = catchAsync(async (req, res, next) => {
     transport_waranty: false,
   });
 
+  // ✅ เตรียม bulkWrite operations
+  const ops = [];
+
   for (const pkwork of pkworks) {
     if (pkwork.scan_data && pkwork.scan_data.length > 0) {
+      // ใช้ Map เพื่อ merge partnumber
       const partsMap = new Map();
 
       pkwork.parts_data.forEach((item) => {
-        partsMap.set(item.partnumber, item);
+        partsMap.set(item.partnumber, { ...item });
       });
 
       pkwork.scan_data.forEach((scanItem) => {
@@ -256,28 +258,64 @@ exports.returnUploadMockQtyToInventory = catchAsync(async (req, res, next) => {
         if (existing) {
           existing.qty += scanItem.qty;
         } else {
-          const newItem = {
+          partsMap.set(scanItem.partnumber, {
             partnumber: scanItem.partnumber,
             qty: scanItem.qty,
-          };
-          pkwork.parts_data.push(newItem);
-          partsMap.set(scanItem.partnumber, newItem);
+          });
         }
       });
+
+      // ✅ เตรียม update operation
+      ops.push({
+        updateOne: {
+          filter: { _id: pkwork._id },
+          update: {
+            $set: {
+              scan_data: [], // เคลียร์ค่า
+              parts_data: Array.from(partsMap.values()), // แปลงกลับเป็น array
+            },
+          },
+        },
+      });
     }
+  }
 
-    pkwork.scan_data = [];
-
-    await pkwork.save();
-
-    // ส่วนใหญ่แล้ว order ที่ cancel มักจะถูกส่งออกไปแล้วจึงไม่ควรคืนค่า mock_qty เพราะของจริงยังไม่มา
-    // ถ้าเป็นของร้าน RM ต้องเอาของไปคืนค่า mock_qty ใน inventory
-    // if (pkwork.station === "RM") {
-    //   await Skinventory.updateMockQty("increase", pkwork.parts_data);
-    // }
+  // ✅ execute bulkWrite ถ้ามีงานต้องทำ
+  if (ops.length > 0) {
+    await Pkwork.bulkWrite(ops);
   }
 
   next();
+
+  //Logic เดิม
+  // for (const pkwork of pkworks) {
+  //   if (pkwork.scan_data && pkwork.scan_data.length > 0) {
+  //     const partsMap = new Map();
+
+  //     pkwork.parts_data.forEach((item) => {
+  //       partsMap.set(item.partnumber, item);
+  //     });
+
+  //     pkwork.scan_data.forEach((scanItem) => {
+  //       const existing = partsMap.get(scanItem.partnumber);
+  //       if (existing) {
+  //         existing.qty += scanItem.qty;
+  //       } else {
+  //         const newItem = {
+  //           partnumber: scanItem.partnumber,
+  //           qty: scanItem.qty,
+  //         };
+  //         pkwork.parts_data.push(newItem);
+  //         partsMap.set(scanItem.partnumber, newItem);
+  //       }
+  //     });
+  //   }
+
+  //   pkwork.scan_data = [];
+
+  //   await pkwork.save();
+
+  // }
 });
 
 //จัดการข้อมูลเวลามีการเปลี่ยน station ที่ work
