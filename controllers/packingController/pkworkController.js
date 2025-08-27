@@ -880,42 +880,60 @@ exports.movePartsToScanWorkSuccessMany = catchAsync(async (req, res, next) => {
     });
   }
 
-  let updatedCount = 0;
+  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+  const job = await Jobqueue.create({
+    status: "pending",
+    job_source: "pkrsmsuccess",
+    result: {},
+  });
 
-  // วน loop ทีละ document
-  for (const pkwork of pkworks) {
-    if (
-      pkwork.station === "RSM" &&
-      Array.isArray(pkwork.parts_data) &&
-      pkwork.parts_data.length > 0
-    ) {
-      // เอาเฉพาะ field ที่จำเป็นเพื่อให้ตรวจซ้ำได้
-      const cleanedParts = pkwork.parts_data.map((p) => ({
-        partnumber: p.partnumber,
-        qty: p.qty,
-      }));
+  setTimeout(async () => {
+    let updatedCount = 0;
 
-      await Pkwork.findOneAndUpdate(
-        { _id: pkwork._id },
-        {
-          $addToSet: { scan_data: { $each: cleanedParts } }, // ป้องกันซ้ำโดย MongoDB
-          $set: {
-            parts_data: [],
-            user_updated: user._id,
-            updated_at: moment().tz("Asia/Bangkok").toDate(),
+    // วน loop ทีละ document
+    for (const pkwork of pkworks) {
+      if (
+        pkwork.station === "RSM" &&
+        Array.isArray(pkwork.parts_data) &&
+        pkwork.parts_data.length > 0
+      ) {
+        // เอาเฉพาะ field ที่จำเป็นเพื่อให้ตรวจซ้ำได้
+        const cleanedParts = pkwork.parts_data.map((p) => ({
+          partnumber: p.partnumber,
+          qty: p.qty,
+        }));
+
+        await Pkwork.findOneAndUpdate(
+          { _id: pkwork._id },
+          {
+            $addToSet: { scan_data: { $each: cleanedParts } }, // ป้องกันซ้ำโดย MongoDB
+            $set: {
+              parts_data: [],
+              user_updated: user._id,
+              updated_at: moment().tz("Asia/Bangkok").toDate(),
+            },
           },
-        },
-        { new: true }
-      );
-      updatedCount++;
+          { new: true }
+        );
+        updatedCount++;
+      }
     }
-  }
 
-  res.status(200).json({
+    // อัปเดตสถานะของ Jobqueue เป็น "done"
+    await Jobqueue.findByIdAndUpdate(job._id, {
+      status: "done",
+      result: {
+        ...job.result,
+        message: `เปลี่ยนสถานะสำเร็จ ${updatedCount} รายการ`,
+      },
+    });
+  }, 0); // รันแยก thread
+
+  // ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
+  res.status(202).json({
     status: "success",
-    data: {
-      message: `Work ที่เลือกแก้ไขสำเร็จ ${updatedCount} รายการ`,
-    },
+    message: `ได้รับคิวงานแล้ว เปลี่ยนสถานะงาน RSM`,
+    jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
   });
 });
 
