@@ -43,6 +43,11 @@ const skinventorymovementSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  remark: {
+    type: String,
+    trim: true,
+    default: "",
+  },
   //field พื้นฐาน
   created_at: {
     type: Date,

@@ -67,7 +67,8 @@ exports.createSkinventorymovementAdjust = catchAsync(async (req, res, next) => {
     movement_type: req.isIncrease ? "in" : "out",
     cost_movement: req.updatedDoc.avg_cost,
     user_created: req.user._id,
-    stock_balance: req.updatedDoc.qty, //ยอดคงเหลือยังที่เกิดการ update แล้ว
+    stock_balance: req.updatedDoc.qty, //ยอดคงเหลือยังที่เกิดการ update แล้ว\
+    remark: req.body.remark || "",
   };
 
   //สร้างการเคลื่อนไหวแบบ ADJUST
