@@ -2,7 +2,7 @@ const cron = require("node-cron");
 const swquotationController = require("../siriwatController/swquotationController");
 
 const swquotationJob = cron.schedule(
-  "0 0 * * *",
+  "55 0 * * *",
   // "* * * * *",
   () => {
     console.log("Running swquotation job...");

@@ -2,7 +2,7 @@ const cron = require("node-cron");
 const quotationController = require("../appController/quotationController");
 
 const quotationJob = cron.schedule(
-  "0 0 * * *",
+  "45 0 * * *",
   // "* * * * *",
   () => {
     console.log("Running quotation job...");

@@ -2,7 +2,7 @@ const cron = require("node-cron");
 const skinventoryController = require("../stockController/skinventoryController");
 
 const skinventoryJob = cron.schedule(
-  "0 0 * * *",
+  "30 1 * * *",
   // "* * * * *",
   () => {
     console.log("Running skinventory job...");

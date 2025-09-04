@@ -9,12 +9,12 @@ const pkunitpriceJob = require("./pkunitprice");
 // start ทุก cron job
 function startAllJobs() {
   // jobqueueJob.start();
-  skinventoryJob.start();
-  deletePkworkJob.start();
-  quotationJob.start();
-  swquotationJob.start();
-  reportUnitPriceJob.start();
-  pkunitpriceJob.start();
+  skinventoryJob.start(); //run 1.30
+  deletePkworkJob.start(); // run 0.30
+  quotationJob.start(); // run 0.45
+  swquotationJob.start(); // run 0.55
+  reportUnitPriceJob.start(); // run 23.45
+  pkunitpriceJob.start(); // run 1.45
 }
 
 module.exports = startAllJobs;
