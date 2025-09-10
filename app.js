@@ -47,6 +47,7 @@ const skinventorymovementRouter = require("./routes/stockRoutes/skinventorymovem
 const skinventoryRouter = require("./routes/stockRoutes/skinventoryRoutes");
 const skreceiveRouter = require("./routes/stockRoutes/skreceiveRoutes");
 const sksuggestorderRouter = require("./routes/stockRoutes/sksuggestorderRoutes");
+const skzcorevalueRouter = require("./routes/stockRoutes/skzcorevalueRoutes");
 
 //Routes ของ ส่วนกลาง
 const jobqueueRouter = require("./routes/basedataRoutes/jobqueueRoutes");
@@ -105,8 +106,8 @@ app.use(cookieParser());
 
 // ป้องกัน Bot Attack ขอ requset จนเว็บล่ม
 const limiter = rateLimit({
-  max: 500,
-  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  windowMs: 30 * 60 * 1000,
   message: "IP นี้มี request มากเกินไปกรุณาลองใหม่ในอีกครึ่งชั่วโมง",
 });
 app.use("/", limiter);
@@ -171,6 +172,7 @@ app.use("/sk/inventorymovements", skinventorymovementRouter);
 app.use("/sk/inventories", skinventoryRouter);
 app.use("/sk/receives", skreceiveRouter);
 app.use("/sk/suggestorders", sksuggestorderRouter);
+app.use("/sk/zscorevalues", skzcorevalueRouter);
 
 // siriwat routes
 app.use("/sw/customers", swcustomerRouter);

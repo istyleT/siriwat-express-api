@@ -32,6 +32,12 @@ const skinventorySchema = new mongoose.Schema({
     default: "-",
     trim: true,
   },
+  service_rate: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  },
   //field พื้นฐาน
   created_at: {
     type: Date,

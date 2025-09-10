@@ -35,6 +35,10 @@ const stock_init = JSON.parse(
   fs.readFileSync(`${__dirname}/data/stock_init_210825.json`, "utf-8")
 );
 
+const partnumber_service_rate = JSON.parse(
+  fs.readFileSync(`${__dirname}/data/partnumber_service_rate.json`, "utf-8")
+);
+
 // Function สำหรับ decode string ที่เป็น Unicode escape (ภาษาไทย)
 const decodeUnicodeEscape = (text) => {
   if (typeof text !== "string") return text;
@@ -55,6 +59,35 @@ const decodeUnicodeObjectArray = (dataArray) => {
     }
     return decoded;
   });
+};
+
+//function เพื่อเปลี่ยนแปลงค่าใน inventory ให้เป็นตามยอดที่กำหนด
+const updateServiceRateInventory = async (data) => {
+  try {
+    for (const item of data) {
+      const { partnumber, service_rate } = item;
+      if (!partnumber || service_rate === undefined) continue;
+
+      const updatedInventory = await Skinventory.findOneAndUpdate(
+        { part_code: partnumber },
+        { service_rate },
+        { new: true }
+      );
+
+      if (updatedInventory) {
+        console.log(`${partnumber} to ${service_rate}`);
+      } else {
+        console.log(`Failed to update inventory for ${partnumber}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error updating inventory service rate:", error);
+  } finally {
+    // Ensure process does not hang if used in CLI
+    if (process.argv.includes("--updateServiceRateInventory")) {
+      process.exit();
+    }
+  }
 };
 
 //function เพื่อเปลี่ยนแปลงค่าใน inventory ให้เป็นตามยอดที่กำหนด
@@ -346,6 +379,10 @@ if (process.argv[2] === "--checkOrderNumbersInPkwork") {
 
 if (process.argv[2] === "--updateQtyInventory") {
   updateQtyInventory(stock_init);
+}
+
+if (process.argv[2] === "--updateServiceRateInventory") {
+  updateServiceRateInventory(partnumber_service_rate);
 }
 
 if (process.argv[2] === "--getPkworkIdsByTrackingCodes") {
