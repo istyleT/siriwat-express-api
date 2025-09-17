@@ -51,6 +51,7 @@ const skzcorevalueRouter = require("./routes/stockRoutes/skzcorevalueRoutes");
 
 //Routes ของ ส่วนกลาง
 const jobqueueRouter = require("./routes/basedataRoutes/jobqueueRoutes");
+const monitorRouter = require("./routes/basedataRoutes/monitorRoutes");
 
 //Controller ที่ต้องการจะให้ cron ทำงาน
 const startAllJobs = require("./controllers/cronjobs/index");
@@ -150,6 +151,8 @@ app.get("/", (req, res) => {
 // Global Routes
 app.use("/users", usersRouter);
 app.use("/jobqueues", jobqueueRouter);
+app.use("/monitors", monitorRouter);
+
 // application routes
 app.use("/price", priceRouter);
 app.use("/quotation", quotationRouter);
