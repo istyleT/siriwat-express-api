@@ -84,7 +84,17 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
         },
 
         firstUploadedAt: { $min: "$created_at" },
-        lastUpdatedAt: { $max: "$updated_at" },
+
+        firstPackedAt: {
+          $min: {
+            $cond: [{ $eq: ["$station", "RM"] }, "$success_at", "$$REMOVE"],
+          },
+        },
+        lastPackedAt: {
+          $max: {
+            $cond: [{ $eq: ["$station", "RM"] }, "$success_at", "$$REMOVE"],
+          },
+        },
       },
     },
 
@@ -99,7 +109,8 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
         orderCount_RM: 1,
         orderCount_RSM: 1,
         firstUploadedAt: 1,
-        lastUpdatedAt: 1,
+        firstPackedAt: 1,
+        lastPackedAt: 1,
       },
     },
   ]);
