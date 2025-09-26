@@ -656,6 +656,7 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
   }
   const upload_ref_no = works[0].upload_ref_no;
 
+  //การหยิบของควรใช้ข้อมูลจาก parts_data เท่านั้น
   const formattedData = works.flatMap(
     (work) =>
       work.parts_data?.map((el) => ({
@@ -738,17 +739,46 @@ exports.formatPartsInArrangeDoc = catchAsync(async (req, res, next) => {
     });
   }
 
-  const formattedData = works.flatMap((work) =>
-    (work.parts_data || []).map((part) => ({
+  // const formattedData = works.flatMap((work) =>
+  //   (work.parts_data || []).map((part) => ({
+  //     upload_ref_no: work.upload_ref_no || "",
+  //     order_date: work.order_date || "",
+  //     partnumber: part.partnumber,
+  //     qty: Number(part.qty),
+  //     order_no: work.order_no || "",
+  //     tracking_code: work.tracking_code || "",
+  //     station: work.station || "",
+  //   }))
+  // );
+  // รวมข้อมูล scan_data และ parts_data แล้วรวม qty ตาม partnumber ต่อ work
+  const formattedData = works.flatMap((work) => {
+    const mergedParts = [...(work.scan_data || []), ...(work.parts_data || [])];
+
+    // ใช้ Map เพื่อรวม qty ตาม partnumber
+    const partMap = new Map();
+
+    for (const part of mergedParts) {
+      const partnumber = part.partnumber;
+      const qty = Number(part.qty) || 0;
+
+      if (partMap.has(partnumber)) {
+        partMap.set(partnumber, partMap.get(partnumber) + qty);
+      } else {
+        partMap.set(partnumber, qty);
+      }
+    }
+
+    // แปลงข้อมูลที่รวมแล้วให้อยู่ในรูปแบบ output
+    return Array.from(partMap.entries()).map(([partnumber, qty]) => ({
       upload_ref_no: work.upload_ref_no || "",
       order_date: work.order_date || "",
-      partnumber: part.partnumber,
-      qty: Number(part.qty),
+      partnumber,
+      qty,
       order_no: work.order_no || "",
       tracking_code: work.tracking_code || "",
       station: work.station || "",
-    }))
-  );
+    }));
+  });
 
   // ❗ สร้างชุด partnumber ที่ไม่ซ้ำกัน
   const uniquePartNumbers = [

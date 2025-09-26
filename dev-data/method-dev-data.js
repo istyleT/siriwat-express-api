@@ -265,6 +265,42 @@ const checkOrderNumbersInPkwork = async () => {
   }
 };
 
+//function ตรวจสอบว่า tracking_code ไหนในชุดข้อมูลที่ไม่มีใน pkwork
+const checkMissingTrackingCodesInPkwork = async (trackingCodes) => {
+  try {
+    //กำหนดวันที่
+    const startOfDay = new Date("2025-09-20T00:00:00+07:00");
+    const endOfDay = new Date("2025-09-21T00:00:00+07:00");
+
+    const foundDocs = await Pkwork.find({
+      created_at: { $gte: startOfDay, $lt: endOfDay },
+      station: "RM",
+      status: "เสร็จสิ้น",
+      tracking_code: { $in: trackingCodes },
+    }).select("tracking_code");
+
+    const foundTrackingCodes = foundDocs.map((doc) => doc.tracking_code);
+
+    // ค้นหารายการที่ไม่มีในเอกสาร
+    const notFoundCodes = trackingCodes.filter(
+      (code) => !foundTrackingCodes.includes(code)
+    );
+
+    if (notFoundCodes.length === 0) {
+      console.log("✅ พบ tracking_code ทั้งหมดในฐานข้อมูลแล้ว");
+    } else {
+      console.log("❌ ไม่พบ tracking_code เหล่านี้ในฐานข้อมูล:");
+      notFoundCodes.forEach((code) => console.log(`- ${code}`));
+    }
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดระหว่างการตรวจสอบ:", error);
+  } finally {
+    if (process.argv.includes("--checkMissingTrackingCodesInPkwork")) {
+      process.exit();
+    }
+  }
+};
+
 //function report tracking_code ที่ซ้ำกันใน pkwork
 const findDuplicateTrackingCodes = async () => {
   try {
@@ -383,6 +419,17 @@ if (process.argv[2] === "--updateQtyInventory") {
 
 if (process.argv[2] === "--updateServiceRateInventory") {
   updateServiceRateInventory(partnumber_service_rate);
+}
+
+if (process.argv[2] === "--checkMissingTrackingCodesInPkwork") {
+  const trackingCodes = [
+    "764001009391",
+    "764001409393",
+    "764042802390",
+    "764042804394",
+  ];
+
+  checkMissingTrackingCodesInPkwork(trackingCodes);
 }
 
 if (process.argv[2] === "--getPkworkIdsByTrackingCodes") {
