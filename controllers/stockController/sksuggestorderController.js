@@ -321,11 +321,12 @@ exports.calculateSuggestOrderLowFrequency = catchAsync(
 
 //Method
 exports.getAllSksuggestorder = factory.getAll(Sksuggestorder);
-exports.getSksuggestorder = factory.getOne(Sksuggestorder);
+exports.getSksuggestorder = factory.getSuggest(Sksuggestorder);
 exports.createSksuggestorder = factory.createOne(Sksuggestorder);
 exports.updateSksuggestorder = factory.updateOne(Sksuggestorder);
 
 exports.enrichSuggestOrderWithInventory = catchAsync(async (req, res, next) => {
+  const { suggest_date, lead_time, stock_duration } = req.query;
   const results = [
     ...(req.suggestOrderResultsHigh || []),
     ...(req.suggestOrderResultsMedium || []),
@@ -359,6 +360,13 @@ exports.enrichSuggestOrderWithInventory = catchAsync(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    data: enrichedResults,
+    data: {
+      results: enrichedResults,
+      config: {
+        suggestDate: suggest_date,
+        leadTime: lead_time,
+        stockDuration: stock_duration,
+      },
+    },
   });
 });
