@@ -47,7 +47,6 @@ const skinventorymovementRouter = require("./routes/stockRoutes/skinventorymovem
 const skinventoryRouter = require("./routes/stockRoutes/skinventoryRoutes");
 const skreceiveRouter = require("./routes/stockRoutes/skreceiveRoutes");
 const sksuggestorderRouter = require("./routes/stockRoutes/sksuggestorderRoutes");
-const skzcorevalueRouter = require("./routes/stockRoutes/skzcorevalueRoutes");
 
 //Routes ของ ส่วนกลาง
 const jobqueueRouter = require("./routes/basedataRoutes/jobqueueRoutes");
@@ -175,7 +174,6 @@ app.use("/sk/inventorymovements", skinventorymovementRouter);
 app.use("/sk/inventories", skinventoryRouter);
 app.use("/sk/receives", skreceiveRouter);
 app.use("/sk/suggestorders", sksuggestorderRouter);
-app.use("/sk/zscorevalues", skzcorevalueRouter);
 
 // siriwat routes
 app.use("/sw/customers", swcustomerRouter);

@@ -6,14 +6,14 @@ const factory = require("../handlerFactory");
 const moment = require("moment-timezone");
 const catchAsync = require("../../utils/catchAsync");
 const Skinventory = require("../../models/stockModel/skinventoryModel");
+const {
+  getZfromServiceRate,
+  getPartLogsByDay,
+  prepareSalesArray,
+} = require("../suggestHelper");
 
 //Middleware
-
-//Method
-exports.getAllSksuggestorder = factory.getAll(Sksuggestorder);
-exports.getSksuggestorder = factory.getOne(Sksuggestorder);
-exports.createSksuggestorder = factory.createOne(Sksuggestorder);
-exports.updateSksuggestorder = factory.updateOne(Sksuggestorder);
+exports.setSkSuggestNo = factory.setSkDocno(Sksuggestorder);
 
 exports.prepareDataForSuggest = catchAsync(async (req, res, next) => {
   // console.log("prepareDataForSuggest");
@@ -107,13 +107,37 @@ exports.prepareDataForSuggest = catchAsync(async (req, res, next) => {
   req.mediumFrequency = mediumFrequency;
   req.lowFrequency = lowFrequency;
 
+  // console.log("prepareDataForSuggest done");
+  next();
+});
+
+exports.fetchServiceRates = catchAsync(async (req, res, next) => {
+  // console.log("fetchServiceRates");
+  const allPartnumbers = [
+    ...(req.highFrequency || []),
+    ...(req.mediumFrequency || []),
+  ].map((p) => p.partnumber);
+
+  const inventories = await Skinventory.find({
+    part_code: { $in: allPartnumbers },
+  }).select("part_code service_rate");
+
+  const serviceRateMap = {};
+  inventories.forEach((inv) => {
+    serviceRateMap[inv.part_code] = inv.service_rate;
+  });
+
+  req.serviceRateMap = serviceRateMap;
+  // console.log("fetchServiceRates done");
   next();
 });
 
 exports.calculateSuggestOrderHighFrequency = catchAsync(
   async (req, res, next) => {
+    // console.log("calculateSuggestOrderHighFrequency");
     const { suggest_date, lead_time, stock_duration } = req.query;
     const { highFrequency } = req;
+    const serviceRateMap = req.serviceRateMap;
 
     if (!highFrequency) {
       return res.status(400).json({
@@ -124,59 +148,27 @@ exports.calculateSuggestOrderHighFrequency = catchAsync(
 
     const suggestMoment = moment.tz(suggest_date, "Asia/Bangkok");
 
-    // เตรียม partLogsByDay ใหม่จาก middleware ก่อนหน้า
-    const partLogsByDay = {};
-    const pkworks = await Pkwork.find(
-      {
-        created_at: {
-          $gte: suggestMoment
-            .clone()
-            .subtract(30, "days")
-            .startOf("day")
-            .toDate(),
-          $lte: suggestMoment.clone().endOf("day").toDate(),
-        },
+    const pkworks = await Pkwork.find({
+      created_at: {
+        $gte: suggestMoment
+          .clone()
+          .subtract(30, "days")
+          .startOf("day")
+          .toDate(),
+        $lte: suggestMoment.clone().endOf("day").toDate(),
       },
-      null,
-      { noPopulate: true }
-    ).select("parts_data scan_data created_at");
+    }).select("parts_data scan_data created_at");
 
-    pkworks.forEach((doc) => {
-      const dateKey = moment(doc.created_at)
-        .tz("Asia/Bangkok")
-        .format("YYYY-MM-DD");
-
-      const allParts = [...doc.parts_data, ...doc.scan_data];
-      if (!partLogsByDay[dateKey]) partLogsByDay[dateKey] = [];
-      partLogsByDay[dateKey].push(...allParts);
-    });
-
-    // คำนวณ Suggest Order ทีละ partnumber
-    const Z = 1.65;
+    const partLogsByDay = getPartLogsByDay(pkworks, suggestMoment);
     const results = [];
 
-    function prepareDailySaleArray(partnumber) {
-      const arr = [];
-      for (let i = 29; i >= 0; i--) {
-        const dateKey = suggestMoment
-          .clone()
-          .subtract(i, "days")
-          .format("YYYY-MM-DD");
-        const logs = partLogsByDay[dateKey] || [];
-        const totalQty = logs
-          .filter((p) => p.partnumber === partnumber)
-          .reduce((sum, p) => sum + p.qty, 0);
-        arr.push(totalQty);
-      }
-      return arr;
-    }
-
     highFrequency.forEach(({ partnumber }) => {
-      const sales = prepareDailySaleArray(partnumber);
+      const sales = prepareSalesArray(partLogsByDay, suggestMoment, partnumber);
       const avg = ss.mean(sales);
       const std = ss.standardDeviation(sales);
       const total_qty_30d = sales.reduce((sum, x) => sum + x, 0);
 
+      const Z = getZfromServiceRate(serviceRateMap[partnumber]); // ✅ ตรงนี้ถูกต้องแล้ว
       const safety_stock = Z * std * Math.sqrt(Number(lead_time));
       const suggest_order = avg * Number(stock_duration) + safety_stock;
 
@@ -188,20 +180,31 @@ exports.calculateSuggestOrderHighFrequency = catchAsync(
         total_qty_30d,
         stddev: Number(std.toFixed(2)),
         safety_stock: Math.ceil(safety_stock),
+        // service_rate: serviceRateMap[partnumber],
+        Z,
       });
     });
 
-    console.log("Suggest Order Results:", results);
-
-    req.suggestOrderResults = results;
+    req.suggestOrderResultsHigh = results;
+    // console.log("calculateSuggestOrderHighFrequency done");
     next();
   }
 );
 
 exports.calculateSuggestOrderMediumFrequency = catchAsync(
   async (req, res, next) => {
+    // console.log("calculateSuggestOrderMediumFrequency");
     const { suggest_date, lead_time, stock_duration } = req.query;
     const { mediumFrequency } = req;
+    const serviceRateMap = req.serviceRateMap;
+
+    if (!mediumFrequency) {
+      return res.status(400).json({
+        status: "fail",
+        message: "ไม่มีข้อมูลกลุ่ม Medium Frequency",
+      });
+    }
+
     const suggestMoment = moment.tz(suggest_date, "Asia/Bangkok");
 
     const pkworks = await Pkwork.find({
@@ -215,63 +218,53 @@ exports.calculateSuggestOrderMediumFrequency = catchAsync(
       },
     }).select("parts_data scan_data created_at");
 
-    const partLogsByDay = {};
-    pkworks.forEach((doc) => {
-      const dateKey = moment(doc.created_at)
-        .tz("Asia/Bangkok")
-        .format("YYYY-MM-DD");
-      const allParts = [...doc.parts_data, ...doc.scan_data];
-      if (!partLogsByDay[dateKey]) partLogsByDay[dateKey] = [];
-      partLogsByDay[dateKey].push(...allParts);
-    });
-
-    function prepareSalesArray(partnumber) {
-      const arr = [];
-      for (let i = 29; i >= 0; i--) {
-        const dateKey = suggestMoment
-          .clone()
-          .subtract(i, "days")
-          .format("YYYY-MM-DD");
-        const logs = partLogsByDay[dateKey] || [];
-        const totalQty = logs
-          .filter((p) => p.partnumber === partnumber)
-          .reduce((sum, p) => sum + p.qty, 0);
-        arr.push(totalQty);
-      }
-      return arr;
-    }
-
-    const Z = 1.65;
+    const partLogsByDay = getPartLogsByDay(pkworks, suggestMoment);
     const results = [];
 
     for (const { partnumber } of mediumFrequency) {
-      const sales = prepareSalesArray(partnumber);
+      const sales = prepareSalesArray(partLogsByDay, suggestMoment, partnumber);
       const avg = ss.mean(sales);
       const std = ss.standardDeviation(sales);
-      const cv = std / avg;
+      const cv = avg === 0 ? 0 : std / avg;
+
+      const Z = getZfromServiceRate(serviceRateMap[partnumber]);
+
       const safety = Z * avg * cv * Math.sqrt(Number(lead_time));
       const suggest = avg * Number(stock_duration) + safety;
+
       results.push({
         partnumber,
         group: "medium",
         avg_qty_per_d: Number(avg.toFixed(2)),
-        cv: Number(cv.toFixed(2)),
         stddev: Number(std.toFixed(2)),
+        cv: Number(cv.toFixed(2)),
         safety_stock: Math.ceil(safety),
         suggest_qty: Math.ceil(suggest),
         total_qty_30d: sales.reduce((a, b) => a + b, 0),
+        // service_rate: serviceRateMap[partnumber],
+        Z,
       });
     }
 
     req.suggestOrderResultsMedium = results;
+    // console.log("calculateSuggestOrderMediumFrequency done");
     next();
   }
 );
 
 exports.calculateSuggestOrderLowFrequency = catchAsync(
   async (req, res, next) => {
+    // console.log("calculateSuggestOrderLowFrequency");
     const { suggest_date, stock_duration } = req.query;
     const { lowFrequency } = req;
+
+    if (!lowFrequency) {
+      return res.status(400).json({
+        status: "fail",
+        message: "ไม่มีข้อมูลกลุ่ม Low Frequency",
+      });
+    }
+
     const suggestMoment = moment.tz(suggest_date, "Asia/Bangkok");
 
     const pkworks = await Pkwork.find({
@@ -285,40 +278,15 @@ exports.calculateSuggestOrderLowFrequency = catchAsync(
       },
     }).select("parts_data scan_data created_at");
 
-    const partLogsByDay = {};
-    pkworks.forEach((doc) => {
-      const dateKey = moment(doc.created_at)
-        .tz("Asia/Bangkok")
-        .format("YYYY-MM-DD");
-      const allParts = [...doc.parts_data, ...doc.scan_data];
-      if (!partLogsByDay[dateKey]) partLogsByDay[dateKey] = [];
-      partLogsByDay[dateKey].push(...allParts);
-    });
-
-    function prepareSalesArray(partnumber) {
-      const arr = [];
-      for (let i = 29; i >= 0; i--) {
-        const dateKey = suggestMoment
-          .clone()
-          .subtract(i, "days")
-          .format("YYYY-MM-DD");
-        const logs = partLogsByDay[dateKey] || [];
-        const totalQty = logs
-          .filter((p) => p.partnumber === partnumber)
-          .reduce((sum, p) => sum + p.qty, 0);
-        arr.push(totalQty);
-      }
-      return arr;
-    }
-
+    const partLogsByDay = getPartLogsByDay(pkworks, suggestMoment);
     const alpha = 0.1;
     const results = [];
 
     for (const { partnumber } of lowFrequency) {
-      const sales = prepareSalesArray(partnumber);
+      const sales = prepareSalesArray(partLogsByDay, suggestMoment, partnumber);
       let forecast = 0,
-        interval = 1;
-      let timeSinceLast = 1;
+        interval = 1,
+        timeSinceLast = 1;
 
       sales.forEach((v) => {
         if (v > 0) {
@@ -332,9 +300,13 @@ exports.calculateSuggestOrderLowFrequency = catchAsync(
 
       const croston = interval === 0 ? 0 : forecast / interval;
       const suggest = croston * Number(stock_duration);
+
       results.push({
         partnumber,
         group: "low",
+        avg_qty_per_d: Number(
+          (sales.reduce((a, b) => a + b, 0) / 30).toFixed(2)
+        ),
         forecast: Number(croston.toFixed(2)),
         suggest_qty: Math.ceil(suggest),
         total_qty_30d: sales.reduce((a, b) => a + b, 0),
@@ -342,13 +314,20 @@ exports.calculateSuggestOrderLowFrequency = catchAsync(
     }
 
     req.suggestOrderResultsLow = results;
+    // console.log("calculateSuggestOrderLowFrequency done");
     next();
   }
 );
 
-exports.enrichSuggestOrderWithInventory = async (req, res) => {
+//Method
+exports.getAllSksuggestorder = factory.getAll(Sksuggestorder);
+exports.getSksuggestorder = factory.getOne(Sksuggestorder);
+exports.createSksuggestorder = factory.createOne(Sksuggestorder);
+exports.updateSksuggestorder = factory.updateOne(Sksuggestorder);
+
+exports.enrichSuggestOrderWithInventory = catchAsync(async (req, res, next) => {
   const results = [
-    ...(req.suggestOrderResults || []),
+    ...(req.suggestOrderResultsHigh || []),
     ...(req.suggestOrderResultsMedium || []),
     ...(req.suggestOrderResultsLow || []),
   ];
@@ -363,17 +342,23 @@ exports.enrichSuggestOrderWithInventory = async (req, res) => {
     inventoryMap[inv.part_code] = inv;
   });
 
-  const enrichedResults = results.map((item) => {
-    const inv = inventoryMap[item.partnumber];
-    return {
-      ...item,
-      part_name_thai: inv?.part_name || null,
-      current_qty_in_stock: inv?.qty ?? 0,
-    };
-  });
+  const enrichedResults = results
+    .map((item) => {
+      const inv = inventoryMap[item.partnumber];
+      const orderQty = Math.max(item.suggest_qty - (inv?.qty ?? 0), 0);
+
+      return {
+        ...item,
+        suggest_qty: orderQty,
+        part_name_thai: inv?.part_name || null,
+        current_qty_in_stock: inv?.qty ?? 0,
+      };
+    })
+    .filter((item) => item.suggest_qty > 0) // ✅ กรองรายการที่ไม่ต้องสั่ง
+    .sort((a, b) => b.suggest_qty - a.suggest_qty);
 
   return res.status(200).json({
     status: "success",
     data: enrichedResults,
   });
-};
+});

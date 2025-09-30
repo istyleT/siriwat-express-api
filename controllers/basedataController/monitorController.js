@@ -82,7 +82,7 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
             $cond: [{ $eq: ["$station", "RSM"] }, 1, 0],
           },
         },
-        trackingcodeSet_RM: {
+        trackingcodeSet: {
           $addToSet: {
             $cond: [{ $eq: ["$station", "RM"] }, "$tracking_code", "$$REMOVE"],
           },
@@ -113,7 +113,7 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
         totalQty: { $add: ["$totalQty_parts", "$totalQty_scan"] },
         orderCount_RM: 1,
         orderCount_RSM: 1,
-        trackingcodeCount_RM: { $size: "$trackingcodeSet_RM" },
+        trackingcodeCount: { $size: "$trackingcodeSet" },
         firstUploadedAt: 1,
         firstPackedAt: 1,
         lastPackedAt: 1,

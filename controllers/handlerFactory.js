@@ -100,6 +100,63 @@ exports.setDocno = (Model) =>
     }
   });
 
+exports.setSkDocno = (Model) =>
+  catchAsync(async (req, res, next) => {
+    try {
+      let docnum = "";
+      let type = "";
+      switch (Model.modelName) {
+        case "Sksuggestorder":
+          type = "SO";
+          break;
+        default:
+          // ถ้าไม่มี case ใดเข้ากันให้ส่ง error กลับไป
+          return next(new AppError("ไม่พบเงื่อนไขที่การตั้งเลขที่เอกสาร", 404));
+      }
+      const parsedDate = moment.tz(new Date(), "Asia/Bangkok");
+      // ดึงข้อมูลเวลาที่ต้องการ
+      const year = parsedDate.format("YY");
+      const month = parsedDate.format("MM");
+      const day = parsedDate.format("DD");
+      const frontdocno = `${type}${year}${month}${day}`;
+
+      // ตรวจสอบว่ามีเลขที่เอกสารที่ตรงกับเงื่อนไขหรือไม่
+      const existingDoc = await Model.findOne({
+        doc_no: { $regex: frontdocno, $options: "i" },
+      });
+
+      if (existingDoc) {
+        // ใช้ updateOne เพื่ออัปเดต docCount
+        const updateResult = await Model.updateOne(
+          { doc_no: { $regex: frontdocno, $options: "i" } },
+          { $inc: { docCount: 1 } }
+        );
+
+        // ค้นหาเอกสารที่อัปเดตเพื่อรับค่า docCount ใหม่
+        const updatedDoc = await Model.findOne({
+          doc_no: { $regex: frontdocno, $options: "i" },
+        });
+
+        docnum = ("000" + updatedDoc.docCount).slice(-4);
+      } else {
+        docnum = "0001";
+      }
+      //กำหนดค่าเพื่อส่งต่อไป
+      req.body.doc_no = frontdocno + docnum;
+
+      //ตรวจสอบค่าที่สร้างขึ้น
+      // console.log(req.body.id);
+
+      next();
+    } catch (err) {
+      res.status(500).json({
+        status: "error",
+        message: "เกิดข้อผิดพลาดในการสร้างเลขที่เอกสาร",
+        error: err.message,
+      });
+    }
+  });
+
 exports.setSwDocno = (Model) =>
   catchAsync(async (req, res, next) => {
     try {
