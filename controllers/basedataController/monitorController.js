@@ -82,11 +82,7 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
             $cond: [{ $eq: ["$station", "RSM"] }, 1, 0],
           },
         },
-        trackingcodeSet: {
-          $addToSet: {
-            $cond: [{ $eq: ["$station", "RM"] }, "$tracking_code", "$$REMOVE"],
-          },
-        },
+        trackingcodeSet: { $addToSet: "$tracking_code" },
 
         firstUploadedAt: { $min: "$created_at" },
 
