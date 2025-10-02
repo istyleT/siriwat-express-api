@@ -25,16 +25,18 @@ const sksuggestorderSchema = new mongoose.Schema(
       required: [true, "กรุณาระบุระยะเวลาในการจัดเก็บ"],
       min: 0,
     },
-    suggest_detail: {
+    suggest_details: {
       type: [
         {
           partnumber: { type: String, required: true },
           part_name_thai: { type: String, default: "-" },
-          suggest_qty: { type: Number, default: 0, min: 0 },
-          current_qty_in_stock: { type: Number, default: 0 },
-          order_qty: { type: Number, default: 0, min: 0 },
           total_qty_30d: { type: Number, default: 0 },
-          avg_qty_per_day: { type: Number, default: 0 },
+          avg_qty_per_d: { type: Number, default: 0 },
+          current_qty_in_stock: { type: Number, default: 0 },
+          avg_cost_per_unit: { type: Number, default: 0 },
+          suggest_qty: { type: Number, default: 0, min: 0 },
+          order_qty: { type: Number, default: 0, min: 0 },
+          total_price: { type: Number, default: 0, min: 0 },
         },
       ],
       default: [],

@@ -6,12 +6,7 @@ const {
   getSksuggestorder,
   createSksuggestorder,
   updateSksuggestorder,
-  prepareDataForSuggest,
-  calculateSuggestOrderHighFrequency,
-  calculateSuggestOrderMediumFrequency,
-  calculateSuggestOrderLowFrequency,
-  enrichSuggestOrderWithInventory,
-  fetchServiceRates,
+  generateSuggestOrder,
 } = require("../../controllers/stockController/sksuggestorderController");
 const { protect } = require("../../controllers/authController");
 //Global
@@ -21,16 +16,7 @@ router
   .route("/")
   .get(getAllSksuggestorder)
   .post(setSkSuggestNo, createSksuggestorder);
-router
-  .route("/generate")
-  .get(
-    prepareDataForSuggest,
-    fetchServiceRates,
-    calculateSuggestOrderHighFrequency,
-    calculateSuggestOrderMediumFrequency,
-    calculateSuggestOrderLowFrequency,
-    enrichSuggestOrderWithInventory
-  );
+router.route("/generate").get(generateSuggestOrder);
 router.route("/suggest").get(getSksuggestorder);
 router.route("/:id").patch(updateSksuggestorder);
 
