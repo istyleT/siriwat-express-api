@@ -318,7 +318,7 @@ exports.enrichResults = async (allResults) => {
       };
     })
     .filter((item) => item.suggest_qty > 0) // ✅ กรองรายการที่ไม่ต้องสั่ง
-    .sort((a, b) => b.suggest_qty - a.suggest_qty);
+    .sort((a, b) => a.partnumber.localeCompare(b.partnumber));
 
   return enriched;
 };
