@@ -2,6 +2,14 @@
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 
+const unitSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    size: { type: Number, required: true, min: 1 },
+  },
+  { _id: false }
+);
+
 const skinventorySchema = new mongoose.Schema({
   part_code: {
     type: String,
@@ -37,6 +45,15 @@ const skinventorySchema = new mongoose.Schema({
     default: 0,
     min: 0,
     max: 100,
+  },
+  units: {
+    type: [unitSchema],
+    default: [
+      {
+        name: "ชิ้น",
+        size: 1,
+      },
+    ],
   },
   //field พื้นฐาน
   created_at: {

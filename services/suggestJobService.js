@@ -3,6 +3,7 @@ const moment = require("moment-timezone");
 const ss = require("simple-statistics");
 const Pkwork = require("../models/packingModel/pkworkModel");
 const Skinventory = require("../models/stockModel/skinventoryModel");
+const Skreceive = require("../models/stockModel/skreceiveModel");
 
 //ส่วน functions helper
 const getZfromServiceRate = (rate) => {
@@ -49,6 +50,85 @@ const prepareSalesArray = (partLogsByDay, suggestMoment, partnumber) => {
     arr.push(totalQty);
   }
   return arr;
+};
+
+//ปัดจำนวนให้ตรงหน่วยบรรจุกภัณฑ์
+const roundTwoUnit = (suggestQty, [pack, piece]) => {
+  const step = pack.size;
+  const remainder = suggestQty % step;
+
+  // ถ้าเศษมากกว่าครึ่งห่อ → ปัดขึ้นเป็นจำนวนเต็มของห่อ
+  if (remainder >= step / 2) {
+    return Math.ceil(suggestQty / step) * step;
+  }
+
+  // ถ้าน้อยกว่าครึ่ง → ปัดลงเป็นห่อเต็มก่อนหน้า
+  return Math.floor(suggestQty / step) * step;
+};
+
+const roundThreeUnit = (suggestQty, [box, pack, piece]) => {
+  const boxSize = box.size; // เช่น 100
+  const packSize = pack.size; // เช่น 10
+
+  const remainderBox = suggestQty % boxSize;
+  const percentBox = (remainderBox / boxSize) * 100;
+
+  // ✅ 1. ถ้าเกิน 90% ของกล่อง → ปัดขึ้นกล่องเต็ม
+  if (percentBox >= 90) {
+    return Math.ceil(suggestQty / boxSize) * boxSize;
+  }
+
+  // ✅ 2. ถ้าไม่ถึง 90% → ปัดตามระดับห่อ
+  const remainderPack = remainderBox % packSize;
+
+  // ถ้าเศษของห่อ ≥ ครึ่งห่อ → ปัดขึ้นเต็มห่อ
+  if (remainderPack >= packSize / 2) {
+    return Math.ceil(suggestQty / packSize) * packSize;
+  }
+
+  // ถ้าน้อยกว่าครึ่งห่อ → ปัดลง
+  return Math.floor(suggestQty / packSize) * packSize;
+};
+
+const roundToNearestUnit = (suggestQty, units = []) => {
+  if (!Array.isArray(units) || units.length <= 1) {
+    return Math.round(suggestQty);
+  }
+
+  // เรียงหน่วยจากใหญ่ -> เล็ก
+  const sorted = [...units].sort((a, b) => b.size - a.size);
+
+  if (sorted.length === 2) {
+    // สินค้าที่มีแค่ ห่อ / ชิ้น
+    return roundTwoUnit(suggestQty, sorted);
+  }
+
+  if (sorted.length === 3) {
+    // สินค้าที่มี กล่อง / ห่อ / ชิ้น
+    return roundThreeUnit(suggestQty, sorted);
+  }
+
+  // ถ้าไม่เข้าเงื่อนไข (เช่น มีหน่วยเดียว)
+  return Math.round(suggestQty);
+};
+
+// ✅ ฟังก์ชันแยกจำนวนออกเป็นหน่วยต่าง ๆ (breakdown)
+exports.breakdownUnits = (totalQty, units = []) => {
+  if (!Array.isArray(units) || units.length === 0) {
+    return { ชิ้น: totalQty };
+  }
+
+  const sorted = [...units].sort((a, b) => b.size - a.size);
+  const result = {};
+  let remain = totalQty;
+
+  for (const unit of sorted) {
+    const count = Math.floor(remain / unit.size);
+    remain -= count * unit.size;
+    result[unit.name] = count;
+  }
+
+  return result;
 };
 
 // ส่วนของ middleware แต่ละขั้นตอน
@@ -304,20 +384,42 @@ exports.enrichResults = async (allResults) => {
     inventoryMap[inv.part_code] = inv;
   });
 
+  const receives = await Skreceive.aggregate([
+    { $match: { partnumber: { $in: partnumbers }, status: "pending" } },
+    { $group: { _id: "$partnumber", back_order_qty: { $sum: "$qty" } } },
+  ]);
+
+  const receiveMap = {};
+  receives.forEach((rec) => {
+    receiveMap[rec._id] = rec.back_order_qty;
+  });
+
   const enriched = allResults
     .map((item) => {
       const inv = inventoryMap[item.partnumber];
-      const orderQty = Math.max(item.suggest_qty - (inv?.qty ?? 0), 0);
+      const rawSuggest = Math.max(
+        item.suggest_qty - (inv?.qty ?? 0) - (receiveMap[item.partnumber] || 0),
+        0
+      ); // หัก stock ปัจจุบันและยอดรับที่ยังไม่เข้า
+
+      // ✅ ปัดจำนวนให้ตรงหน่วย
+      const roundedSuggest = roundToNearestUnit(rawSuggest, inv?.units);
+
+      // ✅ แยกรายละเอียดหน่วย
+      const breakdown = exports.breakdownUnits(roundedSuggest, inv?.units);
 
       return {
         ...item,
-        suggest_qty: orderQty,
+        suggest_qty: roundedSuggest, // เปลี่ยนเป็น suggest_qty ที่ปัดแล้ว
+        part_code: item.partnumber,
         part_name_thai: inv?.part_name || null,
         current_qty_in_stock: inv?.qty ?? 0,
         avg_cost_per_unit: inv?.avg_cost ?? 0,
+        back_order_qty: receiveMap[item.partnumber] || 0, // ยอดรอรับที่ยังไม่เข้า
+        breakdown_units: breakdown, // รายละเอียดการแยกหน่วย
       };
     })
-    .filter((item) => item.suggest_qty > 0) // ✅ กรองรายการที่ไม่ต้องสั่ง
+    .filter((item) => item.suggest_qty > 0 || item.back_order_qty > 0) // ✅ กรองรายการที่ไม่ต้องสั่ง เเต่ยังมียอดรับค้างอยู่
     .sort((a, b) => a.partnumber.localeCompare(b.partnumber));
 
   return enriched;

@@ -7,6 +7,7 @@ const {
   createSksuggestorder,
   updateSksuggestorder,
   generateSuggestOrder,
+  reCalBreakdownUnits,
 } = require("../../controllers/stockController/sksuggestorderController");
 const { protect } = require("../../controllers/authController");
 //Global
@@ -15,9 +16,9 @@ router.use(protect);
 router
   .route("/")
   .get(getAllSksuggestorder)
-  .post(setSkSuggestNo, createSksuggestorder);
+  .post(setSkSuggestNo, reCalBreakdownUnits, createSksuggestorder);
 router.route("/generate").get(generateSuggestOrder);
 router.route("/suggest").get(getSksuggestorder);
-router.route("/:id").patch(updateSksuggestorder);
+router.route("/:id").patch(reCalBreakdownUnits, updateSksuggestorder);
 
 module.exports = router;

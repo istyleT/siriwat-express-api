@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const fs = require("fs");
+const path = require("path");
+const csv = require("csv-parser");
 const dotenv = require("dotenv");
 const RMorder = require("../models/appModel/orderModel");
 const Pkwork = require("../models/packingModel/pkworkModel");
@@ -59,6 +61,103 @@ const decodeUnicodeObjectArray = (dataArray) => {
     }
     return decoded;
   });
+};
+
+//function เพื่อใส่ค่า packaging
+//function update units in Skinventory from packaging.csv
+const updateUnitsFromCSV = async () => {
+  try {
+    const results = [];
+
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(path.join(__dirname, "data/DataPackaging.csv"))
+        .pipe(csv({ separator: "," })) // ✅ ใช้ comma เพราะไฟล์เป็น CSV ปกติ
+        .on("data", (data) => {
+          // ✅ ลบ BOM และ trim key
+          const normalized = {};
+          for (const key in data) {
+            const cleanKey = key.replace(/\uFEFF/g, "").trim(); // ลบ BOM
+            normalized[cleanKey] = data[key]?.trim();
+          }
+          results.push(normalized);
+        })
+        .on("end", resolve)
+        .on("error", reject);
+    });
+
+    console.log("📦 อ่านข้อมูลจาก CSV สำเร็จ:", results.length, "รายการ");
+    console.log("ตัวอย่างข้อมูล:", results.slice(0, 5));
+
+    for (const row of results) {
+      const part_code = row["part_code"]?.trim();
+      if (!part_code) continue;
+
+      const boxSize = row["กล่อง"] ? Number(row["กล่อง"]) : null;
+      const packSize = row["ห่อ"] ? Number(row["ห่อ"]) : null;
+
+      // ✅ เตรียมหน่วยใหม่จาก CSV
+      const newUnits = [];
+      if (boxSize && !isNaN(boxSize)) {
+        newUnits.push({ name: "กล่อง", size: boxSize });
+      }
+      if (packSize && !isNaN(packSize)) {
+        newUnits.push({ name: "ห่อ", size: packSize });
+      }
+
+      try {
+        const part = await Skinventory.findOne({ part_code });
+        if (!part) {
+          console.warn(`⚠️ ไม่พบ part_code: ${part_code} (ข้าม)`);
+          continue;
+        }
+
+        // หน่วยเดิมใน DB
+        const existingUnits = part.units || [];
+        const baseUnit = existingUnits.filter((u) => u.name === "ชิ้น");
+
+        // รวมหน่วยใหม่ แต่เช็คซ้ำก่อน
+        let updated = false;
+        const mergedUnits = [...baseUnit];
+
+        for (const newUnit of newUnits) {
+          const existing = existingUnits.find((u) => u.name === newUnit.name);
+
+          // ✅ ถ้าไม่มีหน่วยนี้ → เพิ่มใหม่
+          if (!existing) {
+            mergedUnits.push(newUnit);
+            updated = true;
+          }
+
+          // ✅ ถ้ามีหน่วยนี้อยู่แล้วแต่ size ไม่ตรง → อัปเดตค่า size
+          else if (existing.size !== newUnit.size) {
+            mergedUnits.push(newUnit);
+            updated = true;
+            console.log(
+              `⚙️ ขนาดหน่วย '${newUnit.name}' ของ ${part_code} เปลี่ยนจาก ${existing.size} → ${newUnit.size}`
+            );
+          }
+        }
+
+        if (updated) {
+          part.units = mergedUnits;
+          await part.save();
+          console.log(`✅ อัปเดตหน่วยของ ${part_code} แล้ว →`, mergedUnits);
+        } else {
+          console.log(`⏩ ไม่มีการเปลี่ยนแปลงสำหรับ ${part_code}`);
+        }
+      } catch (err) {
+        console.error(`❌ เกิดข้อผิดพลาดที่ ${part_code}:`, err.message);
+      }
+    }
+
+    console.log("🎉 เสร็จสิ้นการนำเข้า CSV!");
+  } catch (error) {
+    console.error("❌ Error updateUnitsFromCSV:", error);
+  } finally {
+    if (process.argv.includes("--updateUnitsFromCSV")) {
+      process.exit();
+    }
+  }
 };
 
 //function เพื่อเปลี่ยนแปลงค่าใน inventory ให้เป็นตามยอดที่กำหนด
@@ -454,6 +553,10 @@ if (process.argv[2] === "--updateCancelledPkworkToComplete") {
   updateCancelledPkworkToComplete(ids);
 }
 
+if (process.argv[2] === "--updateUnitsFromCSV") {
+  updateUnitsFromCSV();
+}
+
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
-// node dev-data/method-dev-data.js --updateQtyInventory
+// node dev-data/method-dev-data.js --updateUnitsFromCSV

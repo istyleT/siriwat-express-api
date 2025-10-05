@@ -37,9 +37,21 @@ const sksuggestorderSchema = new mongoose.Schema(
           suggest_qty: { type: Number, default: 0, min: 0 },
           order_qty: { type: Number, default: 0, min: 0 },
           total_price: { type: Number, default: 0, min: 0 },
+          back_order_qty: { type: Number, default: 0, min: 0 },
+          breakdown_units: { type: Object, default: {} },
         },
       ],
       default: [],
+    },
+    //วันที่สั่งของ
+    ordered_date: {
+      type: Date,
+      default: null,
+    },
+    user_ordered: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     user_created: {
       type: mongoose.Schema.Types.ObjectId,
@@ -64,6 +76,10 @@ sksuggestorderSchema.index({
 sksuggestorderSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
+    select: "firstname",
+    options: { lean: true },
+  }).populate({
+    path: "user_ordered",
     select: "firstname",
     options: { lean: true },
   });
