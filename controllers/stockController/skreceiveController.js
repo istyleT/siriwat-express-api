@@ -9,6 +9,7 @@ moment.tz.setDefault("Asia/Bangkok");
 
 //Middleware
 exports.cleanDataUpload = catchAsync(async (req, res, next) => {
+  // console.log("cleanDataUpload");
   const receive_data = req.body;
 
   if (!Array.isArray(receive_data) || receive_data.length === 0) {
@@ -44,6 +45,7 @@ exports.cleanDataUpload = catchAsync(async (req, res, next) => {
     (pn) => !existingPartNumbers.includes(pn)
   );
 
+  // console.log("notFoundParts", notFoundParts);
   if (notFoundParts.length > 0) {
     return res.status(400).json({
       status: "fail",
@@ -74,7 +76,7 @@ exports.cleanDataUpload = catchAsync(async (req, res, next) => {
   }
 
   req.body = Array.from(mergedDataMap.values());
-  //   console.log("cleanedData", req.receiveData);
+  // console.log("cleanDataUpload Done");
   next();
 });
 

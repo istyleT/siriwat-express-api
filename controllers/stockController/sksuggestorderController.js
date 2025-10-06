@@ -4,8 +4,11 @@ const Skinventory = require("../../models/stockModel/skinventoryModel");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
+const moment = require("moment-timezone");
 const { processSuggestJob } = require("../worker/suggestJobProcess");
 const { breakdownUnits } = require("../../services/suggestJobService");
+
+moment.tz.setDefault("Asia/Bangkok");
 
 //Middleware
 exports.setSkSuggestNo = factory.setSkDocno(Sksuggestorder);
@@ -46,6 +49,58 @@ exports.reCalBreakdownUnits = catchAsync(async (req, res, next) => {
   next();
 });
 
+//เตรียมข้อมูลกไปที่ไปสร้างเป็น Receive
+exports.prepareSuggestToReceive = catchAsync(async (req, res, next) => {
+  // console.log("prepareSuggestToReceive");
+  const doc = await Sksuggestorder.findById(req.params.id);
+
+  if (!doc) {
+    return next(new AppError("ไม่พบเอกสารที่ต้องการ", 404));
+  }
+
+  if (!Array.isArray(doc.suggest_details) || doc.suggest_details.length === 0) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่มีรายการสินค้าใน suggest_details",
+    });
+  }
+
+  //จัดข้อมูลให้เหมาะสมกับการสร้าง Receive
+  req.body = doc.suggest_details
+    .filter((item) => item.order_qty > 0)
+    .map((item) => ({
+      partnumber: item.partnumber,
+      qty: item.order_qty,
+      cost_per_unit: item.avg_cost_per_unit || 0,
+    }));
+
+  // console.log("prepareSuggestToReceive Done");ห
+
+  next();
+});
+
+//กำหนดเลข Upload_ref_no ให้ Receive
+exports.setReceiveUploadRefNo = catchAsync(async (req, res, next) => {
+  if (!Array.isArray(req.body) || req.body.length === 0) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่พบข้อมูล req.body สำหรับใส่ upload_ref_no",
+    });
+  }
+  const doc = await Sksuggestorder.findById(req.params.id).select("doc_no");
+
+  if (!doc) {
+    return next(new Error("ไม่พบเอกสารที่ต้องการอัพเดท", 404));
+  }
+
+  req.body = req.body.map((item) => ({
+    ...item,
+    upload_ref_no: doc.doc_no,
+  }));
+
+  next();
+});
+
 //Method
 exports.getAllSksuggestorder = factory.getAll(Sksuggestorder);
 exports.getSksuggestorder = factory.getSuggest(Sksuggestorder);
@@ -80,5 +135,41 @@ exports.generateSuggestOrder = catchAsync(async (req, res, next) => {
     status: "success",
     message: "สร้างงานและเริ่มประมวลผลแล้ว",
     jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
+  });
+});
+
+//จัดการ Suggest ที่ถูกนำไปสร้างเป็น Receive แล้ว
+exports.suggestToReceiveConfirm = catchAsync(async (req, res, next) => {
+  //ใส่ผู้สั้งซื้อและวันที่สั่งซื้อ
+  const user = req.user;
+  if (!user) {
+    return next(new Error("ไม่พบข้อมูลผู้ใช้งาน", 400));
+  }
+
+  const updateFields = {
+    user_ordered: user._id,
+    ordered_date: moment.tz(new Date(), "Asia/Bangkok").toDate(),
+  };
+
+  const doc = await Sksuggestorder.findOneAndUpdate(
+    { _id: req.params.id },
+    updateFields,
+    {
+      new: true,
+      runValidators: true,
+      context: { user },
+    }
+  );
+
+  if (!doc) {
+    return next(new Error("ไม่พบเอกสารที่ต้องการอัพเดท", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      message: `สร้างรอรับเข้าจาก ${doc.doc_no} สำเร็จ`,
+      data: doc,
+    },
   });
 });
