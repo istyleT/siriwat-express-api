@@ -250,9 +250,17 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
 
 //ยืนยันการรับสินค้าเข้าคลังจากจากการสแกน
 exports.confirmReceivePart = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
   const { partnumber, qty_in, cost_per_unit, upload_ref_no } = req.body;
 
   //ตรวจสอบข้อมูล
+  if (!id) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่พบ ID ของรายการ",
+    });
+  }
+
   if (
     !partnumber ||
     qty_in == null ||
@@ -265,67 +273,78 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     });
   }
 
-  //กำหนดค่าสั่งซื้อ
-  const rawOrderQty = req.body.order_qty ?? 0;
+  let resData = {};
 
-  // หาอะไหล่จาก Skinventory และเพิ่มจำนวนเข้าไป
-  const part = await Skinventory.findOne({ part_code: partnumber });
+  if (qty_in > 0) {
+    //กำหนดค่าสั่งซื้อ
+    const rawOrderQty = req.body.order_qty ?? 0;
 
-  if (!part) {
-    return res.status(404).json({
-      status: "fail",
-      message: `ไม่พบอะไหล่ part_code: ${partnumber}`,
+    // หาอะไหล่จาก Skinventory และเพิ่มจำนวนเข้าไป
+    const part = await Skinventory.findOne({ part_code: partnumber });
+
+    if (!part) {
+      return res.status(404).json({
+        status: "fail",
+        message: `ไม่พบอะไหล่ part_code: ${partnumber}`,
+      });
+    }
+
+    // ดึงข้อมูล qty และ avg_cost ปัจจุบัน
+    const currentQty = Number(part.qty || 0);
+    const currentMockQty = Number(part.mock_qty || 0);
+    const currentAvgCost = Number(part.avg_cost || 0);
+
+    // คำนวณค่า avg_cost ใหม่แบบ weighted average
+    const newQty = Number(currentQty) + Number(qty_in);
+    const newMockQty = Number(currentMockQty) + Number(qty_in);
+    const newAvgCost = Number(
+      Number(
+        Number(currentAvgCost) * Number(currentQty) +
+          Number(cost_per_unit) * Number(qty_in)
+      ) / Number(newQty)
+    );
+
+    // Update ข้อมูล
+    part.qty = newQty;
+    part.mock_qty = newMockQty;
+    part.avg_cost = Math.round(newAvgCost * 100) / 100;
+
+    await part.save();
+
+    // บันทึกการเคลื่อนไหวของอะไหล่
+    await Skinventorymovement.createMovement({
+      partnumber: partnumber,
+      qty: Number(qty_in),
+      movement_type: "in",
+      cost_movement: Number(cost_per_unit),
+      document_ref: upload_ref_no,
+      user_created: req.user._id,
+      order_qty: Number(rawOrderQty),
+      stock_balance: newQty, //หลังจากรับเข้า
     });
+
+    resData = {
+      part_code: part.part_code,
+      qty: part.qty,
+      avg_cost: part.avg_cost,
+    };
   }
-
-  // ดึงข้อมูล qty และ avg_cost ปัจจุบัน
-  const currentQty = Number(part.qty || 0);
-  const currentMockQty = Number(part.mock_qty || 0);
-  const currentAvgCost = Number(part.avg_cost || 0);
-
-  // คำนวณค่า avg_cost ใหม่แบบ weighted average
-  const newQty = Number(currentQty) + Number(qty_in);
-  const newMockQty = Number(currentMockQty) + Number(qty_in);
-  const newAvgCost = Number(
-    Number(
-      Number(currentAvgCost) * Number(currentQty) +
-        Number(cost_per_unit) * Number(qty_in)
-    ) / Number(newQty)
-  );
-
-  // Update ข้อมูล
-  part.qty = newQty;
-  part.mock_qty = newMockQty;
-  part.avg_cost = Math.round(newAvgCost * 100) / 100;
-
-  await part.save();
-
-  // บันทึกการเคลื่อนไหวของอะไหล่
-  await Skinventorymovement.createMovement({
-    partnumber: partnumber,
-    qty: Number(qty_in),
-    movement_type: "in",
-    cost_movement: Number(cost_per_unit),
-    order_qty: Number(rawOrderQty),
-    document_ref: upload_ref_no,
-    user_created: req.user._id,
-    stock_balance: newQty, //หลังจากรับเข้า
-  });
 
   //เปลี่ยนสถานะใน Skreceive
   await Skreceive.findOneAndUpdate(
-    { partnumber: partnumber, status: "pending" },
-    { $set: { status: "completed" } }
+    { _id: id },
+    {
+      $set: {
+        status: "completed",
+        received_at: new Date(),
+      },
+    }
   );
 
   res.status(200).json({
     status: "success",
     message: `รับเข้าสำเร็จ: ${partnumber}`,
-    data: {
-      part_code: part.part_code,
-      qty: part.qty,
-      avg_cost: part.avg_cost,
-    },
+    data: resData,
   });
 });
 

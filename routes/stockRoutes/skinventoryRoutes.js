@@ -35,7 +35,7 @@ router
   .route("/from-work-cancel-done/partmovein")
   .patch(fromWorkCancelDoneMoveInPart);
 //upload สินค้าเข้าคลังโดยการสแกน
-router.route("/confirm-receive").patch(confirmReceivePart);
+router.route("/confirm-receive/:id").patch(confirmReceivePart);
 router.route("/suggest").get(getSuggestSkinventory);
 router.route("/balance").get(getInventoriesWithZeroFilter);
 router.route("/cancel/:id").patch(cancelData, updateSkinventory);
