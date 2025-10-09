@@ -420,7 +420,18 @@ exports.enrichResults = async (allResults) => {
       };
     })
     .filter((item) => item.suggest_qty > 0 || item.back_order_qty > 0) // ✅ กรองรายการที่ไม่ต้องสั่ง เเต่ยังมียอดรับค้างอยู่
-    .sort((a, b) => a.partnumber.localeCompare(b.partnumber));
+    .sort((a, b) => {
+      const aHasName = a.part_name_thai ? 1 : 0;
+      const bHasName = b.part_name_thai ? 1 : 0;
+
+      if (aHasName !== bHasName) {
+        return aHasName - bHasName; // ไม่มีชื่อ (0) จะมาก่อน
+      }
+
+      return a.partnumber.localeCompare(b.partnumber); // ถ้ามี/ไม่มีเหมือนกัน ให้ sort ตาม partnumber
+    });
+
+  // .sort((a, b) => a.partnumber.localeCompare(b.partnumber));
 
   return enriched;
 };
