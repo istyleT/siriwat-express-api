@@ -38,6 +38,7 @@ const sksuggestorderSchema = new mongoose.Schema(
           order_qty: { type: Number, default: 0, min: 0 },
           total_price: { type: Number, default: 0, min: 0 },
           back_order_qty: { type: Number, default: 0, min: 0 },
+          units: { type: Array, default: [] },
           breakdown_units: { type: Object, default: {} },
         },
       ],

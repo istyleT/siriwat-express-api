@@ -416,6 +416,7 @@ exports.enrichResults = async (allResults) => {
         current_qty_in_stock: inv?.qty ?? 0,
         avg_cost_per_unit: inv?.avg_cost ?? 0,
         back_order_qty: receiveMap[item.partnumber] || 0, // ยอดรอรับที่ยังไม่เข้า
+        units: inv?.units || [],
         breakdown_units: breakdown, // รายละเอียดการแยกหน่วย
       };
     })
@@ -430,8 +431,6 @@ exports.enrichResults = async (allResults) => {
 
       return a.partnumber.localeCompare(b.partnumber); // ถ้ามี/ไม่มีเหมือนกัน ให้ sort ตาม partnumber
     });
-
-  // .sort((a, b) => a.partnumber.localeCompare(b.partnumber));
 
   return enriched;
 };
