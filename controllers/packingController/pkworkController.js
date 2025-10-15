@@ -1187,7 +1187,7 @@ exports.dailyReportUnitPriceInWork = async () => {
       },
     });
 
-    console.log("รวมราคาต่อหน่วยสำเร็จ");
+    // console.log("รวมราคาต่อหน่วยสำเร็จ");
   } catch (error) {
     console.error("Job queue update error:", error);
     // อัปเดตสถานะของ Jobqueue เป็น "error"
@@ -1199,74 +1199,6 @@ exports.dailyReportUnitPriceInWork = async () => {
       },
     });
   }
-
-  // Logic เดิม
-  // for (const work of docs) {
-  //   //docs คือ pkwork ที่สร้างเสร็จในวันนั้นแล้ว for loop หา pkunitprice ที่ตรงกัน
-  //   const pkPriceDoc = await Pkunitprice.findOne({
-  //     tracking_code: work.tracking_code,
-  //     shop: work.shop,
-  //   });
-
-  //   const priceMap = new Map();
-  //   if (pkPriceDoc) {
-  //     pkPriceDoc.detail_price_per_unit.forEach((detail) => {
-  //       if (!priceMap.has(detail.partnumber)) {
-  //         priceMap.set(detail.partnumber, []);
-  //       }
-  //       const priceList = priceMap.get(detail.partnumber);
-  //       // เพิ่มเฉพาะราคาที่ไม่ซ้ำกันเท่านั้น
-  //       if (!priceList.includes(detail.price_per_unit)) {
-  //         priceList.push(detail.price_per_unit);
-  //       }
-  //     });
-  //   }
-
-  //   const allParts = [...(work.scan_data || []), ...(work.parts_data || [])];
-
-  //   for (const part of allParts) {
-  //     const priceList = priceMap.get(part.partnumber) || [0];
-
-  //     if (priceList.length === 1 || part.qty <= 1) {
-  //       // กรณีราคามีค่าเดียว หรือ qty = 1 ก็ใส่ตรงๆ
-  //       result.push({
-  //         upload_ref_no: work.upload_ref_no,
-  //         success_at: work.success_at,
-  //         created_at: work.created_at,
-  //         partnumber: part.partnumber,
-  //         qty: part.qty,
-  //         order_no: work.order_no,
-  //         price_per_unit: priceList[0],
-  //         part_name: partNameMap.get(part.partnumber) || "-",
-  //       });
-  //     } else if (priceList.length === 2) {
-  //       // กรณีราคาสองค่า ให้ใส่ qty-1 กับ qty 1 ตามลำดับ
-  //       const mainQty = part.qty - 1;
-  //       if (mainQty > 0) {
-  //         result.push({
-  //           upload_ref_no: work.upload_ref_no,
-  //           success_at: work.success_at,
-  //           created_at: work.created_at,
-  //           partnumber: part.partnumber,
-  //           qty: mainQty,
-  //           order_no: work.order_no,
-  //           price_per_unit: priceList[0],
-  //           part_name: partNameMap.get(part.partnumber) || "-",
-  //         });
-  //       }
-  //       result.push({
-  //         upload_ref_no: work.upload_ref_no,
-  //         success_at: work.success_at,
-  //         created_at: work.created_at,
-  //         partnumber: part.partnumber,
-  //         qty: 1,
-  //         order_no: work.order_no,
-  //         price_per_unit: priceList[1],
-  //         part_name: partNameMap.get(part.partnumber) || "-",
-  //       });
-  //     }
-  //   }
-  // }
 };
 
 //ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ

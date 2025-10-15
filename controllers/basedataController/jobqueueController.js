@@ -68,4 +68,9 @@ exports.deleteJobqueueUnUsed = async () => {
     job_source: "pkimportwork",
     createdAt: { $lt: date_45 },
   });
+
+  //ลบ Jobqueue ของ job_source  ที่เป็น "suggest_order" (ทุกวัน)
+  await Jobqueue.deleteMany({
+    job_source: "suggest_order",
+  });
 };
