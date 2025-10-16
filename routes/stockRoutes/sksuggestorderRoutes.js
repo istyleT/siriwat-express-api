@@ -6,6 +6,7 @@ const {
   getSksuggestorder,
   createSksuggestorder,
   updateSksuggestorder,
+  deleteSksuggestorder,
   generateSuggestOrder,
   reCalBreakdownUnits,
   prepareSuggestToReceive,
@@ -37,6 +38,9 @@ router
     createManySkreceive,
     suggestToReceiveConfirm
   );
-router.route("/:id").patch(reCalBreakdownUnits, updateSksuggestorder);
+router
+  .route("/:id")
+  .patch(reCalBreakdownUnits, updateSksuggestorder)
+  .delete(deleteSksuggestorder);
 
 module.exports = router;

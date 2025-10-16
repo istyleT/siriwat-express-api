@@ -51,9 +51,9 @@ exports.deleteJobqueueUnUsed = async () => {
   const date_45 = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
   const date_90 = moment().tz("Asia/Bangkok").subtract(90, "days").toDate();
 
-  //ลบ Jobqueue ของ job_source  ที่เป็น "pkreportwork"(ทุกวัน)
+  //ลบ Jobqueue ของ job_source  ที่เป็น "pkdailyreportwork"(ทุกวัน)
   await Jobqueue.deleteMany({
-    job_source: "pkreportwork",
+    job_source: "pkdailyreportwork",
     createdAt: { $lt: date_90 },
   });
 

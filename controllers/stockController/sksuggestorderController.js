@@ -106,6 +106,7 @@ exports.getAllSksuggestorder = factory.getAll(Sksuggestorder);
 exports.getSksuggestorder = factory.getSuggest(Sksuggestorder);
 exports.createSksuggestorder = factory.createOne(Sksuggestorder);
 exports.updateSksuggestorder = factory.updateOne(Sksuggestorder);
+exports.deleteSksuggestorder = factory.deleteOne(Sksuggestorder);
 
 exports.generateSuggestOrder = catchAsync(async (req, res, next) => {
   const { suggest_date, lead_time, stock_duration } = req.query;

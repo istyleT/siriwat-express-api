@@ -593,7 +593,10 @@ exports.deleteOne = (Model) =>
 
     res.status(204).json({
       status: "success",
-      data: null,
+      data: {
+        message: "ลบข้อมูลสำเร็จ",
+        data: null,
+      },
     });
   });
 
