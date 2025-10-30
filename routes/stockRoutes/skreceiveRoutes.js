@@ -5,6 +5,7 @@ const {
   cleanDataUpload,
   getAllSkreceive,
   getSuggestSkreceive,
+  deleteSkreceive,
   createManySkreceive,
 } = require("../../controllers/stockController/skreceiveController");
 const { protect } = require("../../controllers/authController");
@@ -16,5 +17,6 @@ router.route("/suggest").get(getSuggestSkreceive);
 router
   .route("/upload")
   .post(cleanDataUpload, assignUploadRefNo, createManySkreceive);
+router.route("/:id").delete(deleteSkreceive);
 
 module.exports = router;

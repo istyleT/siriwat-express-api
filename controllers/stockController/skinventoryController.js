@@ -4,6 +4,7 @@ const Skinventorymovement = require("../../models/stockModel/skinventorymovement
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
+const { calculateWeightedAverageCost } = require("./helper");
 
 //Middleware
 exports.checkForAdjustPart = catchAsync(async (req, res, next) => {
@@ -250,34 +251,48 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
 
 //ยืนยันการรับสินค้าเข้าคลังจากจากการสแกน
 exports.confirmReceivePart = catchAsync(async (req, res, next) => {
-  const id = req.params.id;
-  const { partnumber, qty_in, cost_per_unit, upload_ref_no } = req.body;
-
+  const partnumber = req.params.partnum;
   //ตรวจสอบข้อมูล
-  if (!id) {
+  if (!partnumber) {
     return res.status(400).json({
       status: "fail",
-      message: "ไม่พบ ID ของรายการ",
+      message: "ไม่พบ partnumber ที่ต้องการรับเข้า",
     });
   }
 
-  if (
-    !partnumber ||
-    qty_in == null ||
-    cost_per_unit == null ||
-    !upload_ref_no
-  ) {
+  const { qty_in } = req.body;
+
+  if (qty_in == null || isNaN(Number(qty_in)) || Number(qty_in) <= 0) {
     return res.status(400).json({
       status: "fail",
-      message: "ข้อมูลไม่ครบถ้วน",
+      message: "ไม่มีจำนวนที่ต้องการรับเข้า",
     });
   }
 
+  //ดึงรายการ Skreceive ที่ match กับ partnumber และยัง pending
+  const pendingReceives = await Skreceive.find({
+    partnumber: partnumber,
+    status: "pending",
+  }).sort({ created_at: 1 });
+
+  if (pendingReceives.length === 0) {
+    return res.status(404).json({
+      status: "fail",
+      message: `ไม่พบรอรับเข้า: ${partnumber} หรืออาจรับครบหมดแล้ว`,
+    });
+  }
+
+  let qtyLeft = Number(qty_in);
   let resData = {};
 
-  if (qty_in > 0) {
-    //กำหนดค่าสั่งซื้อ
-    const rawOrderQty = req.body.order_qty ?? 0;
+  for (const receive of pendingReceives) {
+    if (qtyLeft <= 0) break;
+
+    const remaining = receive.qty - receive.received_qty;
+    const toReceive = Math.min(remaining, qtyLeft);
+
+    const newReceivedQty = receive.received_qty + toReceive;
+    const isCompleted = newReceivedQty >= receive.qty;
 
     // หาอะไหล่จาก Skinventory และเพิ่มจำนวนเข้าไป
     const part = await Skinventory.findOne({ part_code: partnumber });
@@ -297,30 +312,40 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     // คำนวณค่า avg_cost ใหม่แบบ weighted average
     const newQty = Number(currentQty) + Number(qty_in);
     const newMockQty = Number(currentMockQty) + Number(qty_in);
-    const newAvgCost = Number(
-      Number(
-        Number(currentAvgCost) * Number(currentQty) +
-          Number(cost_per_unit) * Number(qty_in)
-      ) / Number(newQty)
-    );
+
+    const newAvgCost = calculateWeightedAverageCost({
+      currentQty,
+      currentAvgCost,
+      incomingQty: toReceive,
+      incomingCost: receive.cost_per_unit,
+    });
 
     // Update ข้อมูล
     part.qty = newQty;
     part.mock_qty = newMockQty;
-    part.avg_cost = Math.round(newAvgCost * 100) / 100;
+    part.avg_cost = newAvgCost;
 
     await part.save();
 
     // บันทึกการเคลื่อนไหวของอะไหล่
     await Skinventorymovement.createMovement({
       partnumber: partnumber,
-      qty: Number(qty_in),
+      qty: Number(toReceive),
       movement_type: "in",
-      cost_movement: Number(cost_per_unit),
-      document_ref: upload_ref_no,
+      cost_movement: Number(receive.cost_per_unit),
+      document_ref: receive.upload_ref_no,
       user_created: req.user._id,
-      order_qty: Number(rawOrderQty),
+      order_qty: Number(receive.qty || 0),
       stock_balance: newQty, //หลังจากรับเข้า
+    });
+
+    // อัปเดต Skreceive
+    await Skreceive.findByIdAndUpdate(receive._id, {
+      $set: {
+        received_qty: newReceivedQty,
+        status: isCompleted ? "completed" : "pending",
+        received_at: isCompleted ? new Date() : null,
+      },
     });
 
     resData = {
@@ -328,18 +353,9 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
       qty: part.qty,
       avg_cost: part.avg_cost,
     };
-  }
 
-  //เปลี่ยนสถานะใน Skreceive
-  await Skreceive.findOneAndUpdate(
-    { _id: id },
-    {
-      $set: {
-        status: "completed",
-        received_at: new Date(),
-      },
-    }
-  );
+    qtyLeft -= toReceive;
+  }
 
   res.status(200).json({
     status: "success",

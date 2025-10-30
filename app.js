@@ -67,6 +67,7 @@ const allowedOrigins = [
   "https://ssmapp.netlify.app",
   "https://rmpacking.netlify.app",
   "https://rmstock.netlify.app",
+  "https://rmtax.netlify.app/",
   "http://localhost:4173", //กรณี test เเบบ mode production
 ];
 

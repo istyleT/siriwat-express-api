@@ -16,6 +16,11 @@ const skreceiveSchema = new mongoose.Schema({
     required: [true, "กรุณาระบุจำนวน"],
     min: 0,
   },
+  received_qty: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
   cost_per_unit: {
     type: Number,
     default: 0,

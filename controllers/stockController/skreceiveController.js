@@ -103,4 +103,5 @@ exports.assignUploadRefNo = catchAsync(async (req, res, next) => {
 //Method
 exports.getAllSkreceive = factory.getAll(Skreceive);
 exports.getSuggestSkreceive = factory.getSuggest(Skreceive);
+exports.deleteSkreceive = factory.deleteOne(Skreceive);
 exports.createManySkreceive = factory.createMany(Skreceive);
