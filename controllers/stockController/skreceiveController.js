@@ -81,7 +81,7 @@ exports.cleanDataUpload = catchAsync(async (req, res, next) => {
 });
 
 exports.assignUploadRefNo = catchAsync(async (req, res, next) => {
-  const today = moment().format("YYMMDD");
+  const todayPrefix = moment().format("YYMMDD");
 
   if (!Array.isArray(req.body) || req.body.length === 0) {
     return res.status(400).json({
@@ -90,13 +90,28 @@ exports.assignUploadRefNo = catchAsync(async (req, res, next) => {
     });
   }
 
+  // หา ref_no ล่าสุดที่ขึ้นต้นด้วย todayPrefix
+  const latestRecord = await Skreceive.findOne({
+    upload_ref_no: { $regex: `^${todayPrefix}` },
+  })
+    .sort({ upload_ref_no: -1 })
+    .select("upload_ref_no");
+
+  let nextSequence = 1;
+
+  if (latestRecord && latestRecord.upload_ref_no) {
+    const lastSeq = parseInt(latestRecord.upload_ref_no.slice(-2));
+    nextSequence = lastSeq + 1;
+  }
+
+  const newRefNo = `${todayPrefix}${String(nextSequence).padStart(2, "0")}`;
+
   req.body = req.body.map((item) => ({
     ...item,
-    upload_ref_no: today,
+    upload_ref_no: newRefNo,
   }));
 
   // console.log("req.body", req.body);
-
   next();
 });
 
