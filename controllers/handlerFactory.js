@@ -364,6 +364,128 @@ exports.getSuggest = (Model) =>
     }
   });
 
+exports.getSuggestWithDate = (Model) =>
+  catchAsync(async (req, res, next) => {
+    try {
+      const {
+        search_field: field,
+        search_text: value,
+        fields,
+        startdate = "2025-01-01",
+        enddate = "2025-12-31",
+        typedate = "createdAt",
+        limit = "30",
+        page = "1",
+        sort = "-_id",
+        ...restQuery
+      } = req.query;
+
+      //console.log("Query Parameters:", req.query);
+
+      const parsedLimit = parseInt(limit);
+      const parsedPage = parseInt(page);
+
+      let filter = { ...restQuery };
+
+      // แปลง operator
+      let queryStr = JSON.stringify(filter);
+      queryStr = queryStr.replace(
+        /\b(gt|gte|lt|lte|ne|in|nin|or|and)\b/g,
+        (match) => `$${match}`
+      );
+      let parsedQueryObj = JSON.parse(queryStr);
+
+      Object.keys(parsedQueryObj).forEach((key) => {
+        if (
+          parsedQueryObj[key]?.$in &&
+          typeof parsedQueryObj[key].$in === "string"
+        ) {
+          parsedQueryObj[key].$in = parsedQueryObj[key].$in.split(",");
+        }
+        if (
+          parsedQueryObj[key]?.$nin &&
+          typeof parsedQueryObj[key].$nin === "string"
+        ) {
+          parsedQueryObj[key].$nin = parsedQueryObj[key].$nin.split(",");
+        }
+      });
+
+      // ตรวจสอบและแปลงช่วงเวลา
+      if (startdate && enddate && typedate) {
+        const startDate = new Date(startdate);
+        const endDate = new Date(enddate);
+        endDate.setDate(endDate.getDate() + 1);
+
+        parsedQueryObj[typedate] = { $gte: startDate, $lt: endDate };
+      }
+
+      // ตรวจสอบการใช้ regex
+      if (field && value?.trim()) {
+        const fieldType = getFieldType(Model.schema.paths, field);
+        if (fieldType !== "String") {
+          return next(
+            new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท ${fieldType}`, 400)
+          );
+        }
+
+        parsedQueryObj[field] = { $regex: new RegExp(value, "i") };
+      }
+
+      filter = parsedQueryObj;
+
+      // console.log("Filter:", filter);
+
+      const totalRecords = await Model.countDocuments(filter);
+      const totalPages = Math.ceil(totalRecords / parsedLimit);
+
+      if (parsedPage > totalPages && totalPages > 0) {
+        return next(
+          new AppError(
+            `หน้าที่ร้องขอเกินจำนวนหน้าที่มี (${totalPages} หน้า)`,
+            400
+          )
+        );
+      }
+
+      let query = Model.find(filter);
+
+      if (fields) {
+        const selectedFields = fields.split(",").join(" ");
+        query = query.select(selectedFields);
+      } else {
+        query = query.select("-__v");
+      }
+
+      const skip = (parsedPage - 1) * parsedLimit;
+      query = query.sort(sort).skip(skip).limit(parsedLimit);
+
+      const suggestionList = await query;
+
+      if (suggestionList.length === 0) {
+        return res.status(404).json({
+          status: "fail",
+          message: "ไม่พบข้อมูลที่คุณค้นหา",
+        });
+      }
+
+      res.status(200).json({
+        status: "success",
+        data: suggestionList,
+        length: suggestionList.length,
+        totalRecords,
+        totalPages,
+      });
+    } catch (error) {
+      console.error("Error fetching suggestions with date:", error);
+
+      if (error.name === "CastError") {
+        return next(new AppError("รูปแบบข้อมูลไม่ถูกต้อง", 400));
+      }
+
+      next(new AppError("เกิดข้อผิดพลาดในการค้นหาข้อมูล", 500));
+    }
+  });
+
 exports.getOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const doc = await Model.findById(req.params.id);

@@ -5,6 +5,7 @@ const quotationJob = require("./quotation");
 const swquotationJob = require("./swquotation");
 const pkunitpriceJob = require("./pkunitprice");
 const jobqueueJob = require("./jobqueue");
+const txinformalinvoiceJob = require("./txinformalinvoice");
 
 // start ทุก cron job
 function startAllJobs() {
@@ -15,6 +16,7 @@ function startAllJobs() {
   reportUnitPriceJob.start(); // run 23.45
   pkunitpriceJob.start(); // run 1.45
   jobqueueJob.start(); // run 2.30
+  txinformalinvoiceJob.start(); // run 3.00
 }
 
 module.exports = startAllJobs;

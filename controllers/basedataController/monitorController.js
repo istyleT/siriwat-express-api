@@ -96,6 +96,47 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
             $cond: [{ $eq: ["$station", "RM"] }, "$success_at", "$$REMOVE"],
           },
         },
+
+        shippingCompanies: {
+          $push: "$shipping_company",
+        },
+      },
+    },
+
+    // นับจำนวน shipping_company
+    {
+      $addFields: {
+        shippingCompanyCounts: {
+          $let: {
+            vars: {
+              validShippingCompanies: {
+                $filter: {
+                  input: { $ifNull: ["$shippingCompanies", []] },
+                  as: "company",
+                  cond: { $ne: ["$$company", null] },
+                },
+              },
+            },
+            in: {
+              $map: {
+                input: { $setUnion: ["$$validShippingCompanies", []] },
+                as: "company",
+                in: {
+                  company: "$$company",
+                  count: {
+                    $size: {
+                      $filter: {
+                        input: "$$validShippingCompanies",
+                        as: "c",
+                        cond: { $eq: ["$$c", "$$company"] },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
 
@@ -113,6 +154,7 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
         firstUploadedAt: 1,
         firstPackedAt: 1,
         lastPackedAt: 1,
+        shippingCompanyCounts: 1,
       },
     },
   ]);

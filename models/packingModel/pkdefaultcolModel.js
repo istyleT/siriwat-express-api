@@ -36,6 +36,10 @@ const pkdefaultcolSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  col_shippingcompany: {
+    type: String,
+    default: null,
+  },
   //ค่า column ที่เอาไว้คำนวณ
   col_variable_1: {
     type: String,

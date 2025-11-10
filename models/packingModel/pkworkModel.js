@@ -21,6 +21,10 @@ const pkworkSchema = new mongoose.Schema({
     type: String,
     required: [true, "กรุณาระบุเลขที่สั่งซื้อ"],
   },
+  shipping_company: {
+    type: String,
+    default: null,
+  },
   shop: {
     type: String,
     enum: ["Lazada", "Shopee", "TikTok"],

@@ -165,6 +165,7 @@ exports.separatePartSet = catchAsync(async (req, res, next) => {
       tracking_code: sku.tracking_code.trim(),
       order_date: sku.order_date,
       order_no: sku.order_no.trim(),
+      shipping_company: sku.shipping_company ? sku.shipping_company.trim() : "",
       parts,
     };
   });
@@ -189,7 +190,13 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 
   // ✅ 1. จัดกลุ่ม sku_data ตาม tracking_code และรวม parts_data (รวม qty ของ partnumber ที่ซ้ำกัน)
   const groupedData = sku_data.reduce((acc, item) => {
-    const { tracking_code, order_date, order_no, parts } = item;
+    const {
+      tracking_code,
+      order_date,
+      order_no,
+      parts,
+      shipping_company,
+    } = item;
 
     if (!tracking_code) return acc;
 
@@ -200,6 +207,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
         order_no,
         shop,
         station,
+        shipping_company,
         parts_data: [],
       };
     }
@@ -305,6 +313,32 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 
   // กำหนด upload_ref_no ที่ใช้สำหรับทุกเอกสาร
   const uploadRefNo = `${refPrefix}${String(lastNumber + 1).padStart(2, "0")}`;
+
+  //จัดการเรื่องชื่อของบริษัทขนส่ง
+  const shippingCompanyMap = [
+    { keyword: ["ไปรษณีย์", "thailand post"], name: "ไปรษณีย์ไทย" },
+    { keyword: ["spx"], name: "SPX" },
+    { keyword: ["kerry"], name: "Kerry" },
+    { keyword: ["flash"], name: "Flash" },
+    { keyword: ["j&t"], name: "J&T" },
+    { keyword: ["best"], name: "Best" },
+    { keyword: ["ninja"], name: "Ninja" },
+    { keyword: ["dhl"], name: "DHL" },
+  ];
+
+  const normalizeShippingCompany = (input = "") => {
+    const lowerInput = input.toLowerCase();
+    const matched = shippingCompanyMap.find(({ keyword }) =>
+      keyword.some((kw) => lowerInput.includes(kw))
+    );
+    return matched ? matched.name : input;
+  };
+
+  // ✅ Normalize ค่า shipping_company ของแต่ละ workDocument
+  workDocuments = workDocuments.map((doc) => ({
+    ...doc,
+    shipping_company: normalizeShippingCompany(doc.shipping_company),
+  }));
 
   // console.dir(workDocuments, { depth: null });
 
