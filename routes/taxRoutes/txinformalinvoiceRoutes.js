@@ -4,6 +4,7 @@ const {
   getAllTxinformalinvoice,
   getSuggestTxinformalinvoice,
   updateTxinformalinvoice,
+  getOneTxinformalinvoice,
 } = require("../../controllers/taxController/txinformalinvoiceController");
 const {
   cancelData,
@@ -17,7 +18,9 @@ router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllTxinformalinvoice);
 router.route("/suggest").get(getSuggestTxinformalinvoice);
-router.route("/:id").patch(updateTxinformalinvoice);
-//การยกเลิกใบกำกับ
+router
+  .route("/:id")
+  .get(getOneTxinformalinvoice)
+  .patch(updateTxinformalinvoice);
 
 module.exports = router;

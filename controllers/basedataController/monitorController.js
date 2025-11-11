@@ -54,6 +54,12 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
             { $size: { $ifNull: ["$scan_data", []] } },
           ],
         },
+        shippingCompany_RM: {
+          $cond: [{ $eq: ["$station", "RM"] }, "$shipping_company", null],
+        },
+        shippingCompany_RSM: {
+          $cond: [{ $eq: ["$station", "RSM"] }, "$shipping_company", null],
+        },
       },
     },
 
@@ -97,8 +103,11 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
           },
         },
 
-        shippingCompanies: {
-          $push: "$shipping_company",
+        shippingCompanies_RM: {
+          $push: "$shippingCompany_RM",
+        },
+        shippingCompanies_RSM: {
+          $push: "$shippingCompany_RSM",
         },
       },
     },
@@ -106,12 +115,43 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
     // นับจำนวน shipping_company
     {
       $addFields: {
-        shippingCompanyCounts: {
+        shippingCompanyCounts_RM: {
           $let: {
             vars: {
               validShippingCompanies: {
                 $filter: {
-                  input: { $ifNull: ["$shippingCompanies", []] },
+                  input: { $ifNull: ["$shippingCompanies_RM", []] },
+                  as: "company",
+                  cond: { $ne: ["$$company", null] },
+                },
+              },
+            },
+            in: {
+              $map: {
+                input: { $setUnion: ["$$validShippingCompanies", []] },
+                as: "company",
+                in: {
+                  company: "$$company",
+                  count: {
+                    $size: {
+                      $filter: {
+                        input: "$$validShippingCompanies",
+                        as: "c",
+                        cond: { $eq: ["$$c", "$$company"] },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        shippingCompanyCounts_RSM: {
+          $let: {
+            vars: {
+              validShippingCompanies: {
+                $filter: {
+                  input: { $ifNull: ["$shippingCompanies_RSM", []] },
                   as: "company",
                   cond: { $ne: ["$$company", null] },
                 },
@@ -154,7 +194,10 @@ exports.getMonitorDailyPkwork = catchAsync(async (req, res, next) => {
         firstUploadedAt: 1,
         firstPackedAt: 1,
         lastPackedAt: 1,
-        shippingCompanyCounts: 1,
+        shippingCompanyCounts: {
+          RM: "$shippingCompanyCounts_RM",
+          RSM: "$shippingCompanyCounts_RSM",
+        },
       },
     },
   ]);

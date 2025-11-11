@@ -11,6 +11,7 @@ moment.tz.setDefault("Asia/Bangkok");
 
 //Methods
 exports.getAllTxinformalinvoice = factory.getAll(Txinformalinvoice);
+exports.getOneTxinformalinvoice = factory.getOne(Txinformalinvoice);
 exports.getSuggestTxinformalinvoice = factory.getSuggestWithDate(
   Txinformalinvoice
 );
@@ -77,7 +78,6 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
         doc_no: newDocNo,
         order_no,
         product_details,
-        // invoice_date, vat_rate, customer_info, seller_info ใช้ default ได้เลย
       };
     }
   );
@@ -87,9 +87,4 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
   console.log(
     `Created ${invoicesToCreate.length} informal invoices grouped by order_no.`
   );
-
-  // res.status(200).json({
-  //   status: "success",
-  //   message: `Created ${invoicesToCreate.length} invoices grouped by order_no.`,
-  // });
 });

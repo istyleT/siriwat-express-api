@@ -84,6 +84,11 @@ const txformalinvoiceSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    //บันทึกการพิมพ์
+    print_count: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

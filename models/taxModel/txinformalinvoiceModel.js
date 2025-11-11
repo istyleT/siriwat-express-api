@@ -61,6 +61,11 @@ const txinformalinvoiceSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    formal_invoice_ref: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Txformalinvoice",
+      default: null,
+    },
     //ส่วนที่ทำการแก้ไข
     user_updated: {
       type: mongoose.Schema.Types.ObjectId,
