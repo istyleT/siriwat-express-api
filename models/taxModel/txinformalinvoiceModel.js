@@ -26,6 +26,7 @@ const txinformalinvoiceSchema = new mongoose.Schema(
       type: {
         name: { type: String, default: "ลูกค้าทั่วไป ภายในประเทศ" },
       },
+      default: { name: "ลูกค้าทั่วไป ภายในประเทศ" },
     },
     seller_info: {
       type: {
@@ -94,6 +95,7 @@ txinformalinvoiceSchema.index({ order_no: 1, doc_no: 1 });
 
 // populate path
 const populateFields = [
+  { path: "formal_invoice_ref", select: "doc_no" },
   { path: "user_canceled", select: "firstname" },
   { path: "user_updated", select: "firstname" },
 ];

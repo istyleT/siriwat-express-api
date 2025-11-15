@@ -6,7 +6,6 @@ const moment = require("moment-timezone");
 
 // ตั้งค่าให้ใช้เวลาไทย
 moment.tz.setDefault("Asia/Bangkok");
-
 //Middleware
 
 //Methods
@@ -16,6 +15,29 @@ exports.getSuggestTxinformalinvoice = factory.getSuggestWithDate(
   Txinformalinvoice
 );
 exports.updateTxinformalinvoice = factory.updateOne(Txinformalinvoice);
+
+//หลังจากที่สร้างใบกำกับภาษีอย่างเต็มสำเร็จเราจะมาอัพเดท ref ในใบกำกับภาษีอย่างย่อ
+exports.updateFormalInvoiceRef = catchAsync(async (req, res, next) => {
+  const formalInvoice = req.createdDoc;
+  const { informal_invoice_id } = req.body;
+
+  const updatedInformalInvoice = await Txinformalinvoice.findByIdAndUpdate(
+    informal_invoice_id,
+    { formal_invoice_ref: formalInvoice._id },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedInformalInvoice) {
+    return next(new AppError("ไม่พบใบกำกับภาษีอย่างย่อที่ต้องการอัพเดท", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      message: `สร้างใบกำกับแบบเต็ม ${formalInvoice.doc_no} สำเร็จ`,
+    },
+  });
+});
 
 //ส่วน function ที่ทำงานกับ cron job
 //สร้างใบกำกับภาษีอย่างย่อรายวัน
@@ -62,25 +84,49 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
     if (!isNaN(num)) lastSeq = num;
   }
 
-  const invoicesToCreate = Object.entries(groupedByOrderNo).map(
-    ([order_no, items]) => {
+  // const invoicesToCreate = Object.entries(groupedByOrderNo).map(
+  //   ([order_no, items]) => {
+  //     lastSeq += 1;
+  //     const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
+
+  //     const product_details = items.map((i) => ({
+  //       partnumber: i.partnumber || "",
+  //       part_name: i.part_name || "",
+  //       price_per_unit: i.price_per_unit || 0,
+  //       qty: i.qty || 0,
+  //     }));
+
+  //     return {
+  //       doc_no: newDocNo,
+  //       order_no,
+  //       product_details,
+  //     };
+  //   }
+  // );
+  const invoicesToCreate = [];
+
+  for (const [order_no, items] of Object.entries(groupedByOrderNo)) {
+    // แบ่งรายการสินค้าเป็นกลุ่ม กลุ่มละไม่เกิน 10 รายการ
+    for (let i = 0; i < items.length; i += 10) {
+      const chunk = items.slice(i, i + 10); // ดึงกลุ่มรายการสินค้า
+
       lastSeq += 1;
       const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
 
-      const product_details = items.map((i) => ({
+      const product_details = chunk.map((i) => ({
         partnumber: i.partnumber || "",
         part_name: i.part_name || "",
         price_per_unit: i.price_per_unit || 0,
         qty: i.qty || 0,
       }));
 
-      return {
+      invoicesToCreate.push({
         doc_no: newDocNo,
         order_no,
         product_details,
-      };
+      });
     }
-  );
+  }
 
   await Txinformalinvoice.insertMany(invoicesToCreate);
 

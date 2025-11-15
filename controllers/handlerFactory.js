@@ -639,7 +639,7 @@ exports.createMany = (Model) =>
     const createdDocs = await Model.insertMany(docsToCreate, { ordered: true });
 
     if (req.skipResNext) {
-      // req.createdDocs = createdDocs;
+      req.createdDocs = createdDocs;
       delete req.skipResNext;
       return next();
     }

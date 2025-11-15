@@ -7,7 +7,7 @@ const txformalinvoiceSchema = new mongoose.Schema(
     doc_no: {
       type: String,
       unique: true,
-      required: [true, "กรุณาระบุเลขที่ชำระเงิน"],
+      required: [true, "กรุณาระบุเลขที่ใบกำกับภาษี"],
     },
     docCount: {
       type: Number,
@@ -19,7 +19,7 @@ const txformalinvoiceSchema = new mongoose.Schema(
     },
     invoice_date: {
       type: Date,
-      default: () => moment.tz(Date.now(), "Asia/Bangkok").toDate(),
+      default: null,
     },
     vat_rate: {
       type: Number,
@@ -84,10 +84,18 @@ const txformalinvoiceSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    //บันทึกการพิมพ์
-    print_count: {
+    //บันทึกแก้ไข
+    edit_count: {
       type: Number,
       default: 0,
+    },
+    edit_request: {
+      type: String,
+      default: null,
+    },
+    edit_approved: {
+      type: Boolean,
+      default: true, //ทุกครั้งที่การพิมพ์จะเปลี่ยนค่าเป็น false ต้องรอการอนุมัติจากผู้มีสิทธิ์
     },
   },
   { timestamps: true }
@@ -108,6 +116,24 @@ txformalinvoiceSchema.pre(/^find/, function (next) {
   populateFields.forEach((field) => {
     this.populate({ ...field, options: { lean: true } });
   });
+  next();
+});
+
+//Middleware
+txformalinvoiceSchema.post("findOneAndUpdate", async function (doc, next) {
+  if (!doc) return next();
+
+  const update = this.getUpdate();
+
+  // ตรวจสอบว่า update มีการเปลี่ยนค่า print_count หรือไม่
+  if (
+    update &&
+    (update.print_count !== undefined || update.$inc?.print_count)
+  ) {
+    // ถ้ามีการเปลี่ยนค่า print_count ให้ทำการเปลี่ยน approved_print = false
+    await doc.updateOne({ approved_print: false });
+  }
+
   next();
 });
 
