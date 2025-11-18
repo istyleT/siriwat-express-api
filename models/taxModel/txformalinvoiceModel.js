@@ -85,19 +85,44 @@ const txformalinvoiceSchema = new mongoose.Schema(
       default: null,
     },
     //บันทึกแก้ไข
-    edit_count: {
+    history_edit: {
+      type: [
+        {
+          reason: { type: String },
+          request_at: { type: Date },
+          request_by: {
+            type: String,
+          },
+          approved_at: { type: Date },
+          approved_by: {
+            type: String,
+          },
+        },
+      ],
+      default: [],
+    },
+    request_edit: {
+      type: {
+        reason: { type: String },
+        request_at: { type: Date },
+        request_by: {
+          type: String,
+        },
+      },
+      default: null,
+    },
+    approved_print: {
+      type: Boolean,
+      default: true,
+    },
+    print_count: {
       type: Number,
       default: 0,
     },
-    edit_request: {
-      type: String,
-      default: null,
-    },
-    edit_approved: {
-      type: Boolean,
-      default: true, //ทุกครั้งที่การพิมพ์จะเปลี่ยนค่าเป็น false ต้องรอการอนุมัติจากผู้มีสิทธิ์
-    },
   },
+  // กระบวนการทำงานคือ ทุกครั้งที่มีการกดพิมพ์ จะมีการนับจำนวนครั้งที่พิมพ์โดยใช้ findOneAndUpdate
+  // ถ้าค่า approved_print เป็น false จะมีปุ่มให้ขออนุมัติการพิมพ์ใหม่ เเละต้องใส่เหตุผล request_edit ก่อน
+  // เมื่อผู้มีสิทธิ์อนุมัติจะทำการเปลี่ยน approved_print เป็น true เเละล้างค่า request_edit ทิ้งเอาไปไว้ใน history_edit พร้อมวันที่และชื่อผู้อนุมัติ
   { timestamps: true }
 );
 
@@ -120,6 +145,7 @@ txformalinvoiceSchema.pre(/^find/, function (next) {
 });
 
 //Middleware
+// เมื่อมีการแก้ไข print_count ให้เปลี่ยน approved_print เป็น false
 txformalinvoiceSchema.post("findOneAndUpdate", async function (doc, next) {
   if (!doc) return next();
 
