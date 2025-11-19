@@ -19,6 +19,7 @@ exports.cancelData = (req, res, next) => {
     const currentTime = moment.tz(new Date(), "Asia/Bangkok").format();
     req.body.date_canceled = currentTime;
     req.body.canceled_at = currentTime;
+    req.body.canceledAt = currentTime;
     req.body.user_canceled = req.user._id;
     next();
   } catch (err) {

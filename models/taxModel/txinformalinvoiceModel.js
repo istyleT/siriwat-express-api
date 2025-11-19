@@ -67,6 +67,11 @@ const txinformalinvoiceSchema = new mongoose.Schema(
       ref: "Txformalinvoice",
       default: null,
     },
+    credit_note_ref: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Txcreditnote",
+      default: null,
+    },
     //ส่วนที่ทำการแก้ไข
     user_updated: {
       type: mongoose.Schema.Types.ObjectId,
@@ -96,6 +101,7 @@ txinformalinvoiceSchema.index({ order_no: 1, doc_no: 1 });
 // populate path
 const populateFields = [
   { path: "formal_invoice_ref", select: "doc_no" },
+  { path: "credit_note_ref", select: "doc_no" },
   { path: "user_canceled", select: "firstname" },
   { path: "user_updated", select: "firstname" },
 ];

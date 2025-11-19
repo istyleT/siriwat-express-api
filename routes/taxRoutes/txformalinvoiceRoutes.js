@@ -7,6 +7,8 @@ const {
   getOneTxformalinvoice,
   createTxformalinvoice,
   setDocnoForTxformalinvoice,
+  approvedEdit,
+  updatePrintCount,
 } = require("../../controllers/taxController/txformalinvoiceController");
 const {
   updateFormalInvoiceRef,
@@ -32,6 +34,8 @@ router
     updateFormalInvoiceRef
   );
 router.route("/suggest").get(getSuggestTxformalinvoice);
+router.route("/after-print/:id").get(updatePrintCount);
+router.route("/approved-edit/:id").get(approvedEdit);
 router.route("/:id").get(getOneTxformalinvoice).patch(updateTxformalinvoice);
 
 module.exports = router;

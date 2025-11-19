@@ -84,25 +84,6 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
     if (!isNaN(num)) lastSeq = num;
   }
 
-  // const invoicesToCreate = Object.entries(groupedByOrderNo).map(
-  //   ([order_no, items]) => {
-  //     lastSeq += 1;
-  //     const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
-
-  //     const product_details = items.map((i) => ({
-  //       partnumber: i.partnumber || "",
-  //       part_name: i.part_name || "",
-  //       price_per_unit: i.price_per_unit || 0,
-  //       qty: i.qty || 0,
-  //     }));
-
-  //     return {
-  //       doc_no: newDocNo,
-  //       order_no,
-  //       product_details,
-  //     };
-  //   }
-  // );
   const invoicesToCreate = [];
 
   for (const [order_no, items] of Object.entries(groupedByOrderNo)) {

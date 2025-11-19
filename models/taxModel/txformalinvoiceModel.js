@@ -84,6 +84,11 @@ const txformalinvoiceSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    credit_note_ref: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Txcreditnote",
+      default: null,
+    },
     //บันทึกแก้ไข
     history_edit: {
       type: [
@@ -134,6 +139,7 @@ txformalinvoiceSchema.index({
 
 // populate path
 const populateFields = [
+  { path: "credit_note_ref", select: "doc_no" },
   { path: "user_canceled", select: "firstname" },
   { path: "user_updated", select: "firstname" },
 ];

@@ -37,20 +37,65 @@ exports.setDocnoForTxformalinvoice = catchAsync(async (req, res, next) => {
   next();
 });
 
-// exports.updateApprovedPrint = catchAsync(async (req, res, next) => {
-//   const { id } = req.params;
-//   const { approved_print } = req.body;
-//   const updatedInvoice = await Txinformalinvoice.findByIdAndUpdate(
-//     id,
-//     { approved_print },
-//     { new: true, runValidators: true }
-//   );
-//   next();
-// });
-
 //Methods
 exports.getAllTxformalinvoice = factory.getAll(Txformalinvoice);
 exports.getOneTxformalinvoice = factory.getOne(Txformalinvoice);
 exports.getSuggestTxformalinvoice = factory.getSuggestWithDate(Txformalinvoice);
 exports.createTxformalinvoice = factory.createOne(Txformalinvoice);
 exports.updateTxformalinvoice = factory.updateOne(Txformalinvoice);
+
+exports.approvedEdit = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const invoice = await Txformalinvoice.findById(id);
+
+  if (!invoice || !invoice.request_edit) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่พบข้อมูลที่ร้องขอแก้ไข หรือไม่มีการร้องขอแก้ไข",
+    });
+  }
+
+  const approvedData = {
+    ...invoice.request_edit,
+    approved_at: moment().tz("Asia/Bangkok").toDate(),
+    approved_by: req.user.firstname,
+  };
+
+  invoice.history_edit.push(approvedData);
+  invoice.request_edit = null;
+  invoice.approved_print = true;
+
+  await invoice.save();
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      data: invoice,
+    },
+  });
+});
+
+exports.updatePrintCount = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const updatedInvoice = await Txformalinvoice.findByIdAndUpdate(
+    id,
+    { $inc: { print_count: 1 } },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedInvoice) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบเอกสารที่ต้องการอัปเดต",
+    });
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      data: updatedInvoice,
+    },
+  });
+});

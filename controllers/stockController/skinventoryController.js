@@ -282,6 +282,21 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     });
   }
 
+  // หาอะไหล่จาก Skinventory และเพิ่มจำนวนเข้าไป
+  const part = await Skinventory.findOne({ part_code: partnumber });
+
+  if (!part) {
+    return res.status(404).json({
+      status: "fail",
+      message: `ไม่พบอะไหล่ part_code: ${partnumber}`,
+    });
+  }
+
+  // ดึงข้อมูล qty และ avg_cost ปัจจุบัน
+  let currentQty = Number(part.qty || 0);
+  let currentMockQty = Number(part.mock_qty || 0);
+  let currentAvgCost = Number(part.avg_cost || 0);
+
   let qtyLeft = Number(qty_in);
   let resData = {};
 
@@ -294,38 +309,15 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     const newReceivedQty = receive.received_qty + toReceive;
     const isCompleted = newReceivedQty >= receive.qty;
 
-    // หาอะไหล่จาก Skinventory และเพิ่มจำนวนเข้าไป
-    const part = await Skinventory.findOne({ part_code: partnumber });
-
-    if (!part) {
-      return res.status(404).json({
-        status: "fail",
-        message: `ไม่พบอะไหล่ part_code: ${partnumber}`,
-      });
-    }
-
-    // ดึงข้อมูล qty และ avg_cost ปัจจุบัน
-    const currentQty = Number(part.qty || 0);
-    const currentMockQty = Number(part.mock_qty || 0);
-    const currentAvgCost = Number(part.avg_cost || 0);
-
-    // คำนวณค่า avg_cost ใหม่แบบ weighted average
-    const newQty = Number(currentQty) + Number(qty_in);
-    const newMockQty = Number(currentMockQty) + Number(qty_in);
-
-    const newAvgCost = calculateWeightedAverageCost({
+    currentAvgCost = calculateWeightedAverageCost({
       currentQty,
       currentAvgCost,
       incomingQty: toReceive,
       incomingCost: receive.cost_per_unit,
     });
 
-    // Update ข้อมูล
-    part.qty = newQty;
-    part.mock_qty = newMockQty;
-    part.avg_cost = newAvgCost;
-
-    await part.save();
+    currentQty += toReceive;
+    currentMockQty += toReceive;
 
     // บันทึกการเคลื่อนไหวของอะไหล่
     await Skinventorymovement.createMovement({
@@ -336,7 +328,7 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
       document_ref: receive.upload_ref_no,
       user_created: req.user._id,
       order_qty: Number(receive.qty || 0),
-      stock_balance: newQty, //หลังจากรับเข้า
+      stock_balance: currentQty, //หลังจากรับเข้า
     });
 
     // อัปเดต Skreceive
@@ -348,14 +340,20 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
       },
     });
 
-    resData = {
-      part_code: part.part_code,
-      qty: part.qty,
-      avg_cost: part.avg_cost,
-    };
-
     qtyLeft -= toReceive;
   }
+
+  // สุดท้ายค่อยอัปเดต Skinventory
+  part.qty = currentQty;
+  part.mock_qty = currentMockQty;
+  part.avg_cost = currentAvgCost;
+  await part.save();
+
+  resData = {
+    part_code: part.part_code,
+    qty: part.qty,
+    avg_cost: part.avg_cost,
+  };
 
   res.status(200).json({
     status: "success",
