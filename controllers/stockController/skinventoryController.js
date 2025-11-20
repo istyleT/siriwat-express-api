@@ -300,6 +300,8 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
   let qtyLeft = Number(qty_in);
   let resData = {};
 
+  let lastReceiveUsed = null;
+
   for (const receive of pendingReceives) {
     if (qtyLeft <= 0) break;
 
@@ -341,6 +343,34 @@ exports.confirmReceivePart = catchAsync(async (req, res, next) => {
     });
 
     qtyLeft -= toReceive;
+    lastReceiveUsed = receive;
+  }
+
+  // กรณีรับเกินใบสั่งทั้งหมด
+  if (qtyLeft > 0 && lastReceiveUsed) {
+    currentAvgCost = calculateWeightedAverageCost({
+      currentQty,
+      currentAvgCost,
+      incomingQty: qtyLeft,
+      incomingCost: lastReceiveUsed.cost_per_unit,
+    });
+
+    currentQty += qtyLeft;
+    currentMockQty += qtyLeft;
+
+    // เพิ่ม movement สำหรับของที่เกิน
+    await Skinventorymovement.createMovement({
+      partnumber: partnumber,
+      qty: Number(qtyLeft),
+      movement_type: "in",
+      cost_movement: Number(lastReceiveUsed.cost_per_unit),
+      document_ref: lastReceiveUsed.upload_ref_no,
+      user_created: req.user._id,
+      order_qty: 0, // ไม่เกี่ยวข้องกับใบสั่ง
+      stock_balance: currentQty,
+    });
+
+    qtyLeft = 0;
   }
 
   // สุดท้ายค่อยอัปเดต Skinventory
