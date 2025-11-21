@@ -120,3 +120,31 @@ exports.getAllSkreceive = factory.getAll(Skreceive);
 exports.getSuggestSkreceive = factory.getSuggest(Skreceive);
 exports.deleteSkreceive = factory.deleteOne(Skreceive);
 exports.createManySkreceive = factory.createMany(Skreceive);
+
+exports.deleteManySkreceive = catchAsync(async (req, res, next) => {
+  const user = req.user;
+  const { ids } = req.body;
+
+  if (!user) {
+    return next(new AppError("ไม่พบข้อมูลผู้ใช้งาน", 400));
+  }
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ต้องส่งรายการ _id อย่างน้อย 1 รายการ",
+    });
+  }
+
+  const result = await Skreceive.deleteMany({ _id: { $in: ids } });
+
+  if (result.deletedCount === 0) {
+    return next(new AppError("ไม่พบข้อมูลที่ต้องการลบ", 404));
+  }
+
+  res.status(204).json({
+    status: "success",
+    message: `ลบข้อมูลสำเร็จ ${result.deletedCount} รายการ`,
+    data: null,
+  });
+});
