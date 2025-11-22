@@ -58,10 +58,6 @@ const txinformalinvoiceSchema = new mongoose.Schema(
       ],
       default: [],
     },
-    remark: {
-      type: String,
-      default: null,
-    },
     formal_invoice_ref: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Txformalinvoice",

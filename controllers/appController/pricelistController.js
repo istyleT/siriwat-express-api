@@ -86,6 +86,7 @@ exports.uploadPricelists = catchAsync(async (req, res, next) => {
             price_1: price1,
             price_2: part.price_2 != null ? part.price_2 : price1,
             price_3: part.price_3 != null ? part.price_3 : price1,
+            change_partnumber: part.change_partnumber || null,
           },
         },
         upsert: true,

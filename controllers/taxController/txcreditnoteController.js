@@ -39,17 +39,6 @@ exports.setDocnoForTxcreditnote = catchAsync(async (req, res, next) => {
   next();
 });
 
-// exports.updateApprovedPrint = catchAsync(async (req, res, next) => {
-//   const { id } = req.params;
-//   const { approved_print } = req.body;
-//   const updatedInvoice = await Txinformalinvoice.findByIdAndUpdate(
-//     id,
-//     { approved_print },
-//     { new: true, runValidators: true }
-//   );
-//   next();
-// });
-
 //Methods
 exports.getAllTxcreditnote = factory.getAll(Txcreditnote);
 exports.getOneTxcreditnote = factory.getOne(Txcreditnote);

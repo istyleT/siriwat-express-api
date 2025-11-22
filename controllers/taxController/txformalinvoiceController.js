@@ -56,8 +56,12 @@ exports.approvedEdit = catchAsync(async (req, res, next) => {
     });
   }
 
+  const { reason, request_at, request_by } = invoice.request_edit;
+
   const approvedData = {
-    ...invoice.request_edit,
+    reason,
+    request_at,
+    request_by,
     approved_at: moment().tz("Asia/Bangkok").toDate(),
     approved_by: req.user.firstname,
   };
