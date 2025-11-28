@@ -60,10 +60,6 @@ const txformalinvoiceSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-    remark: {
-      type: String,
-      default: null,
-    },
     //ส่วนที่ทำการแก้ไข
     user_updated: {
       type: mongoose.Schema.Types.ObjectId,

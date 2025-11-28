@@ -19,7 +19,7 @@ const txcreditnoteSchema = new mongoose.Schema(
     },
     creditnote_date: {
       type: Date,
-      default: null,
+      default: () => moment.tz("Asia/Bangkok").toDate(),
     },
     vat_rate: {
       type: Number,
@@ -60,9 +60,9 @@ const txcreditnoteSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-    remark: {
-      type: String,
-      default: null,
+    creditnote_items: {
+      type: Array,
+      default: [],
     },
     //ส่วนที่ทำการแก้ไข
     user_updated: {
@@ -127,6 +127,7 @@ const txcreditnoteSchema = new mongoose.Schema(
 );
 
 txcreditnoteSchema.index({
+  invoice_no: 1,
   order_no: 1,
   doc_no: 1,
   "customer_info.name": 1,

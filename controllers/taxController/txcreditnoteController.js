@@ -49,13 +49,14 @@ exports.updateTxcreditnote = factory.updateOne(Txcreditnote);
 //หลังจากที่สร้างใบกำกับภาษีอย่างเต็มสำเร็จเราจะมาอัพเดท ref ในใบกำกับภาษีอย่างย่อ
 exports.updateCreditnoteRef = catchAsync(async (req, res, next) => {
   const creditNote = req.createdDoc;
-  const { invoice_id, doc_no } = req.body;
+  const { invoice_id, invoice_no } = req.body;
 
-  if (!doc_no || typeof doc_no !== "string") {
+  if (!invoice_no || typeof invoice_no !== "string") {
     return next(new AppError("ไม่พบเลขที่เอกสาร หรือรูปแบบไม่ถูกต้อง", 400));
   }
 
-  const prefix = doc_no.slice(0, 3); // ตรวจสอบ 3 ตัวอักษรแรก
+  const prefix = invoice_no.slice(0, 3); // ตรวจสอบ 3 ตัวอักษรแรก
+
   let updatedInvoice = null;
 
   if (prefix === "INV") {
@@ -85,8 +86,66 @@ exports.updateCreditnoteRef = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
+    message: `สร้างใบลดหนี้ ${creditNote.doc_no} สำเร็จ`,
+  });
+});
+
+exports.approvedEdit = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const creditNote = await Txcreditnote.findById(id);
+
+  if (!creditNote || !creditNote.request_edit) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่พบข้อมูลที่ร้องขอแก้ไข หรือไม่มีการร้องขอแก้ไข",
+    });
+  }
+
+  const { reason, request_at, request_by } = creditNote.request_edit;
+
+  const approvedData = {
+    reason,
+    request_at,
+    request_by,
+    approved_at: moment().tz("Asia/Bangkok").toDate(),
+    approved_by: req.user.firstname,
+  };
+
+  creditNote.history_edit.push(approvedData);
+  creditNote.request_edit = null;
+  creditNote.approved_print = true;
+
+  await creditNote.save();
+
+  res.status(200).json({
+    status: "success",
     data: {
-      message: `สร้างใบลดหนี้ ${creditNote.doc_no} สำเร็จ`,
+      data: creditNote,
+    },
+  });
+});
+
+exports.updatePrintCount = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const updatedCreditNote = await Txcreditnote.findByIdAndUpdate(
+    id,
+    { $inc: { print_count: 1 } },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedCreditNote) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบเอกสารที่ต้องการอัปเดต",
+    });
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      data: updatedCreditNote,
     },
   });
 });
