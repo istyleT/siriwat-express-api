@@ -9,6 +9,7 @@ const {
   setDocnoForTxcreditnote,
   updateCreditnoteRef,
   updatePrintCount,
+  updateManyPrintCount,
   approvedEdit,
 } = require("../../controllers/taxController/txcreditnoteController");
 const {
@@ -33,6 +34,7 @@ router
   );
 router.route("/suggest").get(getSuggestTxcreditnote);
 router.route("/after-print/:id").get(updatePrintCount);
+router.route("/after-print-many").patch(updateManyPrintCount);
 router.route("/approved-edit/:id").get(approvedEdit);
 router.route("/:id").get(getOneTxcreditnote).patch(updateTxcreditnote);
 

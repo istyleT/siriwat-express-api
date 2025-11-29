@@ -149,3 +149,37 @@ exports.updatePrintCount = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.updateManyPrintCount = catchAsync(async (req, res, next) => {
+  const { ids } = req.body;
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({
+      status: "fail",
+      message: "กรุณาส่งรายการ ID ที่ต้องการอัปเดต",
+    });
+  }
+
+  const result = await Txcreditnote.updateMany(
+    { _id: { $in: ids } },
+    {
+      $inc: { print_count: 1 },
+      $set: { approved_print: false },
+    }
+  );
+
+  if (result.matchedCount === 0) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบเอกสารที่ต้องการอัปเดต",
+    });
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+    },
+  });
+});
