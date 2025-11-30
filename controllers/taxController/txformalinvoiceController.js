@@ -2,6 +2,7 @@ const Txformalinvoice = require("../../models/taxModel/txformalinvoiceModel");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
+const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
 
 // ตั้งค่าให้ใช้เวลาไทย
 moment.tz.setDefault("Asia/Bangkok");
@@ -33,6 +34,28 @@ exports.setDocnoForTxformalinvoice = catchAsync(async (req, res, next) => {
   const newDocNo = `${prefix}${String(newSeq).padStart(6, "0")}`;
 
   req.body.doc_no = newDocNo;
+
+  next();
+});
+
+//จะยกเลิกได้ก็ต่อเมื่อยังไม่มีการลดหนี้เอกสารนี้
+exports.checkBeforeCancel = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const formalInvoice = await Txformalinvoice.findById(id);
+
+  if (!formalInvoice) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบเอกสารที่ต้องการยกเลิก",
+    });
+  }
+
+  if (formalInvoice.credit_note_ref) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่สามารถยกเลิกได้ ออกใบลดหนี้แล้ว",
+    });
+  }
 
   next();
 });
@@ -77,6 +100,30 @@ exports.approvedEdit = catchAsync(async (req, res, next) => {
     data: {
       data: invoice,
     },
+  });
+});
+
+//เอาค่าอ้างอิงออกจาก Informalinvoice เมื่อมีการยกเลิก
+exports.removeRefOnAnotherModel = catchAsync(async (req, res, next) => {
+  const formalInvoice = req.updatedDoc;
+  const { _id } = formalInvoice;
+
+  const inFormalInvoice = await Txinformalinvoice.findOneAndUpdate(
+    { formal_invoice_ref: _id },
+    { formal_invoice_ref: null },
+    { new: true }
+  );
+
+  if (!inFormalInvoice) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบใบกำกับอย่างย่อที่อ้างอิงถึงเอกสารนี้",
+    });
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: `ยกเลิกใบกำกับ ${formalInvoice.doc_no} เรียบร้อย`,
   });
 });
 

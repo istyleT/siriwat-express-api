@@ -9,6 +9,8 @@ const {
   setDocnoForTxformalinvoice,
   approvedEdit,
   updatePrintCount,
+  removeRefOnAnotherModel,
+  checkBeforeCancel,
 } = require("../../controllers/taxController/txformalinvoiceController");
 const {
   updateFormalInvoiceRef,
@@ -36,6 +38,15 @@ router
 router.route("/suggest").get(getSuggestTxformalinvoice);
 router.route("/after-print/:id").get(updatePrintCount);
 router.route("/approved-edit/:id").get(approvedEdit);
+router
+  .route("/cancel/:id")
+  .patch(
+    checkBeforeCancel,
+    cancelData,
+    setSkipResNext(true),
+    updateTxformalinvoice,
+    removeRefOnAnotherModel
+  );
 router.route("/:id").get(getOneTxformalinvoice).patch(updateTxformalinvoice);
 
 module.exports = router;

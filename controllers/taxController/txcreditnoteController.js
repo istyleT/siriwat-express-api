@@ -183,3 +183,44 @@ exports.updateManyPrintCount = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+//เอาค่าอ้างอิงออกจาก Txinformalinvoice หรือ Txformalinvoice เมื่อมีการยกเลิก
+exports.removeRefOnAnotherModel = catchAsync(async (req, res, next) => {
+  const creditNote = req.updatedDoc;
+  const { _id, invoice_no } = creditNote;
+
+  //ตรวจสอบอักษร 3 ตัวเเรกของ invoice_no
+  const prefix = invoice_no.slice(0, 3);
+  let invoice = null;
+
+  if (prefix === "IFN") {
+    invoice = await Txinformalinvoice.findOneAndUpdate(
+      { credit_note_ref: _id },
+      { credit_note_ref: null },
+      { new: true }
+    );
+  } else if (prefix === "INV") {
+    invoice = await Txformalinvoice.findOneAndUpdate(
+      { credit_note_ref: _id },
+      { credit_note_ref: null },
+      { new: true }
+    );
+  } else {
+    return res.status(400).json({
+      status: "fail",
+      message: "เลขที่ใบกำกับไม่ถูกต้อง",
+    });
+  }
+
+  if (!invoice) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบใบกำกับที่อ้างอิงถึงเอกสารนี้",
+    });
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: `ยกเลิกใบลดหนี้ ${creditNote.doc_no} เรียบร้อย`,
+  });
+});
