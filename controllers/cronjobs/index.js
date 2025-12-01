@@ -1,11 +1,14 @@
 //รวม cron job ที่จะทำงานเป็นประจำ
 const skinventoryJob = require("./skinventory");
-const { deletePkworkJob, reportUnitPriceJob } = require("./pkwork");
 const quotationJob = require("./quotation");
 const swquotationJob = require("./swquotation");
 const pkunitpriceJob = require("./pkunitprice");
 const jobqueueJob = require("./jobqueue");
-const txinformalinvoiceJob = require("./txinformalinvoice");
+const { deletePkworkJob, reportUnitPriceJob } = require("./pkwork");
+const {
+  txinformalinvoiceJob,
+  canceltxinformalinvoiceJob,
+} = require("./txinformalinvoice");
 
 // start ทุก cron job
 function startAllJobs() {
@@ -17,6 +20,7 @@ function startAllJobs() {
   pkunitpriceJob.start(); // run 1.45
   jobqueueJob.start(); // run 2.30
   txinformalinvoiceJob.start(); // run 3.00
+  canceltxinformalinvoiceJob.start(); // run 2.15
 }
 
 module.exports = startAllJobs;

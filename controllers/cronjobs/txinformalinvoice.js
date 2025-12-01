@@ -14,4 +14,17 @@ const txinformalinvoiceJob = cron.schedule(
   }
 );
 
-module.exports = txinformalinvoiceJob;
+// ยกเลิกใบกำกับภาษีอย่างย่อรายวัน
+const canceltxinformalinvoiceJob = cron.schedule(
+  "15 2 * * *", // run every day at 2:15 AM
+  //"* * * * *",
+  () => {
+    console.log("Running canceltxinformalinvoice job...");
+    txinformalinvoiceController.cancelInFormalInvoice();
+  },
+  {
+    timezone: "Asia/Bangkok",
+  }
+);
+
+module.exports = { txinformalinvoiceJob, canceltxinformalinvoiceJob };

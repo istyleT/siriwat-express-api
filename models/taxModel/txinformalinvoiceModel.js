@@ -76,8 +76,7 @@ const txinformalinvoiceSchema = new mongoose.Schema(
     },
     //ส่วนที่ทำการยกเลิก
     user_canceled: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       default: null,
     },
     remark_canceled: {
@@ -98,7 +97,6 @@ txinformalinvoiceSchema.index({ order_no: 1, doc_no: 1 });
 const populateFields = [
   { path: "formal_invoice_ref", select: "doc_no" },
   { path: "credit_note_ref", select: "doc_no" },
-  { path: "user_canceled", select: "firstname" },
   { path: "user_updated", select: "firstname" },
 ];
 txinformalinvoiceSchema.pre(/^find/, function (next) {

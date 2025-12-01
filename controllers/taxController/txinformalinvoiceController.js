@@ -1,4 +1,5 @@
 const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
+const Pkwork = require("../../models/packingModel/pkworkModel");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
@@ -114,4 +115,48 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
   console.log(
     `Created ${invoicesToCreate.length} informal invoices grouped by order_no.`
   );
+});
+
+//ยกเลิกใบกำกับภาษีอย่างย่อรายวัน
+exports.cancelInFormalInvoice = catchAsync(async (req, res, next) => {
+  //1. ดึงข้อมูลจาก Pkwork ที่มีการยกเลิกเสร็จสิ้นในวันปัจจุบันเอาเเค่ค่าของ order_no
+  // ใช้เวลาเป็นของเมื่อวาน (Yesterday)
+  const startOfDay = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "day")
+    .startOf("day")
+    .toDate();
+  const endOfDay = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "day")
+    .endOf("day")
+    .toDate();
+
+  const canceledSuccessWorks = await Pkwork.find({
+    status: "ยกเลิก",
+    cancel_success_at: { $gte: startOfDay, $lte: endOfDay },
+    cancel_status: "เสร็จสิ้น",
+  })
+    .select("order_no")
+    .lean();
+
+  //2.กรองของ order_no ที่ซ้ำกันออก
+  const uniqueOrderNos = [
+    ...new Set(canceledSuccessWorks.map((work) => work.order_no)),
+  ];
+
+  //3. ดึงข้อมูลจาก Txinformalinvoice ที่มี order_no ตรงกับ order_no ที่ได้จากข้อ 2 และยังไม่มีการยกเลิก
+  const invoicesToCancel = await Txinformalinvoice.updateMany(
+    {
+      order_no: { $in: uniqueOrderNos },
+      canceledAt: null,
+    },
+    {
+      user_canceled: "System",
+      remark_canceled: "งานถูกยกเลิกในระบบจัดส่งสินค้า",
+      canceledAt: moment().tz("Asia/Bangkok").toDate(),
+    }
+  );
+
+  console.log(`Canceled ${invoicesToCancel.modifiedCount} informal invoices.`);
 });
