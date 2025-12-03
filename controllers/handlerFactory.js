@@ -368,20 +368,21 @@ exports.getSuggest = (Model) =>
 exports.getSuggestWithDate = (Model) =>
   catchAsync(async (req, res, next) => {
     try {
+      //กำหนดปีปัจจุบัน
+      const currentYear = new Date().getFullYear();
+
       const {
         search_field: field,
         search_text: value,
         fields,
-        startdate = "2025-01-01",
-        enddate = "2025-12-31",
+        startdate = `${currentYear}-01-01`,
+        enddate = `${currentYear}-12-31`,
         typedate = "createdAt",
         limit = "30",
         page = "1",
         sort = "-_id",
         ...restQuery
       } = req.query;
-
-      //console.log("Query Parameters:", req.query);
 
       const parsedLimit = parseInt(limit);
       const parsedPage = parseInt(page);
@@ -395,6 +396,13 @@ exports.getSuggestWithDate = (Model) =>
         (match) => `$${match}`
       );
       let parsedQueryObj = JSON.parse(queryStr);
+
+      // แปลง "null" เป็น null จริง ๆ
+      Object.keys(parsedQueryObj).forEach((key) => {
+        if (parsedQueryObj[key] === "null") {
+          parsedQueryObj[key] = null;
+        }
+      });
 
       Object.keys(parsedQueryObj).forEach((key) => {
         if (
@@ -466,6 +474,7 @@ exports.getSuggestWithDate = (Model) =>
         return res.status(404).json({
           status: "fail",
           message: "ไม่พบข้อมูลที่คุณค้นหา",
+          data: suggestionList,
         });
       }
 

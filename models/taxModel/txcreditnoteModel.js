@@ -64,6 +64,10 @@ const txcreditnoteSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
+    total_net: {
+      type: Number,
+      default: 0,
+    },
     //ส่วนที่ทำการแก้ไข
     user_updated: {
       type: mongoose.Schema.Types.ObjectId,

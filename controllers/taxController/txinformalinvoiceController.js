@@ -17,6 +17,104 @@ exports.getSuggestTxinformalinvoice = factory.getSuggestWithDate(
 );
 exports.updateTxinformalinvoice = factory.updateOne(Txinformalinvoice);
 
+exports.getReportTaxTxinformalinvoice = catchAsync(async (req, res, next) => {
+  const {
+    search_field: field,
+    search_text: value,
+    fields,
+    startdate,
+    enddate,
+    typedate = "createdAt",
+    sort = "doc_no",
+    ...restQuery
+  } = req.query;
+
+  const filter = { ...restQuery };
+
+  // แปลง operator
+  let queryStr = JSON.stringify(filter);
+
+  let parsedQueryObj = JSON.parse(queryStr);
+
+  // แปลง "null" เป็น null จริง ๆ
+  Object.keys(parsedQueryObj).forEach((key) => {
+    if (parsedQueryObj[key] === "null") {
+      parsedQueryObj[key] = null;
+    }
+  });
+
+  // ตรวจสอบและแปลงช่วงเวลา
+  if (startdate && enddate && typedate) {
+    const startDate = new Date(startdate);
+    const endDate = new Date(enddate);
+    endDate.setDate(endDate.getDate() + 1); // รวมวันสิ้นสุดด้วย
+
+    parsedQueryObj[typedate] = { $gte: startDate, $lt: endDate };
+  }
+
+  // ถ้ามีการใช้ regex ค้นหาจาก field
+  if (field && value?.trim()) {
+    const fieldType = getFieldType(Txinformalinvoice.schema.paths, field);
+    if (fieldType !== "String") {
+      return next(
+        new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท ${fieldType}`, 400)
+      );
+    }
+
+    parsedQueryObj[field] = { $regex: new RegExp(value, "i") };
+  }
+
+  let query = Txinformalinvoice.find(parsedQueryObj);
+
+  // เลือก fields ที่ต้องการ
+  if (fields) {
+    const selectedFields = fields.split(",").join(" ");
+    query = query.select(selectedFields);
+  } else {
+    query = query.select("-__v");
+  }
+
+  query = query.sort(sort);
+
+  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+  const job = await Jobqueue.create({
+    status: "pending",
+    job_source: "reporttaxinformalinvoice",
+    result: {
+      reportno: `RPTXINVOICE-${moment().format("YYYYMMDD-HHmmss")}`,
+    },
+  });
+
+  // เริ่มประมวลผล async
+  setTimeout(async () => {
+    try {
+      const result = await query.lean();
+
+      // อัปเดตสถานะของ Jobqueue เป็น "done"
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "done",
+        result: { ...job.result, data: result },
+      });
+    } catch (err) {
+      // อัพเดทสถานะงานเป็นล้มเหลว
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "error",
+        result: { ...job.result, errorMessage: err.message },
+      });
+      return;
+    }
+  }, 0); // รันแยก thread
+
+  // ✅ 7. ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
+  res.status(202).json({
+    status: "success",
+    message: `ได้รับคิวงานแล้ว: ${job.result.reportno}`,
+    data: {
+      jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
+    },
+  });
+});
+
 //หลังจากที่สร้างใบกำกับภาษีอย่างเต็มสำเร็จเราจะมาอัพเดท ref ในใบกำกับภาษีอย่างย่อ
 exports.updateFormalInvoiceRef = catchAsync(async (req, res, next) => {
   const formalInvoice = req.createdDoc;
@@ -86,6 +184,11 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
   }
 
   const invoicesToCreate = [];
+  // กำหนดวันที่ใบกำกับภาษีเป็นวันที่สร้างงานล่าสุด
+  const invoiceDate = moment(latestJob.createdAt)
+    .tz("Asia/Bangkok")
+    .startOf("day")
+    .toDate();
 
   for (const [order_no, items] of Object.entries(groupedByOrderNo)) {
     // แบ่งรายการสินค้าเป็นกลุ่ม กลุ่มละไม่เกิน 10 รายการ
@@ -102,10 +205,19 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
         qty: i.qty || 0,
       }));
 
+      // คำนวณ total_net
+      const total_net = Number(
+        product_details
+          .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
+          .toFixed(2)
+      );
+
       invoicesToCreate.push({
         doc_no: newDocNo,
         order_no,
         product_details,
+        invoice_date: invoiceDate,
+        total_net,
       });
     }
   }

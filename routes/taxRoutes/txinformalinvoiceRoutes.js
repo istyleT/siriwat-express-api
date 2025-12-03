@@ -5,11 +5,8 @@ const {
   getSuggestTxinformalinvoice,
   updateTxinformalinvoice,
   getOneTxinformalinvoice,
+  getReportTaxTxinformalinvoice,
 } = require("../../controllers/taxController/txinformalinvoiceController");
-const {
-  cancelData,
-  setSkipResNext,
-} = require("../../controllers/handlerFactory");
 const { protect, restrictTo } = require("../../controllers/authController");
 
 //Global
@@ -18,6 +15,7 @@ router.use(restrictTo("Owner", "Sale"));
 //Routes
 router.route("/").get(getAllTxinformalinvoice);
 router.route("/suggest").get(getSuggestTxinformalinvoice);
+router.route("/report-tax").get(getReportTaxTxinformalinvoice);
 router
   .route("/:id")
   .get(getOneTxinformalinvoice)
