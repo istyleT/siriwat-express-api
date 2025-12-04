@@ -46,6 +46,7 @@ const swvehicleRouter = require("./routes/siriwatRoutes/swvehicleRoutes");
 const txinformalinvoiceRouter = require("./routes/taxRoutes/txinformalinvoiceRoutes");
 const txformalinvoiceRouter = require("./routes/taxRoutes/txformalinvoiceRoutes");
 const txcreditnoteRouter = require("./routes/taxRoutes/txcreditnoteRoutes");
+const txreporttaxRouter = require("./routes/taxRoutes/txreporttaxRoutes");
 
 //Routes ของ Stock
 const skinventorymovementRouter = require("./routes/stockRoutes/skinventorymovementRoutes");
@@ -185,6 +186,7 @@ app.use("/sk/suggestorders", sksuggestorderRouter);
 app.use("/tx/informalinvoices", txinformalinvoiceRouter);
 app.use("/tx/formalinvoices", txformalinvoiceRouter);
 app.use("/tx/creditnotes", txcreditnoteRouter);
+app.use("/tx/reporttaxs", txreporttaxRouter);
 
 // siriwat routes
 app.use("/sw/customers", swcustomerRouter);
