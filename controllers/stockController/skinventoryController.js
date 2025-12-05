@@ -667,7 +667,7 @@ exports.getInventoriesWithZeroFilter = catchAsync(async (req, res) => {
   }
 
   const inventories = await Skinventory.find(filter).select(
-    "part_code part_name qty"
+    "part_code part_name qty avg_cost"
   );
 
   res.status(200).json({
