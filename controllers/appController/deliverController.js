@@ -1,10 +1,32 @@
 const Deliver = require("../../models/appModel/deliverModel");
 const Order = require("../../models/appModel/orderModel");
+const Txcreditnote = require("../../models/taxModel/txcreditnoteModel");
 const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
 
 //Middleware
 exports.setDeliverNo = factory.setDocno(Deliver);
+
+//ตรวจสอบก่อนการลบเอกสารการจัดส่งว่ามี creditnote อ้างอิงอยู่หรือไม่
+exports.checkBeforeCancelDeliver = catchAsync(async (req, res, next) => {
+  //ค้นหา deliverId ใน Deliver Model เพื่อเอาค่า id มาเช็คกับ Txcreditnote
+  const deliver = await Deliver.findById(req.params.id);
+
+  // ค้นหา Txcreditnote ที่มี deliver_no ตรงกับ deliverId
+  const creditnote = await Txcreditnote.findOne({
+    deliver_no: deliver.id,
+    canceledAt: null,
+  });
+
+  if (creditnote) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่สามารถยกเลิกการจัดส่งนี้ได้ เนื่องจากมีใบลดหนี้อ้างอิงอยู่",
+    });
+  }
+
+  next();
+});
 
 // Method
 exports.getAllDeliver = factory.getAll(Deliver);

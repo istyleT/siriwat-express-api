@@ -13,6 +13,10 @@ const txinformalinvoiceSchema = new mongoose.Schema(
       type: String,
       required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
     },
+    deliver_no: {
+      type: String,
+      default: null,
+    },
     invoice_date: {
       type: Date,
       default: () =>
@@ -104,6 +108,11 @@ const populateFields = [
   { path: "user_updated", select: "firstname" },
 ];
 txinformalinvoiceSchema.pre(/^find/, function (next) {
+  // ตรวจสอบว่า query มี option ที่ชื่อว่า noPopulate หรือไม่
+  if (this.getOptions().noPopulate) {
+    return next();
+  }
+
   populateFields.forEach((field) => {
     this.populate({ ...field, options: { lean: true } });
   });

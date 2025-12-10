@@ -92,6 +92,12 @@ const deliverSchema = new mongoose.Schema({
           type: Number,
           default: 0,
         },
+        discount_percent: {
+          type: Number,
+          default: 0,
+          min: [0, "ส่วนลดต้องมากกว่าหรือเท่ากับ 0"],
+          max: [100, "ส่วนลดต้องน้อยกว่าหรือเท่ากับ 100"],
+        },
       },
     ],
     default: [],

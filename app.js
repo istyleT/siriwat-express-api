@@ -27,6 +27,7 @@ const tambonRouter = require("./routes/basedataRoutes/tambonRoutes");
 //Routes ของ Packing
 const pkskudictionaryRouter = require("./routes/packingRoutes/pkskudictionaryRoutes");
 const pkworkRouter = require("./routes/packingRoutes/pkworkRoutes");
+const pkreturnworkRouter = require("./routes/packingRoutes/pkreturnworkRoutes");
 const pkimportRouter = require("./routes/packingRoutes/pkimportRoutes");
 const pkdefaultcolRouter = require("./routes/packingRoutes/pkdefaultcolRoutes");
 
@@ -62,6 +63,10 @@ const monitorRouter = require("./routes/basedataRoutes/monitorRoutes");
 const startAllJobs = require("./controllers/cronjobs/index");
 
 const app = express();
+
+// // ✅ ให้ Express รู้ว่ามี Proxy ข้างหน้า (เช่น Ngrok)
+// app.set("trust proxy", 1);
+
 //ส่วนการตั้งค่า cors origin
 // ตรวจสอบว่าอยู่ใน development mode หรือไม่
 const isDevelopment = process.env.NODE_ENV !== "production";
@@ -81,6 +86,7 @@ const allowedOrigins = [
 if (isDevelopment) {
   allowedOrigins.push("http://localhost:5174");
   allowedOrigins.push("http://localhost:5173");
+  // allowedOrigins.push("https://5a748a183a8e.ngrok-free.app/");
 }
 
 const corsOptions = {
@@ -110,6 +116,49 @@ app.use(helmet());
 
 //ตั้งค่าให้อ่านค่าจาก cookie ได้
 app.use(cookieParser());
+
+// Webhook verification endpoint ของ Facebook Messenger
+// app.get("/webhook", (req, res) => {
+//   const VERIFY_TOKEN = "my_verify_token";
+//   console.log("Webhook verification request received");
+//   console.log("🔍 Raw query:", req.query);
+
+//   const mode = req.query["hub.mode"];
+//   const token = req.query["hub.verify_token"];
+//   const challenge = req.query["hub.challenge"];
+
+//   console.log("👉", mode, token, challenge);
+
+//   if (mode === "subscribe" && token === VERIFY_TOKEN) {
+//     console.log("✅ Webhook verified!");
+//     res.status(200).send(challenge);
+//   } else {
+//     res.sendStatus(403);
+//   }
+// });
+
+// app.post("/webhook", (req, res) => {
+//   const body = req.body;
+
+//   // ตรวจว่าเป็น event จากเพจ (page object)
+//   if (body.object === "page") {
+//     body.entry.forEach((entry) => {
+//       const event = entry.messaging[0];
+//       console.log("📩 Message Event:", event);
+
+//       // ถ้ามีข้อความเข้ามา
+//       if (event.message) {
+//         const senderId = event.sender.id;
+//         const messageText = event.message.text;
+//         console.log(`💬 ข้อความจาก ${senderId}: ${messageText}`);
+//       }
+//     });
+
+//     res.status(200).send("EVENT_RECEIVED");
+//   } else {
+//     res.sendStatus(404);
+//   }
+// });
 
 // ป้องกัน Bot Attack ขอ requset จนเว็บล่ม
 const limiter = rateLimit({
@@ -173,6 +222,7 @@ app.use("/tambon", tambonRouter);
 //packing routes
 app.use("/pk/skudictionarys", pkskudictionaryRouter);
 app.use("/pk/works", pkworkRouter);
+app.use("/pk/returnworks", pkreturnworkRouter);
 app.use("/pk/imports", pkimportRouter);
 app.use("/pk/defaultcols", pkdefaultcolRouter);
 

@@ -8,6 +8,7 @@ const { deletePkworkJob, reportUnitPriceJob } = require("./pkwork");
 const {
   txinformalinvoiceJob,
   canceltxinformalinvoiceJob,
+  txinformalinvoiceRMBKKJob,
 } = require("./txinformalinvoice");
 
 // start ทุก cron job
@@ -19,6 +20,7 @@ function startAllJobs() {
   reportUnitPriceJob.start(); // run 23.45
   pkunitpriceJob.start(); // run 1.45
   jobqueueJob.start(); // run 2.30
+  txinformalinvoiceRMBKKJob.start(); //run 2.45
   txinformalinvoiceJob.start(); // run 3.00
   canceltxinformalinvoiceJob.start(); // run 2.15
 }

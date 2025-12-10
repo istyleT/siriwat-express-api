@@ -1,5 +1,6 @@
 const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
 const Pkwork = require("../../models/packingModel/pkworkModel");
+const Deliver = require("../../models/appModel/deliverModel");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
@@ -8,6 +9,29 @@ const moment = require("moment-timezone");
 // ตั้งค่าให้ใช้เวลาไทย
 moment.tz.setDefault("Asia/Bangkok");
 //Middleware
+//ยกเลิกใบกำกับภาษีหลังจากยกเลิก deliver แล้ว
+exports.cancelIFNAfterCancelDeliver = catchAsync(async (req, res, next) => {
+  const updatedDeliver = req.updatedDoc;
+  const { id } = updatedDeliver;
+
+  // update formalinvoice ที่มี deliver_no ตรงกับ id ของ deliver ที่ถูกยกเลิก
+  await Txinformalinvoice.updateMany(
+    { deliver_no: id, canceledAt: null },
+    {
+      $set: {
+        canceledAt: moment.tz("Asia/Bangkok").toDate(),
+        user_canceled: req.user?.firstname || "-",
+        remark_canceled: "ยกเลิกการจัดส่ง",
+      },
+    }
+  );
+
+  res.status(204).json({
+    status: "success",
+    message: "ยกเลิกการจัดส่งสำเร็จ",
+    data: null,
+  });
+});
 
 //Methods
 exports.getAllTxinformalinvoice = factory.getAll(Txinformalinvoice);
@@ -17,6 +41,7 @@ exports.getSuggestTxinformalinvoice = factory.getSuggestWithDate(
 );
 exports.updateTxinformalinvoice = factory.updateOne(Txinformalinvoice);
 
+//เรียก report ใบกำกับภาษีอย่างย่อ
 exports.getReportTaxTxinformalinvoice = catchAsync(async (req, res, next) => {
   const {
     search_field: field,
@@ -64,7 +89,9 @@ exports.getReportTaxTxinformalinvoice = catchAsync(async (req, res, next) => {
     parsedQueryObj[field] = { $regex: new RegExp(value, "i") };
   }
 
-  let query = Txinformalinvoice.find(parsedQueryObj);
+  let query = Txinformalinvoice.find(parsedQueryObj).setOptions({
+    noPopulate: true,
+  });
 
   // เลือก fields ที่ต้องการ
   if (fields) {
@@ -226,6 +253,113 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
 
   console.log(
     `Created ${invoicesToCreate.length} informal invoices grouped by order_no.`
+  );
+});
+
+//สร้างใบกำกับภาษีอย่างย่อรายวันจากการดส่งสินค้า(Facebook RMBKK)
+exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
+  //ดึงข้อมูลที่จะออกใบกำกับมาตรวจสอบ
+  const yesterdayStart = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "day")
+    .startOf("day")
+    .toDate();
+  const yesterdayEnd = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "day")
+    .endOf("day")
+    .toDate();
+
+  // ดึงข้อมูล Deliver เฉพาะที่มี deliver_date เมื่อวานและไม่ถูกยกเลิก
+  const deliverJobs = await Deliver.find({
+    deliver_date: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    date_canceled: null,
+  })
+    .sort({ created_at: 1 })
+    .exec();
+
+  if (!deliverJobs || deliverJobs.length === 0) {
+    return console.log("No deliver jobs found for yesterday.");
+  }
+
+  //กระบวนการกำหนดเลขที่ใบกำกับภาษีอย่างย่อ
+  const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
+    -2
+  );
+  const prefix = `IFN${current_year}`;
+
+  // ค้นหา doc_no ล่าสุด
+  const latestInvoice = await Txinformalinvoice.findOne({
+    doc_no: { $regex: `^${prefix}` },
+  })
+    .sort({ doc_no: -1 })
+    .exec();
+
+  let lastSeq = 0;
+  if (latestInvoice) {
+    const seqStr = latestInvoice.doc_no.slice(-6);
+    const num = parseInt(seqStr, 10);
+    if (!isNaN(num)) lastSeq = num;
+  }
+
+  const invoicesToCreate = [];
+
+  // ใช้วันที่ของ Deliver ตัวแรกเป็น invoiceDate (ทุกตัวเป็นวันเดียวกัน)
+  const invoiceDate = moment(deliverJobs[0].deliver_date)
+    .tz("Asia/Bangkok")
+    .startOf("day")
+    .toDate();
+
+  for (const job of deliverJobs) {
+    const { order_no, deliverlist = [], deliver_cost, id } = job;
+
+    // แบ่ง deliverlist เป็นกลุ่มย่อย (chunk) ละไม่เกิน 9 รายการ + 1 รายการสำหรับค่าขนส่ง
+    for (let i = 0; i < deliverlist.length; i += 9) {
+      const chunk = deliverlist.slice(i, i + 9); // ดึงกลุ่มรายการสินค้า
+
+      lastSeq += 1;
+      const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
+
+      const product_details = chunk.map((i) => ({
+        partnumber: i.partnumber || "",
+        part_name: i.description || "",
+        price_per_unit: i.net_price || 0,
+        qty: i.qty_order || 0,
+      }));
+
+      // ✅ เพิ่มค่าขนส่งเฉพาะใบแรกของแต่ละ job
+      if (i === 0 && deliver_cost && deliver_cost !== 0) {
+        product_details.push({
+          partnumber: "TRANS-COST",
+          part_name: "ค่าขนส่งสินค้า",
+          price_per_unit: deliver_cost,
+          qty: 1,
+        });
+      }
+
+      // คำนวณ total_net
+      const total_net = Number(
+        product_details
+          .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
+          .toFixed(2)
+      );
+
+      invoicesToCreate.push({
+        doc_no: newDocNo,
+        order_no: order_no || "N/A",
+        product_details,
+        invoice_date: invoiceDate,
+        total_net,
+        deliver_no: id, // อ้างอิงถึง Deliver ID (DN)
+      });
+    }
+  }
+
+  //สร้างใบกำกับภาษีอย่างย่อ
+  await Txinformalinvoice.insertMany(invoicesToCreate);
+
+  console.log(
+    `Created ${invoicesToCreate.length} informal invoices from RMBKK deliver.`
   );
 });
 

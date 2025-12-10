@@ -9,13 +9,13 @@ const txformalinvoiceSchema = new mongoose.Schema(
       unique: true,
       required: [true, "กรุณาระบุเลขที่ใบกำกับภาษี"],
     },
-    docCount: {
-      type: Number,
-      default: 1,
-    },
     order_no: {
       type: String,
       required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],
+    },
+    deliver_no: {
+      type: String,
+      default: null,
     },
     invoice_date: {
       type: Date,
@@ -144,6 +144,11 @@ const populateFields = [
   { path: "user_updated", select: "firstname" },
 ];
 txformalinvoiceSchema.pre(/^find/, function (next) {
+  // ตรวจสอบว่า query มี option ที่ชื่อว่า noPopulate หรือไม่
+  if (this.getOptions().noPopulate) {
+    return next();
+  }
+
   populateFields.forEach((field) => {
     this.populate({ ...field, options: { lean: true } });
   });

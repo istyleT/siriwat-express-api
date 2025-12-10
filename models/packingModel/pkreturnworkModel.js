@@ -1,0 +1,128 @@
+//pkreturnworkModel.js
+const mongoose = require("mongoose");
+const moment = require("moment-timezone");
+
+const pkreturnworkSchema = new mongoose.Schema(
+  {
+    upload_ref_no: {
+      type: String,
+      required: [true, "กรุณาระบุเลขอ้างอิงการ upload"],
+    },
+    tracking_code: {
+      type: String,
+      trim: true,
+      unique: true,
+      required: [true, "กรุณาระบุ tracking_code"],
+    },
+    order_date: {
+      type: String,
+      required: [true, "กรุณาระบุวันที่สั่งซื้อ"],
+    },
+    order_no: {
+      type: String,
+      required: [true, "กรุณาระบุเลขที่สั่งซื้อ"],
+    },
+    shipping_company: {
+      type: String,
+      default: null,
+    },
+    shop: {
+      type: String,
+      enum: ["Lazada", "Shopee", "TikTok"],
+      required: [true, "กรุณาระบุชื่อร้าน"],
+    },
+    parts_data: {
+      type: Array,
+      required: [true, "กรุณาระบุข้อมูลสินค้า"],
+    },
+    scan_data: {
+      type: Array,
+      default: [],
+    },
+    status: {
+      type: String,
+      enum: ["ดำเนินการ", "เสร็จสิ้น", "ยกเลิก"],
+      default: "ดำเนินการ",
+    },
+    success_at: {
+      type: Date,
+      default: null,
+    },
+    station: {
+      type: String,
+      enum: ["RM", "RSM"],
+      default: "RM",
+    },
+    cancel_will_return_inventory: {
+      type: Boolean,
+      default: true,
+    },
+    remark: {
+      type: String,
+      default: null,
+    },
+    //field พื้นฐาน
+    user_updated: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    canceledAt: {
+      type: Date,
+      default: null,
+    },
+    user_canceled: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    remark_canceled: {
+      type: String,
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
+
+pkreturnworkSchema.index({ tracking_code: 1 });
+
+// populate path
+const populateFields = [
+  { path: "user_canceled", select: "firstname" },
+  { path: "user_updated", select: "firstname" },
+];
+
+pkreturnworkSchema.pre(/^find/, function (next) {
+  // ตรวจสอบว่า query มี option ที่ชื่อว่า noPopulate หรือไม่
+  if (this.getOptions().noPopulate) {
+    return next();
+  }
+
+  populateFields.forEach((field) => {
+    this.populate({ ...field, options: { lean: true } });
+  });
+  next();
+});
+
+//stamp เวลาที่เสร็จสิ้น
+pkreturnworkSchema.post("findOneAndUpdate", async function (doc) {
+  if (doc) {
+    const updatedDoc = await this.model.findById(doc._id);
+
+    //work ที่ไม่โดนยกเลิก เป็นงานที่เสร็จสิ้นเมื่อ parts_data ว่าง
+    if (
+      updatedDoc &&
+      updatedDoc.parts_data.length === 0 &&
+      updatedDoc.status !== "ยกเลิก" &&
+      !updatedDoc.success_at
+    ) {
+      updatedDoc.status = "เสร็จสิ้น";
+      updatedDoc.success_at = moment().tz("Asia/Bangkok").toDate();
+      await updatedDoc.save();
+    }
+  }
+});
+
+const Pkreturnwork = mongoose.model("Pkreturnwork", pkreturnworkSchema);
+
+module.exports = Pkreturnwork;

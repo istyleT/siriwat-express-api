@@ -286,36 +286,6 @@ exports.returnUploadMockQtyToInventory = catchAsync(async (req, res, next) => {
   }
 
   next();
-
-  //Logic เดิม
-  // for (const pkwork of pkworks) {
-  //   if (pkwork.scan_data && pkwork.scan_data.length > 0) {
-  //     const partsMap = new Map();
-
-  //     pkwork.parts_data.forEach((item) => {
-  //       partsMap.set(item.partnumber, item);
-  //     });
-
-  //     pkwork.scan_data.forEach((scanItem) => {
-  //       const existing = partsMap.get(scanItem.partnumber);
-  //       if (existing) {
-  //         existing.qty += scanItem.qty;
-  //       } else {
-  //         const newItem = {
-  //           partnumber: scanItem.partnumber,
-  //           qty: scanItem.qty,
-  //         };
-  //         pkwork.parts_data.push(newItem);
-  //         partsMap.set(scanItem.partnumber, newItem);
-  //       }
-  //     });
-  //   }
-
-  //   pkwork.scan_data = [];
-
-  //   await pkwork.save();
-
-  // }
 });
 
 //จัดการข้อมูลเวลามีการเปลี่ยน station ที่ work

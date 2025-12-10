@@ -38,6 +38,26 @@ exports.setDocnoForTxformalinvoice = catchAsync(async (req, res, next) => {
   next();
 });
 
+//ยกเลิกใบกำกับภาษีหลังจากยกเลิก deliver แล้ว
+exports.cancelINVAfterCancelDeliver = catchAsync(async (req, res, next) => {
+  const updatedDeliver = req.updatedDoc;
+  const { id } = updatedDeliver;
+
+  // update formalinvoice ที่มี deliver_no ตรงกับ id ของ deliver ที่ถูกยกเลิก
+  await Txformalinvoice.updateMany(
+    { deliver_no: id, canceledAt: null },
+    {
+      $set: {
+        canceledAt: moment.tz("Asia/Bangkok").toDate(),
+        user_canceled: req.user._id,
+        remark_canceled: "ยกเลิกการจัดส่ง",
+      },
+    }
+  );
+
+  next();
+});
+
 //จะยกเลิกได้ก็ต่อเมื่อยังไม่มีการลดหนี้เอกสารนี้
 exports.checkBeforeCancel = catchAsync(async (req, res, next) => {
   const { id } = req.params;
