@@ -14,10 +14,6 @@ const quotationSchema = new mongoose.Schema({
   cust_tier: {
     type: String,
     required: [true, "กรุณาระบุ Tire ลูกค้า"],
-    enum: {
-      values: ["ขายส่งรายสัปดาห์", "ขายส่งด่วน 1", "ขายส่งด่วน 2", "ขายปลีก"],
-      message: "Tire ลูกค้าไม่ถูกต้อง",
-    },
   },
   created_at: {
     type: Date,

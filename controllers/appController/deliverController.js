@@ -21,7 +21,7 @@ exports.checkBeforeCancelDeliver = catchAsync(async (req, res, next) => {
   if (creditnote) {
     return res.status(400).json({
       status: "fail",
-      message: "ไม่สามารถยกเลิกการจัดส่งนี้ได้ เนื่องจากมีใบลดหนี้อ้างอิงอยู่",
+      message: "ไม่สามารถยกเลิกได้ มีใบลดหนี้อ้างอิงอยู่",
     });
   }
 

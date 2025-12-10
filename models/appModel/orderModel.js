@@ -15,20 +15,6 @@ const orderSchema = new mongoose.Schema({
   cust_tier: {
     type: String,
     required: [true, "กรุณาระบุ Tire ลูกค้า"],
-    enum: {
-      values: [
-        "ขายส่งรายสัปดาห์",
-        "ขายส่งด่วน 1",
-        "ขายส่งด่วน 2",
-        "ขายปลีก",
-        "ลูกค้าทั่วไป",
-        "ลูกค้า VIP A ด่วน",
-        "ลูกค้า VIP B ด่วน",
-        "ลูกค้า VIP A รายสัปดาห์",
-        "ลูกค้า VIP B รายสัปดาห์",
-      ],
-      message: "Tire ลูกค้าไม่ถูกต้อง",
-    },
   },
   custname: {
     type: String,
