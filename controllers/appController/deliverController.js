@@ -1,8 +1,10 @@
 const Deliver = require("../../models/appModel/deliverModel");
 const Order = require("../../models/appModel/orderModel");
 const Txcreditnote = require("../../models/taxModel/txcreditnoteModel");
+const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
 const catchAsync = require("../../utils/catchAsync");
 const factory = require("../handlerFactory");
+const moment = require("moment-timezone");
 
 //Middleware
 exports.setDeliverNo = factory.setDocno(Deliver);
@@ -184,4 +186,57 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
     results: filteredDelivers.length,
     data: filteredDelivers,
   });
+});
+
+//ส่วน function ที่ทำงานกับ cron job
+//update เลขที่ใบกำกับภาษีใน deliver ที่มีการยืนยันใบกำกับภาษีแล้ว(ต้องทำงานหลังจาก ออกใบกำกับภาษีแล้ว)
+exports.updateInvoiceNoInDeliver = catchAsync(async (req, res, next) => {
+  //ดึงข้อมูลที่ deliver ที่มีการยืนยันใบกำกับภาษีในวันนี้
+  const yesterdayStart = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "day")
+    .startOf("day")
+    .toDate();
+  const yesterdayEnd = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "day")
+    .endOf("day")
+    .toDate();
+
+  // ดึงข้อมูล Deliver เฉพาะที่มี deliver_date เมื่อวานและไม่ถูกยกเลิก
+  const deliverJobs = await Deliver.find({
+    deliver_date: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    date_canceled: null,
+  })
+    .sort({ created_at: 1 })
+    .exec();
+
+  if (!deliverJobs || deliverJobs.length === 0) {
+    return console.log("No deliver jobs found for yesterday.");
+  }
+
+  // ใช้ Promise.all เพื่อทำงาน async แบบ parallel
+  await Promise.all(
+    deliverJobs.map(async (deliver) => {
+      const invoice = await Txinformalinvoice.findOne({
+        deliver_no: deliver.id,
+      });
+
+      if (!invoice) {
+        // console.log(`No invoice found for deliver ID: ${deliver.id}`);
+        return;
+      }
+
+      // อัปเดต deliver ให้มี doc_no
+      deliver.informal_invoice_no = invoice.doc_no;
+      await deliver.save();
+      // console.log(
+      //   `Updated deliver ID: ${deliver._id} with invoice no: ${invoice.doc_no}`
+      // );
+    })
+  );
+
+  console.log(
+    `Updated ${deliverJobs.length} deliver records with invoice numbers.`
+  );
 });

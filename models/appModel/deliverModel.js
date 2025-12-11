@@ -102,13 +102,17 @@ const deliverSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  confirmed_invoice_date: {
-    type: Date,
-    default: null,
-  },
-  confirmed_invoice_user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+  // confirmed_invoice_date: {
+  //   type: Date,
+  //   default: null,
+  // },
+  // confirmed_invoice_user: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "User",
+  //   default: null,
+  // },
+  informal_invoice_no: {
+    type: String,
     default: null,
   },
   cod: {
@@ -165,7 +169,7 @@ deliverSchema.index({ order_no: 1 });
 // populate path
 const populateFields = [
   { path: "user_created", select: "firstname" },
-  { path: "confirmed_invoice_user", select: "firstname" },
+  // { path: "confirmed_invoice_user", select: "firstname" },
   { path: "user_canceled", select: "firstname" },
   { path: "user_updated", select: "firstname" },
   { path: "tambon", select: "name_th amphure_id province_id" },
