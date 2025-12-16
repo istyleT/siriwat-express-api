@@ -9,20 +9,26 @@ const pkreturnworkSchema = new mongoose.Schema(
       required: [true, "กรุณาระบุเลขอ้างอิงการ upload"],
     },
     tracking_code: {
+      //ใช้จาก Pkwork
       type: String,
-      trim: true,
-      unique: true,
       required: [true, "กรุณาระบุ tracking_code"],
     },
     order_date: {
-      type: String,
-      required: [true, "กรุณาระบุวันที่สั่งซื้อ"],
+      //ใช้จาก Pkwork
+      type: Date,
+      required: [true, "กรุณาระบุวันที่ใบกำกับ"],
     },
     order_no: {
       type: String,
       required: [true, "กรุณาระบุเลขที่สั่งซื้อ"],
     },
-    shipping_company: {
+    invoice_no: {
+      //ใช้จาก Txinformalinvoice
+      type: String,
+      required: [true, "กรุณาระบุเลขที่ใบกำกับ"],
+    },
+    credit_note_no: {
+      //update เพิ่ม field ที่หลังจากสร้าง credit note
       type: String,
       default: null,
     },
@@ -31,9 +37,13 @@ const pkreturnworkSchema = new mongoose.Schema(
       enum: ["Lazada", "Shopee", "TikTok"],
       required: [true, "กรุณาระบุชื่อร้าน"],
     },
+    product_details: {
+      type: Array,
+      default: null,
+    },
     parts_data: {
       type: Array,
-      required: [true, "กรุณาระบุข้อมูลสินค้า"],
+      default: [],
     },
     scan_data: {
       type: Array,
@@ -41,21 +51,12 @@ const pkreturnworkSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["ดำเนินการ", "เสร็จสิ้น", "ยกเลิก"],
+      enum: ["ดำเนินการ", "เสร็จสิ้น"],
       default: "ดำเนินการ",
     },
-    success_at: {
+    successAt: {
       type: Date,
       default: null,
-    },
-    station: {
-      type: String,
-      enum: ["RM", "RSM"],
-      default: "RM",
-    },
-    cancel_will_return_inventory: {
-      type: Boolean,
-      default: true,
     },
     remark: {
       type: String,
@@ -67,30 +68,14 @@ const pkreturnworkSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
-    canceledAt: {
-      type: Date,
-      default: null,
-    },
-    user_canceled: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-    remark_canceled: {
-      type: String,
-      default: null,
-    },
   },
   { timestamps: true }
 );
 
-pkreturnworkSchema.index({ tracking_code: 1 });
+pkreturnworkSchema.index({ order_no: 1, tracking_code: 1 });
 
 // populate path
-const populateFields = [
-  { path: "user_canceled", select: "firstname" },
-  { path: "user_updated", select: "firstname" },
-];
+const populateFields = [{ path: "user_updated", select: "firstname" }];
 
 pkreturnworkSchema.pre(/^find/, function (next) {
   // ตรวจสอบว่า query มี option ที่ชื่อว่า noPopulate หรือไม่
@@ -113,11 +98,11 @@ pkreturnworkSchema.post("findOneAndUpdate", async function (doc) {
     if (
       updatedDoc &&
       updatedDoc.parts_data.length === 0 &&
-      updatedDoc.status !== "ยกเลิก" &&
-      !updatedDoc.success_at
+      updatedDoc.scan_data.length >= 1 &&
+      !updatedDoc.successAt
     ) {
       updatedDoc.status = "เสร็จสิ้น";
-      updatedDoc.success_at = moment().tz("Asia/Bangkok").toDate();
+      updatedDoc.successAt = moment().tz("Asia/Bangkok").toDate();
       await updatedDoc.save();
     }
   }

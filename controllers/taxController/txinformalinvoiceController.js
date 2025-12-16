@@ -172,6 +172,8 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
     job_source: "pkdailyreportwork",
   })
     .sort({ createdAt: -1 })
+    //.skip(1) // ข้ามอันล่าสุด (จะย้อนกลับไปเอาอันก่อนหน้า)
+    //.limit(1) // เอาแค่อันเดียว (จะย้อนกลับไปเอาอันก่อนหน้า)
     .exec();
 
   if (
@@ -211,30 +213,41 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
   }
 
   const invoicesToCreate = [];
+
   // กำหนดวันที่ใบกำกับภาษีเป็นวันที่สร้างงานล่าสุด
-  const invoiceDate = moment(latestJob.createdAt)
-    .tz("Asia/Bangkok")
-    .startOf("day")
-    .toDate();
+  const invoiceDate = moment.utc(latestJob.createdAt).startOf("day").toDate();
 
   for (const [order_no, items] of Object.entries(groupedByOrderNo)) {
+    // ❶ รวมรายการสินค้าที่ partnumber, part_name และ price_per_unit เหมือนกัน
+    const mergedMap = new Map();
+
+    items.forEach((i) => {
+      const key = `${i.partnumber}-${i.part_name}-${i.price_per_unit}`;
+      if (!mergedMap.has(key)) {
+        mergedMap.set(key, {
+          partnumber: i.partnumber || "",
+          part_name: i.part_name || "",
+          price_per_unit: i.price_per_unit || 0,
+          qty: i.qty || 0,
+        });
+      } else {
+        mergedMap.get(key).qty += i.qty || 0;
+      }
+    });
+
+    // ❷ แปลงเป็น array และแบ่งกลุ่มทีละไม่เกิน 10 รายการ
+    const mergedItems = Array.from(mergedMap.values());
+
     // แบ่งรายการสินค้าเป็นกลุ่ม กลุ่มละไม่เกิน 10 รายการ
-    for (let i = 0; i < items.length; i += 10) {
-      const chunk = items.slice(i, i + 10); // ดึงกลุ่มรายการสินค้า
+    for (let i = 0; i < mergedItems.length; i += 10) {
+      const chunk = mergedItems.slice(i, i + 10);
 
       lastSeq += 1;
       const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
 
-      const product_details = chunk.map((i) => ({
-        partnumber: i.partnumber || "",
-        part_name: i.part_name || "",
-        price_per_unit: i.price_per_unit || 0,
-        qty: i.qty || 0,
-      }));
-
-      // คำนวณ total_net
+      // ❸ คำนวณ total_net
       const total_net = Number(
-        product_details
+        chunk
           .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
           .toFixed(2)
       );
@@ -242,7 +255,7 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
       invoicesToCreate.push({
         doc_no: newDocNo,
         order_no,
-        product_details,
+        product_details: chunk,
         invoice_date: invoiceDate,
         total_net,
       });

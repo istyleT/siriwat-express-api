@@ -725,6 +725,7 @@ exports.deleteOne = (Model) =>
 
     res.status(204).json({
       status: "success",
+      message: "ลบข้อมูลสำเร็จ",
       data: {
         message: "ลบข้อมูลสำเร็จ",
         data: null,

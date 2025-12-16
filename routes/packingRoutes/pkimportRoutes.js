@@ -4,8 +4,11 @@ const {
   convertSkuToPartCode,
   separatePartSet,
   setToCreateWork,
+  setToCreateReturnWork,
   checkDuplicateOrderNos,
+  filterValidReturnOrders,
   checkOrderCancel,
+  checkOrderReturn,
 } = require("../../controllers/packingController/pkimportController");
 const {
   createPkunitpriceHandler,
@@ -26,6 +29,12 @@ router
     setToCreateWork
   );
 
+router
+  .route("/return-order")
+  .post(filterValidReturnOrders, setToCreateReturnWork);
+
 router.route("/check-order-cancel").post(checkOrderCancel);
+
+router.route("/check-order-return").post(checkOrderReturn);
 
 module.exports = router;

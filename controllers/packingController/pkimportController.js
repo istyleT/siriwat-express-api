@@ -2,11 +2,83 @@ const Pkskudictionary = require("../../models/packingModel/pkskudictionaryModel"
 const Pkwork = require("../../models/packingModel/pkworkModel");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const Skinventory = require("../../models/stockModel/skinventoryModel");
+const Pkreturnwork = require("../../models/packingModel/pkreturnworkModel");
+const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
+const Txcreditnote = require("../../models/taxModel/txcreditnoteModel");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
 
 // ตั้งค่าให้ใช้เวลาไทย
 moment.tz.setDefault("Asia/Bangkok");
+
+//Middleware
+exports.filterValidReturnOrders = catchAsync(async (req, res, next) => {
+  const { order_return, shop } = req.body;
+
+  if (!Array.isArray(order_return) || order_return.length === 0 || !shop) {
+    return res.status(400).json({
+      status: "fail",
+      message: "order_return หรือ shop ไม่ถูกต้อง",
+    });
+  }
+
+  // ✅ 1. กรอง order_no ไม่ให้ซ้ำ
+  const uniqueOrderNos = [
+    ...new Set(order_return.map((item) => item.order_no.trim())),
+  ];
+
+  if (uniqueOrderNos.length === 0) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ไม่มี order_no ที่ใช้ได้",
+    });
+  }
+
+  // ✅ 2. ตรวจสอบใน Pkreturnwork และ Txcreditnote ที่ยังไม่ถูกยกเลิก
+  const [existingReturnDocs, existingCreditNoteDocs] = await Promise.all([
+    Pkreturnwork.find(
+      {
+        order_no: { $in: uniqueOrderNos },
+        shop: shop.trim(),
+      },
+      { order_no: 1 }
+    ),
+    Txcreditnote.find(
+      {
+        order_no: { $in: uniqueOrderNos },
+        canceledAt: null,
+      },
+      { order_no: 1 }
+    ),
+  ]);
+
+  const restrictedOrderNos = new Set([
+    ...existingReturnDocs.map((doc) => doc.order_no),
+    ...existingCreditNoteDocs.map((doc) => doc.order_no),
+  ]);
+
+  // ✅ 3. ตรวจสอบใน Pkwork ว่ามีจริงหรือไม่
+  const existingWorkDocs = await Pkwork.find(
+    {
+      order_no: { $in: uniqueOrderNos },
+      shop: shop.trim(),
+      canceled_at: null,
+    },
+    { order_no: 1 }
+  );
+
+  const existingWorkSet = new Set(existingWorkDocs.map((doc) => doc.order_no));
+
+  // ✅ 4. กรอง order_no ที่ "ใช้ได้เท่านั้น"
+  const cleanedUniqueOrderNos = uniqueOrderNos.filter(
+    (orderNo) =>
+      !restrictedOrderNos.has(orderNo) && existingWorkSet.has(orderNo)
+  );
+
+  req.cleanedUniqueOrderNos = cleanedUniqueOrderNos;
+
+  return next();
+});
 
 exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
   const { sku_data } = req.body;
@@ -112,6 +184,86 @@ exports.checkOrderCancel = catchAsync(async (req, res, next) => {
   return res.status(200).json({
     status: "success",
     message: `ทุกคำสั่งซื้อของร้าน ${shop} มีในระบบ`,
+  });
+});
+
+exports.checkOrderReturn = catchAsync(async (req, res, next) => {
+  const { order_return, shop } = req.body;
+
+  if (!Array.isArray(order_return) || order_return.length === 0 || !shop) {
+    return res.status(400).json({
+      status: "fail",
+      message: "order_return หรือ shop ไม่ถูกต้อง",
+    });
+  }
+
+  // ✅ 1. ดึง order_no ที่ไม่ซ้ำ
+  const uniqueOrderNos = [
+    ...new Set(order_return.map((item) => item.order_no.trim())),
+  ];
+
+  // ✅ ตรวจสอบใน Pkreturnwork
+  const existingReturnDocs = await Pkreturnwork.find(
+    {
+      order_no: { $in: uniqueOrderNos },
+      shop: shop.trim(),
+    },
+    { order_no: 1, shop: 1 }
+  );
+
+  // ✅ ตรวจสอบใน Txcreditnote
+  const existingCreditNoteDocs = await Txcreditnote.find(
+    {
+      order_no: { $in: uniqueOrderNos },
+      canceledAt: null,
+    },
+    { order_no: 1 }
+  );
+
+  const alreadyOrder = [
+    ...new Set([
+      ...existingReturnDocs.map((doc) => doc.order_no),
+      ...existingCreditNoteDocs.map((doc) => doc.order_no),
+    ]),
+  ];
+
+  if (alreadyOrder.length > 0) {
+    return res.status(200).json({
+      status: "success",
+      message: `พบคำสั่งซื้อของร้าน ${shop}: ${alreadyOrder.join(
+        ", "
+      )} อยู่ในกระบวนการลดหนี้แล้ว`,
+    });
+  }
+
+  // ✅ ถ้าไม่พบรายการที่อยู่ในกระบวนการลดหนี้
+  const existingWorkDocs = await Pkwork.find(
+    {
+      order_no: { $in: uniqueOrderNos },
+      shop: shop.trim(),
+      canceled_at: null,
+    },
+    { order_no: 1 }
+  );
+
+  const existingOrderSet = new Set(existingWorkDocs.map((doc) => doc.order_no));
+  const lostOrderNos = uniqueOrderNos.filter(
+    (order) => !existingOrderSet.has(order)
+  );
+
+  if (lostOrderNos.length > 0) {
+    return res.status(200).json({
+      status: "success",
+      message: `ไม่พบคำสั่งซื้อของร้าน ${shop} ในระบบ: ${lostOrderNos.join(
+        ", "
+      )}`,
+    });
+  }
+
+  // ✅ ถ้าไม่พบรายการที่อยู่ในกระบวนการลดหนี้
+  return res.status(200).json({
+    status: "success",
+    message: `ทุกคำสั่งซื้อของร้าน ${shop} ลดหนี้ได้`,
   });
 });
 
@@ -408,6 +560,177 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
         result: {
           ...job.result,
           message: `สร้าง Work สำเร็จบางส่วน (${
+            bulkOps.length - failedTrackingCodes.length
+          } จาก ${bulkOps.length})`,
+          insertedCount: bulkOps.length - failedTrackingCodes.length,
+          failedTrackingCodes,
+          mongo_error: error.message,
+        },
+      });
+    }
+  }, 0); // รันแยก thread
+
+  // ✅ 7. ตอบกลับผลลัพธ์ กลับไปยัง client ทันที
+  res.status(202).json({
+    status: "success",
+    message: `ได้รับคิวงานแล้ว เลขที่ upload: ${uploadRefNo}`,
+    upload_ref_no: uploadRefNo,
+    jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
+  });
+});
+
+exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
+  // console.log("This is setToCreateReturnWork");
+  const { shop } = req.body;
+  const cleanedUniqueOrderNos = req.cleanedUniqueOrderNos;
+
+  //ในการ upload 1 ครั้งจะมีค่าข้อมูล shop เพียง 1 ค่าเท่านั้น
+  if (
+    !shop ||
+    !cleanedUniqueOrderNos ||
+    !Array.isArray(cleanedUniqueOrderNos)
+  ) {
+    return res.status(400).json({
+      status: "fail",
+      message: "ข้อมูลไม่ครบถ้วน",
+    });
+  }
+
+  // ✅ ดึงข้อมูลจาก Pkwork
+  const pkworkDocs = await Pkwork.find(
+    {
+      order_no: { $in: cleanedUniqueOrderNos },
+      shop: shop.trim(),
+      canceled_at: null,
+    },
+    { order_no: 1, tracking_code: 1, order_date: 1 }
+  ).lean();
+
+  const pkworkMap = new Map(pkworkDocs.map((doc) => [doc.order_no, doc]));
+
+  // ✅ ดึงข้อมูลจาก Txinformalinvoice
+  const invoiceDocs = await Txinformalinvoice.find(
+    {
+      order_no: { $in: cleanedUniqueOrderNos },
+      canceledAt: null,
+    },
+    { order_no: 1, doc_no: 1, product_details: 1 }
+  ).lean();
+
+  // ✅ สร้างเอกสาร Pkreturnwork
+  const workDocuments = [];
+
+  for (const invoice of invoiceDocs) {
+    // console.log("กำลังสร้าง work สำหรับ invoice:", invoice.doc_no);
+    const orderNo = invoice.order_no;
+    const workInfo = pkworkMap.get(orderNo);
+    const productDetails = invoice.product_details || [];
+
+    let parts_data = [];
+    let product_details = null;
+
+    if (productDetails.length > 1) {
+      product_details = productDetails;
+    } else if (productDetails.length === 1) {
+      parts_data = productDetails;
+    }
+
+    workDocuments.push({
+      upload_ref_no: "", // ใส่ทีหลัง
+      tracking_code: workInfo?.tracking_code || "",
+      order_date: workInfo?.order_date || "",
+      order_no: orderNo,
+      invoice_no: invoice.doc_no || "",
+      shop,
+      parts_data,
+      product_details,
+    });
+  }
+
+  // ✅ สร้าง upload_ref_no เพื่อใช้ในการอ้างอิง
+  const today = moment().format("YYMMDD");
+  const shopPrefix = `RE-${shop.charAt(0).toUpperCase()}${shop
+    .charAt(shop.length - 1)
+    .toUpperCase()}`;
+  const refPrefix = `${shopPrefix}${today}`;
+
+  // ✅ 5. หาลำดับ upload_ref_no ล่าสุดที่มี prefix เดียวกัน
+  let existingRefs = [];
+  try {
+    existingRefs = await Pkwork.find(
+      { upload_ref_no: { $regex: `^${refPrefix}` } },
+      { upload_ref_no: 1 }
+    ).sort({ upload_ref_no: 1 });
+  } catch (error) {
+    console.error("Error querying Pkwork:", error);
+  }
+  // หาเลขลำดับสูงสุดที่มีอยู่
+  let lastNumber = 0;
+  if (existingRefs.length > 0) {
+    const lastRef = existingRefs[existingRefs.length - 1].upload_ref_no;
+    const lastSeq = parseInt(lastRef.slice(-2), 10);
+    if (!isNaN(lastSeq)) {
+      lastNumber = lastSeq;
+    }
+  }
+
+  // กำหนด upload_ref_no ที่ใช้สำหรับทุกเอกสาร
+  const uploadRefNo = `${refPrefix}${String(lastNumber + 1).padStart(2, "0")}`;
+
+  // console.dir(workDocuments, { depth: null });
+
+  // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
+  const job = await Jobqueue.create({
+    status: "pending",
+    job_source: "pkimportreturnwork",
+    result: {
+      upload_ref_no: uploadRefNo,
+    },
+  });
+
+  // เริ่มประมวลผล async
+  setTimeout(async () => {
+    let bulkOps = [];
+
+    try {
+      //✅ เตรียมข้อมูลสำหรับ bulkWrite
+      bulkOps = workDocuments.map((doc) => ({
+        insertOne: {
+          document: {
+            ...doc,
+            upload_ref_no: uploadRefNo,
+          },
+        },
+      }));
+
+      const result = await Pkreturnwork.bulkWrite(bulkOps, { ordered: false });
+
+      // อัปเดตสถานะของ Jobqueue เป็น "done"
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "done",
+        result: {
+          ...job.result,
+          message: `สร้าง Return Work สำเร็จทั้งหมด (${result.insertedCount} รายการ)`,
+          insertedCount: result.insertedCount,
+          failedTrackingCodes: [], // ใส่ไว้เผื่ออนาคต
+        },
+      });
+    } catch (error) {
+      // ดึง tracking_code ที่ fail ออกมาจาก error.writeErrors
+      const failedTrackingCodes =
+        error.writeErrors?.map((err) => {
+          const index = err.index;
+          return (
+            bulkOps[index]?.insertOne?.document?.tracking_code || "ไม่ทราบ"
+          );
+        }) || [];
+
+      // อัปเดตสถานะของ Jobqueue เป็น "error"
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "error",
+        result: {
+          ...job.result,
+          message: `สร้าง Return Work สำเร็จบางส่วน (${
             bulkOps.length - failedTrackingCodes.length
           } จาก ${bulkOps.length})`,
           insertedCount: bulkOps.length - failedTrackingCodes.length,
