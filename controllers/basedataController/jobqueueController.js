@@ -73,4 +73,9 @@ exports.deleteJobqueueUnUsed = async () => {
   await Jobqueue.deleteMany({
     job_source: "suggest_order",
   });
+
+  //ลบ Jobqueue ของ job_source  ที่เป็น "pkimportreturnwork" (ทุกวัน)
+  await Jobqueue.deleteMany({
+    job_source: "pkimportreturnwork",
+  });
 };

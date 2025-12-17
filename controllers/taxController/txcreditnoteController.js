@@ -1,6 +1,7 @@
 const Txcreditnote = require("../../models/taxModel/txcreditnoteModel");
 const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
 const Txformalinvoice = require("../../models/taxModel/txformalinvoiceModel");
+const Pkreturnwork = require("../../models/packingModel/pkreturnworkModel");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
@@ -223,4 +224,111 @@ exports.removeRefOnAnotherModel = catchAsync(async (req, res, next) => {
     status: "success",
     message: `ยกเลิกใบลดหนี้ ${creditNote.doc_no} เรียบร้อย`,
   });
+});
+
+//ส่วน function ที่ทำงานกับ cron job
+exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
+  //หาเอกสาร Pkreturnwork ที่มี status เป็น เสร็จสิ้น successAt เป็นของวันที่เมื่อวาน และ ยังไม่มีการสร้าง credit_note_no เป็นค่า null
+  const yesterdayStart = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "days")
+    .startOf("day")
+    .toDate();
+  const yesterdayEnd = moment()
+    .tz("Asia/Bangkok")
+    .subtract(1, "days")
+    .endOf("day")
+    .toDate();
+
+  //ค้นหาเอกสารที่ตรงตามเงื่อนไขเตรียมออกใบลดหนี้
+  const pkReturnWorks = await Pkreturnwork.find({
+    status: "เสร็จสิ้น",
+    successAt: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    credit_note_no: null,
+  })
+    .sort({ createdAt: 1 })
+    .exec();
+
+  if (!pkReturnWorks || pkReturnWorks.length === 0) {
+    return console.log("No pk return works found for yesterday.");
+  }
+
+  //กำหนดเลขที่เอกสารเริ่มต้น
+  const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
+    -2
+  );
+  const prefix = `CDN${current_year}`;
+
+  // ค้นหา doc_no ล่าสุด
+  const latestCreditnote = await Txcreditnote.findOne({
+    doc_no: { $regex: `^${prefix}` },
+  })
+    .sort({ doc_no: -1 })
+    .exec();
+
+  let lastSeq = 0;
+  if (latestCreditnote) {
+    const seqStr = latestCreditnote.doc_no.slice(-6);
+    const num = parseInt(seqStr, 10);
+    if (!isNaN(num)) lastSeq = num;
+  }
+  // ใช้วันที่ของ Deliver ตัวแรกเป็น invoiceDate (ทุกตัวเป็นวันเดียวกัน)
+  const creditNoteDate = moment(pkReturnWorks[0].successAt)
+    .tz("Asia/Bangkok")
+    .startOf("day")
+    .toDate();
+
+  //เริ่มการสร้างใบลดหนี้จาก pkReturnWorks
+  const creditNotesToCreate = [];
+
+  for (const job of pkReturnWorks) {
+    const { order_no, scan_data = [], invoice_no, tracking_code } = job;
+
+    lastSeq += 1;
+    const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
+
+    const creditnote_items = scan_data;
+
+    const total_net = Number(
+      creditnote_items
+        .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
+        .toFixed(2)
+    );
+
+    creditNotesToCreate.push({
+      doc_no: newDocNo,
+      order_no: order_no || "N/A",
+      deliver_no: tracking_code,
+      invoice_no: invoice_no || "N/A",
+      creditnote_items,
+      creditnote_date: creditNoteDate,
+      total_net,
+    });
+  }
+
+  // สร้าง credit notes ทั้งหมด
+  const createdCreditNotes = await Txcreditnote.insertMany(creditNotesToCreate);
+
+  // อัปเดต Txinformalinvoice และ Pkreturnwork
+  const updatePromises = createdCreditNotes.map(async (creditnote) => {
+    const { invoice_no, _id, doc_no } = creditnote;
+
+    // อัปเดต Txinformalinvoice
+    await Txinformalinvoice.updateOne(
+      { doc_no: invoice_no },
+      { $set: { credit_note_ref: _id } }
+    );
+
+    // อัปเดต Pkreturnwork
+    await Pkreturnwork.updateOne(
+      { invoice_no },
+      { $set: { credit_note_no: doc_no } }
+    );
+  });
+
+  await Promise.all(updatePromises);
+
+  console.log(
+    `Created ${createdCreditNotes.length} credit notes and updated references.`
+  );
 });

@@ -31,7 +31,7 @@ const txcreditnoteSchema = new mongoose.Schema(
     },
     customer_info: {
       type: {
-        name: { type: String, default: null },
+        name: { type: String, default: "ลูกค้าทั่วไป ภายในประเทศ" },
         address: { type: String, default: null },
         tax_id: {
           type: String,
@@ -59,10 +59,6 @@ const txcreditnoteSchema = new mongoose.Schema(
         branch: { type: String, default: "0000" },
       },
       default: {},
-    },
-    product_details: {
-      type: Array,
-      default: [],
     },
     creditnote_items: {
       type: Array,
