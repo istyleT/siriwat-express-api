@@ -35,8 +35,8 @@ exports.cancelData = (req, res, next) => {
 exports.setDocno = (Model) =>
   catchAsync(async (req, res, next) => {
     try {
-      let docnum = "";
       let type = "";
+
       switch (Model.modelName) {
         case "Quotation":
           type = "QT";
@@ -53,6 +53,9 @@ exports.setDocno = (Model) =>
         case "Ordercanpart":
           type = "PC";
           break;
+        case "Return":
+          type = "PR";
+          break;
         default:
           // ถ้าไม่มี case ใดเข้ากันให้ส่ง error กลับไป
           return next(new AppError("ไม่พบเงื่อนไขที่การตั้งเลขที่เอกสาร", 404));
@@ -64,31 +67,26 @@ exports.setDocno = (Model) =>
       const day = parsedDate.format("DD");
       const frontdocno = `${type}${year}${month}${day}`;
 
-      // ตรวจสอบว่ามีเลขที่เอกสารที่ตรงกับเงื่อนไขหรือไม่
-      const existingDoc = await Model.findOne({
-        id: { $regex: frontdocno, $options: "i" },
-      });
+      // ค้นหา doc_no ล่าสุด
+      const latestDoc = await Model.findOne({
+        id: { $regex: `^${frontdocno}`, $options: "i" },
+      })
+        .sort({ id: -1 })
+        .exec();
 
-      if (existingDoc) {
-        // ใช้ updateOne เพื่ออัปเดต docCount
-        const updateResult = await Model.updateOne(
-          { id: { $regex: frontdocno, $options: "i" } },
-          { $inc: { docCount: 1 } }
-        );
-
-        // ค้นหาเอกสารที่อัปเดตเพื่อรับค่า docCount ใหม่
-        const updatedDoc = await Model.findOne({
-          id: { $regex: frontdocno, $options: "i" },
-        });
-
-        docnum = ("000" + updatedDoc.docCount).slice(-4);
+      let lastSeq = 0;
+      if (latestDoc) {
+        const seqStr = latestDoc.id.slice(-4);
+        const num = parseInt(seqStr, 10);
+        if (!isNaN(num)) lastSeq = num;
       } else {
-        docnum = "0001";
+        lastSeq = 0;
       }
-      //กำหนดค่าเพื่อส่งต่อไป
-      req.body.id = frontdocno + docnum;
 
-      //ตรวจสอบค่าที่สร้างขึ้น
+      const newSeq = lastSeq + 1;
+      const newDocNo = `${frontdocno}${String(newSeq).padStart(4, "0")}`;
+
+      req.body.id = newDocNo;
       // console.log(req.body.id);
 
       next();

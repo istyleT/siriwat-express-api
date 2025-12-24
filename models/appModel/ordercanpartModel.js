@@ -7,10 +7,6 @@ const ordercanpartSchema = new mongoose.Schema({
     unique: true,
     required: [true, "กรุณาระบุเลขที่ใบยกเลิกสินค้า"],
   },
-  docCount: {
-    type: Number,
-    default: 1,
-  },
   order_no: {
     type: String,
     required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],

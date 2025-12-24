@@ -8,10 +8,6 @@ const orderSchema = new mongoose.Schema({
     unique: true,
     required: [true, "กรุณาระบุเลขที่บิล"],
   },
-  docCount: {
-    type: Number,
-    default: 1,
-  },
   cust_tier: {
     type: String,
     required: [true, "กรุณาระบุ Tire ลูกค้า"],

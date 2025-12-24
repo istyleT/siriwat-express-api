@@ -4,6 +4,7 @@ const {
   getAllDeliver,
   createDeliver,
   updateDeliver,
+  getSuggestDeliver,
   setDeliverNo,
   statusInvoice,
   pushTrackingNumber,
@@ -38,6 +39,7 @@ router
   );
 router.route("/addtrackingno/:id").patch(pushTrackingNumber);
 router.route("/").get(getAllDeliver).post(setDeliverNo, createDeliver);
+router.route("/suggest").get(getSuggestDeliver);
 router.route("/dailyreport").get(getDailyDeliverMove);
 router.route("/:id").put(updateDeliver);
 

@@ -7,10 +7,6 @@ const quotationSchema = new mongoose.Schema({
     unique: true,
     required: [true, "กรุณาระบุเลขที่ใบเสนอราคา"],
   },
-  docCount: {
-    type: Number,
-    default: 1,
-  },
   cust_tier: {
     type: String,
     required: [true, "กรุณาระบุ Tire ลูกค้า"],

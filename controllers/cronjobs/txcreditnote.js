@@ -14,6 +14,20 @@ const txcreditnoteCreateJob = cron.schedule(
   }
 );
 
+const txcreditnoteCreateRMBKKJob = cron.schedule(
+  "30 3 * * *", // run every day at 3:30 AM
+  //"* * * * *",
+  () => {
+    console.log("Running txcreditnoteCreateRMBKKJob...");
+    // Call the function to create credit notes
+    txcreditnoteController.createAutoTxcreditnoteRMBKK();
+  },
+  {
+    timezone: "Asia/Bangkok",
+  }
+);
+
 module.exports = {
   txcreditnoteCreateJob,
+  txcreditnoteCreateRMBKKJob,
 };

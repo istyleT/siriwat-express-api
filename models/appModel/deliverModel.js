@@ -13,10 +13,6 @@ const deliverSchema = new mongoose.Schema({
     unique: true,
     required: [true, "กรุณาระบุเลขที่ใบส่งสินค้า"],
   },
-  docCount: {
-    type: Number,
-    default: 1,
-  },
   deliver_channel: {
     type: String,
     required: [true, "กรุณาระบุช่องทางการจัดส่งสินค้า"],

@@ -10,10 +10,6 @@ const paymentSchema = new mongoose.Schema({
     unique: true,
     required: [true, "กรุณาระบุเลขที่ชำระเงิน"],
   },
-  docCount: {
-    type: Number,
-    default: 1,
-  },
   order_no: {
     type: String,
     required: [true, "กรุณาระบุเลขที่ใบสั่งซื้อ"],

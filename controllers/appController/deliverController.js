@@ -32,6 +32,7 @@ exports.checkBeforeCancelDeliver = catchAsync(async (req, res, next) => {
 
 // Method
 exports.getAllDeliver = factory.getAll(Deliver);
+exports.getSuggestDeliver = factory.getSuggest(Deliver);
 exports.deleteDeliver = factory.deleteOne(Deliver);
 exports.updateDeliver = factory.updateOne(Deliver);
 

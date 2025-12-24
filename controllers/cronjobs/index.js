@@ -11,7 +11,10 @@ const {
   canceltxinformalinvoiceJob,
   txinformalinvoiceRMBKKJob,
 } = require("./txinformalinvoice");
-const { txcreditnoteCreateJob } = require("./txcreditnote");
+const {
+  txcreditnoteCreateJob,
+  txcreditnoteCreateRMBKKJob,
+} = require("./txcreditnote");
 
 // start ทุก cron job
 function startAllJobs() {
@@ -27,6 +30,7 @@ function startAllJobs() {
   txinformalinvoiceJob.start(); // run 3.00
   canceltxinformalinvoiceJob.start(); // run 2.15
   txcreditnoteCreateJob.start(); // run 3.15
+  txcreditnoteCreateRMBKKJob.start(); // run 3.30
 }
 
 module.exports = startAllJobs;

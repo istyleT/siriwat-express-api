@@ -2,6 +2,8 @@ const Txcreditnote = require("../../models/taxModel/txcreditnoteModel");
 const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
 const Txformalinvoice = require("../../models/taxModel/txformalinvoiceModel");
 const Pkreturnwork = require("../../models/packingModel/pkreturnworkModel");
+const Return = require("../../models/appModel/returnModel");
+const AppError = require("../../utils/appError");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
@@ -330,5 +332,110 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
 
   console.log(
     `Created ${createdCreditNotes.length} credit notes and updated references.`
+  );
+});
+
+exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
+  //ค้นหาเอกสารที่ตรงตามเงื่อนไขเตรียมออกใบลดหนี้
+  const returnWorks = await Return.find({
+    status: "ดำเนินการ",
+    credit_note_no: null,
+  })
+    .sort({ createdAt: 1 })
+    .exec();
+
+  if (!returnWorks || returnWorks.length === 0) {
+    return console.log("No return works found.");
+  }
+
+  //กำหนดเลขที่เอกสารเริ่มต้น
+  const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
+    -2
+  );
+  const prefix = `CDN${current_year}`;
+
+  // ค้นหา doc_no ล่าสุด
+  const latestCreditnote = await Txcreditnote.findOne({
+    doc_no: { $regex: `^${prefix}` },
+  })
+    .sort({ doc_no: -1 })
+    .exec();
+
+  let lastSeq = 0;
+  if (latestCreditnote) {
+    const seqStr = latestCreditnote.doc_no.slice(-6);
+    const num = parseInt(seqStr, 10);
+    if (!isNaN(num)) lastSeq = num;
+  }
+  // ใช้วันที่ของ Deliver ตัวแรกเป็น invoiceDate (ทุกตัวเป็นวันเดียวกัน)
+  const creditNoteDate = moment(returnWorks[0].createdAt)
+    .tz("Asia/Bangkok")
+    .startOf("day")
+    .toDate();
+
+  //เริ่มการสร้างใบลดหนี้จาก returnWorks
+  const creditNotesToCreate = [];
+
+  for (const job of returnWorks) {
+    const { order_no, returnlist = [], invoice_no, deliver_no } = job;
+
+    lastSeq += 1;
+    const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
+
+    // ✅ แปลงโครงสร้าง returnlist -> creditnote_items
+    const creditnote_items = returnlist.map((item) => ({
+      partnumber: item.partnumber,
+      part_name: item.description,
+      price_per_unit: item.net_price,
+      qty: item.qty_return,
+    }));
+
+    const total_net = Number(
+      creditnote_items
+        .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
+        .toFixed(2)
+    );
+
+    creditNotesToCreate.push({
+      doc_no: newDocNo,
+      order_no: order_no || "N/A",
+      deliver_no: deliver_no || "N/A",
+      invoice_no: invoice_no || "N/A",
+      creditnote_items,
+      creditnote_date: creditNoteDate,
+      total_net,
+    });
+  }
+
+  // สร้าง credit notes ทั้งหมด
+  const createdCreditNotes = await Txcreditnote.insertMany(creditNotesToCreate);
+
+  // อัปเดต Txinformalinvoice และ Return
+  const updatePromises = createdCreditNotes.map(async (creditnote) => {
+    const { invoice_no, _id, doc_no } = creditnote;
+
+    // อัปเดต Txinformalinvoice
+    await Txinformalinvoice.updateOne(
+      { doc_no: invoice_no },
+      { $set: { credit_note_ref: _id } }
+    );
+
+    // อัปเดต Return
+    await Return.updateOne(
+      { invoice_no },
+      {
+        $set: {
+          credit_note_no: doc_no,
+          status: "เสร็จสิ้น",
+          successAt: moment().tz("Asia/Bangkok").toDate(),
+        },
+      }
+    );
+  });
+
+  await Promise.all(updatePromises);
+
+  console.log(
+    `Created ${createdCreditNotes.length} credit notes RMBKK and updated references.`
   );
 });
