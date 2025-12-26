@@ -73,6 +73,15 @@ exports.protect = catchAsync(async (req, res, next) => {
     return next(new AppError("ผู้ใช้งานนี้ไม่มีในระบบแล้ว", 401));
   }
 
+  if (!freshUser.active) {
+    return next(
+      new AppError(
+        "This user has been deactivated. Please contact support.",
+        401
+      )
+    );
+  }
+
   if (freshUser.changedPasswordAfter(decoded.iat)) {
     return next(new AppError("รหัสผ่านถูกเปลี่ยน กรุณา Login อีกครั้ง", 401));
   }
