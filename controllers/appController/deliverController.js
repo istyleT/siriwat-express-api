@@ -230,6 +230,7 @@ exports.updateInvoiceNoInDeliver = catchAsync(async (req, res, next) => {
 
       // อัปเดต deliver ให้มี doc_no
       deliver.informal_invoice_no = invoice.doc_no;
+      deliver._skipCODPaymentCreation = true;
       await deliver.save();
       // console.log(
       //   `Updated deliver ID: ${deliver._id} with invoice no: ${invoice.doc_no}`

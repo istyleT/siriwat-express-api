@@ -181,6 +181,8 @@ deliverSchema.pre(/^find/, async function (next) {
 
 // Post Middleware for save
 deliverSchema.post("save", async function (doc, next) {
+  // ตรวจสอบ custom flag ที่ตั้งจากภายนอก ถ้าเจอให้ skip
+  if (doc._skipCODPaymentCreation) return next();
   // console.log("Post save working");
   const order = await Order.findOne({ id: doc.order_no });
   if (order) {
