@@ -629,9 +629,13 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
     let parts_data = [];
     let product_details = null;
 
-    if (productDetails.length > 1) {
+    //เงื่อนไขในการแยก parts_data กับ product_details
+    if (
+      productDetails.length > 1 ||
+      (productDetails.length === 1 && productDetails[0].qty > 1)
+    ) {
       product_details = productDetails;
-    } else if (productDetails.length === 1) {
+    } else if (productDetails.length === 1 && productDetails[0].qty === 1) {
       parts_data = productDetails;
     }
 
