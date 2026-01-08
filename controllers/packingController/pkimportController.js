@@ -614,7 +614,7 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
       order_no: { $in: cleanedUniqueOrderNos },
       canceledAt: null,
     },
-    { order_no: 1, doc_no: 1, product_details: 1 }
+    { order_no: 1, doc_no: 1, product_details: 1, formal_invoice_ref: 1 }
   ).lean();
 
   // ✅ สร้างเอกสาร Pkreturnwork
@@ -644,7 +644,9 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
       tracking_code: workInfo?.tracking_code || "",
       order_date: workInfo?.order_date || "",
       order_no: orderNo,
-      invoice_no: invoice.doc_no || "",
+      invoice_no: invoice.formal_invoice_ref //ตรวจสอบว่ามีใบกำกับอย่างเต็มหรือไม่
+        ? invoice.formal_invoice_ref.doc_no //ถ้ามีให้ให้ใช้เลขที่นั้น
+        : invoice.doc_no, //ถ้าไม่มีให้ใช้เลขที่ใบกำกับอย่างย่อ
       shop,
       parts_data,
       product_details,

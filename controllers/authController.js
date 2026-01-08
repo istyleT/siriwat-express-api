@@ -167,6 +167,7 @@ exports.checkToken = catchAsync(async (req, res, next) => {
   if (!freshUser) {
     return next(new AppError("ผู้ใช้งานนี้ไม่มีในระบบแล้ว", 401));
   }
+  // console.log(freshUser);
 
   //ถ้ารหัสผ่านถูกเเต่ user ถูกระงับการใช้งาน
   if (!freshUser.active) {

@@ -1,4 +1,6 @@
 const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
+const Txcreditnote = require("../../models/taxModel/txcreditnoteModel");
+const AppError = require("../../utils/appError");
 const Pkwork = require("../../models/packingModel/pkworkModel");
 const Deliver = require("../../models/appModel/deliverModel");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
@@ -155,6 +157,15 @@ exports.updateFormalInvoiceRef = catchAsync(async (req, res, next) => {
 
   if (!updatedInformalInvoice) {
     return next(new AppError("ไม่พบใบกำกับภาษีอย่างย่อที่ต้องการอัพเดท", 404));
+  }
+
+  // ตรวจสอบว่ามีการอ้างอิง credit_note_ref หรือไม่ ถ้ามีให้ทำการอัพเดท invoice_no ใน credit note ด้วย
+  if (updatedInformalInvoice.credit_note_ref) {
+    await Txcreditnote.findByIdAndUpdate(
+      updatedInformalInvoice.credit_note_ref,
+      { invoice_no: formalInvoice.doc_no },
+      { new: true }
+    );
   }
 
   res.status(200).json({

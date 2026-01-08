@@ -252,7 +252,7 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
     .exec();
 
   if (!pkReturnWorks || pkReturnWorks.length === 0) {
-    return console.log("No pk return works found for yesterday.");
+    return console.log("No pkreturn works found for yesterday.");
   }
 
   //กำหนดเลขที่เอกสารเริ่มต้น
