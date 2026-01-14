@@ -62,7 +62,9 @@ const skinventorymovementSchema = new mongoose.Schema({
 
 //create index
 skinventorymovementSchema.index({
-  part: 1,
+  partnumber: 1,
+  document_ref: 1,
+  movement_type: 1,
 });
 
 //method

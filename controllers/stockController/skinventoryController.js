@@ -423,48 +423,6 @@ exports.fromWorkUploadMoveOutPart = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 2. รวมข้อมูลโดยใช้ทั้ง partnumber + document_ref เป็น key
-  const mergedMap = new Map();
-
-  for (const item of cleanedData) {
-    const key = `${item.partnumber}::${item.document_ref}`;
-
-    if (mergedMap.has(key)) {
-      const existing = mergedMap.get(key);
-      existing.qty += item.qty;
-    } else {
-      mergedMap.set(key, { ...item });
-    }
-  }
-
-  // ✅ เช็คว่าเคยมีการตัดสต็อกไปแล้วหรือไม่
-  const alreadyMovedOut = await Skinventorymovement.find({
-    movement_type: "out",
-    $or: cleanedData.map((item) => ({
-      partnumber: item.partnumber,
-      document_ref: item.document_ref,
-    })),
-  });
-
-  const duplicateKeys = new Set(
-    alreadyMovedOut.map((item) => `${item.partnumber}::${item.document_ref}`)
-  );
-
-  //ไล่ลบรายการที่ซ้ำออกจาก mergedMap
-  for (const key of duplicateKeys) {
-    if (mergedMap.has(key)) {
-      mergedMap.delete(key);
-    }
-  }
-
-  // ถ้าหลังจากลบรายการซ้ำแล้ว ไม่เหลืออะไรเลย
-  if (mergedMap.size === 0) {
-    return res.status(400).json({
-      status: "fail",
-      message: "รายการที่ส่งเข้ามาถูกตัดสต็อกไปแล้วทั้งหมด",
-    });
-  }
-
   // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
   const job = await Jobqueue.create({
     status: "pending",
@@ -472,8 +430,53 @@ exports.fromWorkUploadMoveOutPart = catchAsync(async (req, res, next) => {
     result: {},
   });
 
-  // 4. เตรียม update ทีละตัวและสร้าง movement
   setTimeout(async () => {
+    // 2. รวมข้อมูลโดยใช้ทั้ง partnumber + document_ref เป็น key
+    const mergedMap = new Map();
+
+    for (const item of cleanedData) {
+      const key = `${item.partnumber}::${item.document_ref}`;
+
+      if (mergedMap.has(key)) {
+        const existing = mergedMap.get(key);
+        existing.qty += item.qty;
+      } else {
+        mergedMap.set(key, { ...item });
+      }
+    }
+
+    // ✅ เช็คว่าเคยมีการตัดสต็อกไปแล้วหรือไม่
+    const alreadyMovedOut = await Skinventorymovement.find({
+      movement_type: "out",
+      $or: cleanedData.map((item) => ({
+        partnumber: item.partnumber,
+        document_ref: item.document_ref,
+      })),
+    });
+
+    const duplicateKeys = new Set(
+      alreadyMovedOut.map((item) => `${item.partnumber}::${item.document_ref}`)
+    );
+
+    //ไล่ลบรายการที่ซ้ำออกจาก mergedMap
+    for (const key of duplicateKeys) {
+      if (mergedMap.has(key)) {
+        mergedMap.delete(key);
+      }
+    }
+
+    // ถ้าหลังจากลบรายการซ้ำแล้ว ไม่เหลืออะไรเลย
+    if (mergedMap.size === 0) {
+      await Jobqueue.findByIdAndUpdate(job._id, {
+        status: "done",
+        result: {
+          message: "รายการที่ส่งเข้ามาถูกตัดสต็อกไปแล้วทั้งหมด",
+        },
+      });
+      return; // จบ job
+    }
+
+    // 4. เตรียม update ทีละตัวและสร้าง movement
     let successCount = 0;
 
     for (const [
