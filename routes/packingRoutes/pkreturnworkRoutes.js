@@ -7,14 +7,19 @@ const {
   getOnePkreturnwork,
   updatePkreturnwork,
   deletePkreturnwork,
+  checkCanReturn,
   deleteManyPkreturnwork,
+  createPkreturnwork,
 } = require("../../controllers/packingController/pkreturnworkController");
 const { protect, restrictTo } = require("../../controllers/authController");
 //Global
 router.use(protect);
 router.use(restrictTo("Owner", "Sale"));
 //Routes
-router.route("/").get(getAllPkreturnwork);
+router
+  .route("/")
+  .get(getAllPkreturnwork)
+  .post(checkCanReturn, createPkreturnwork);
 router.route("/suggest").get(getSuggestPkreturnwork);
 router.route("/report").get(getByDatePkreturnwork);
 // router.route("/deletework").delete(deleteManyPkreturnwork);
