@@ -14,7 +14,7 @@ moment.tz.setDefault("Asia/Bangkok");
 //Middleware
 exports.setDocnoForTxcreditnote = catchAsync(async (req, res, next) => {
   const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
-    -2
+    -2,
   );
   const prefix = `CDN${current_year}`;
 
@@ -66,20 +66,20 @@ exports.updateCreditnoteRef = catchAsync(async (req, res, next) => {
     updatedInvoice = await Txformalinvoice.findByIdAndUpdate(
       invoice_id,
       { credit_note_ref: creditNote._id },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
   } else if (prefix === "IFN") {
     updatedInvoice = await Txinformalinvoice.findByIdAndUpdate(
       invoice_id,
       { credit_note_ref: creditNote._id },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
   } else {
     return next(
       new AppError(
         "รูปแบบเลขที่เอกสารไม่ถูกต้อง (ต้องขึ้นต้นด้วย INV หรือ IFN)",
-        400
-      )
+        400,
+      ),
     );
   }
 
@@ -135,7 +135,7 @@ exports.updatePrintCount = catchAsync(async (req, res, next) => {
   const updatedCreditNote = await Txcreditnote.findByIdAndUpdate(
     id,
     { $inc: { print_count: 1 } },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!updatedCreditNote) {
@@ -168,7 +168,7 @@ exports.updateManyPrintCount = catchAsync(async (req, res, next) => {
     {
       $inc: { print_count: 1 },
       $set: { approved_print: false },
-    }
+    },
   );
 
   if (result.matchedCount === 0) {
@@ -200,13 +200,13 @@ exports.removeRefOnAnotherModel = catchAsync(async (req, res, next) => {
     invoice = await Txinformalinvoice.findOneAndUpdate(
       { credit_note_ref: _id },
       { credit_note_ref: null },
-      { new: true }
+      { new: true },
     );
   } else if (prefix === "INV") {
     invoice = await Txformalinvoice.findOneAndUpdate(
       { credit_note_ref: _id },
       { credit_note_ref: null },
-      { new: true }
+      { new: true },
     );
   } else {
     return res.status(400).json({
@@ -257,7 +257,7 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
 
   //กำหนดเลขที่เอกสารเริ่มต้น
   const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
-    -2
+    -2,
   );
   const prefix = `CDN${current_year}`;
 
@@ -274,12 +274,6 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
     const num = parseInt(seqStr, 10);
     if (!isNaN(num)) lastSeq = num;
   }
-  // ใช้วันที่ของ Deliver ตัวแรกเป็น invoiceDate (ทุกตัวเป็นวันเดียวกัน)
-  const creditNoteDate = moment(pkReturnWorks[0].successAt)
-    .tz("Asia/Bangkok")
-    .startOf("day")
-    .toDate();
-
   //เริ่มการสร้างใบลดหนี้จาก pkReturnWorks
   const creditNotesToCreate = [];
 
@@ -294,8 +288,13 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
     const total_net = Number(
       creditnote_items
         .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
-        .toFixed(2)
+        .toFixed(2),
     );
+
+    // ใช้ req_date ของแต่ละ job ถ้ามี, fallback เป็น successAt
+    const creditNoteDate =
+      job.req_date ||
+      moment(job.successAt).tz("Asia/Bangkok").startOf("day").toDate();
 
     creditNotesToCreate.push({
       doc_no: newDocNo,
@@ -318,20 +317,20 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
     // อัปเดต Txinformalinvoice
     await Txinformalinvoice.updateOne(
       { doc_no: invoice_no },
-      { $set: { credit_note_ref: _id } }
+      { $set: { credit_note_ref: _id } },
     );
 
     // อัปเดต Pkreturnwork
     await Pkreturnwork.updateOne(
       { invoice_no },
-      { $set: { credit_note_no: doc_no } }
+      { $set: { credit_note_no: doc_no } },
     );
   });
 
   await Promise.all(updatePromises);
 
   console.log(
-    `Created ${createdCreditNotes.length} credit notes and updated references.`
+    `Created ${createdCreditNotes.length} credit notes and updated references.`,
   );
 });
 
@@ -350,7 +349,7 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
 
   //กำหนดเลขที่เอกสารเริ่มต้น
   const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
-    -2
+    -2,
   );
   const prefix = `CDN${current_year}`;
 
@@ -367,12 +366,6 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
     const num = parseInt(seqStr, 10);
     if (!isNaN(num)) lastSeq = num;
   }
-  // ใช้วันที่ของ Deliver ตัวแรกเป็น invoiceDate (ทุกตัวเป็นวันเดียวกัน)
-  const creditNoteDate = moment(returnWorks[0].createdAt)
-    .tz("Asia/Bangkok")
-    .startOf("day")
-    .toDate();
-
   //เริ่มการสร้างใบลดหนี้จาก returnWorks
   const creditNotesToCreate = [];
 
@@ -393,8 +386,13 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
     const total_net = Number(
       creditnote_items
         .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
-        .toFixed(2)
+        .toFixed(2),
     );
+    // ใช้ req_date ของแต่ละ job ถ้ามี, fallback เป็น successAt
+    const creditNoteDate = moment(job.createdAt)
+      .tz("Asia/Bangkok")
+      .startOf("day")
+      .toDate();
 
     creditNotesToCreate.push({
       doc_no: newDocNo,
@@ -417,7 +415,7 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
     // อัปเดต Txinformalinvoice
     await Txinformalinvoice.updateOne(
       { doc_no: invoice_no },
-      { $set: { credit_note_ref: _id } }
+      { $set: { credit_note_ref: _id } },
     );
 
     // อัปเดต Return
@@ -429,13 +427,13 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
           status: "เสร็จสิ้น",
           successAt: moment().tz("Asia/Bangkok").toDate(),
         },
-      }
+      },
     );
   });
 
   await Promise.all(updatePromises);
 
   console.log(
-    `Created ${createdCreditNotes.length} credit notes RMBKK and updated references.`
+    `Created ${createdCreditNotes.length} credit notes RMBKK and updated references.`,
   );
 });

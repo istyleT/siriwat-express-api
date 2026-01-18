@@ -22,10 +22,17 @@ exports.filterValidReturnOrders = catchAsync(async (req, res, next) => {
     });
   }
 
-  // ✅ 1. กรอง order_no ไม่ให้ซ้ำ
-  const uniqueOrderNos = [
-    ...new Set(order_return.map((item) => item.order_no.trim())),
-  ];
+  // ✅ 1. กรอง order_no ไม่ให้ซ้ำ (โดยเก็บ order_no และ req_date ด้วย)
+  const uniqueOrdersMap = new Map();
+  for (const item of order_return) {
+    const orderNo = item.order_no?.trim();
+    const reqDate = item.req_date;
+    if (orderNo && !uniqueOrdersMap.has(orderNo)) {
+      uniqueOrdersMap.set(orderNo, reqDate);
+    }
+  }
+
+  const uniqueOrderNos = Array.from(uniqueOrdersMap.keys());
 
   if (uniqueOrderNos.length === 0) {
     return res.status(400).json({
@@ -41,14 +48,14 @@ exports.filterValidReturnOrders = catchAsync(async (req, res, next) => {
         order_no: { $in: uniqueOrderNos },
         shop: shop.trim(),
       },
-      { order_no: 1 }
+      { order_no: 1 },
     ),
     Txcreditnote.find(
       {
         order_no: { $in: uniqueOrderNos },
         canceledAt: null,
       },
-      { order_no: 1 }
+      { order_no: 1 },
     ),
   ]);
 
@@ -64,18 +71,20 @@ exports.filterValidReturnOrders = catchAsync(async (req, res, next) => {
       shop: shop.trim(),
       canceled_at: null,
     },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   const existingWorkSet = new Set(existingWorkDocs.map((doc) => doc.order_no));
 
-  // ✅ 4. กรอง order_no ที่ "ใช้ได้เท่านั้น"
-  const cleanedUniqueOrderNos = uniqueOrderNos.filter(
-    (orderNo) =>
-      !restrictedOrderNos.has(orderNo) && existingWorkSet.has(orderNo)
-  );
+  // ✅ 4. กรอง order_no ที่ "ใช้ได้เท่านั้น" พร้อม req_date
+  const cleanedOrders = [];
+  for (const [orderNo, reqDate] of uniqueOrdersMap.entries()) {
+    if (!restrictedOrderNos.has(orderNo) && existingWorkSet.has(orderNo)) {
+      cleanedOrders.push({ order_no: orderNo, req_date: reqDate });
+    }
+  }
 
-  req.cleanedUniqueOrderNos = cleanedUniqueOrderNos;
+  req.cleanedReturnOrders = cleanedOrders;
 
   return next();
 });
@@ -102,7 +111,7 @@ exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
   // ✅ ตรวจสอบ order_no ที่ซ้ำในระบบ
   const existingOrders = await Pkwork.find(
     { order_no: { $in: orderNos } },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   if (existingOrders.length > 0) {
@@ -118,12 +127,12 @@ exports.checkDuplicateOrderNos = catchAsync(async (req, res, next) => {
   // ✅ ตรวจสอบ tracking_code ที่ซ้ำในระบบ
   const existingTrackings = await Pkwork.find(
     { tracking_code: { $in: trackingCodes } },
-    { tracking_code: 1 }
+    { tracking_code: 1 },
   );
 
   if (existingTrackings.length > 0) {
     const duplicatedTrackingCodes = existingTrackings.map(
-      (doc) => doc.tracking_code
+      (doc) => doc.tracking_code,
     );
     return res.status(200).json({
       status: "success",
@@ -160,17 +169,17 @@ exports.checkOrderCancel = catchAsync(async (req, res, next) => {
       order_no: { $in: uniqueOrderNos },
       shop: shop.trim(),
     },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   // ✅ 3. แปลงผลลัพธ์ที่เจอเป็น Set
   const existingOrderSet = new Set(
-    existingOrderDocs.map((doc) => doc.order_no)
+    existingOrderDocs.map((doc) => doc.order_no),
   );
 
   // ✅ 4. หา order_no ที่ไม่เจอในระบบ
   const lostOrder = uniqueOrderNos.filter(
-    (code) => !existingOrderSet.has(code)
+    (code) => !existingOrderSet.has(code),
   );
 
   // ✅ 5. ตอบกลับ
@@ -208,7 +217,7 @@ exports.checkOrderReturn = catchAsync(async (req, res, next) => {
       order_no: { $in: uniqueOrderNos },
       shop: shop.trim(),
     },
-    { order_no: 1, shop: 1 }
+    { order_no: 1, shop: 1 },
   );
 
   // ✅ ตรวจสอบใน Txcreditnote
@@ -217,7 +226,7 @@ exports.checkOrderReturn = catchAsync(async (req, res, next) => {
       order_no: { $in: uniqueOrderNos },
       canceledAt: null,
     },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   const alreadyOrder = [
@@ -231,7 +240,7 @@ exports.checkOrderReturn = catchAsync(async (req, res, next) => {
     return res.status(200).json({
       status: "success",
       message: `พบคำสั่งซื้อของร้าน ${shop}: ${alreadyOrder.join(
-        ", "
+        ", ",
       )} อยู่ในกระบวนการลดหนี้แล้ว`,
     });
   }
@@ -243,19 +252,19 @@ exports.checkOrderReturn = catchAsync(async (req, res, next) => {
       shop: shop.trim(),
       canceled_at: null,
     },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   const existingOrderSet = new Set(existingWorkDocs.map((doc) => doc.order_no));
   const lostOrderNos = uniqueOrderNos.filter(
-    (order) => !existingOrderSet.has(order)
+    (order) => !existingOrderSet.has(order),
   );
 
   if (lostOrderNos.length > 0) {
     return res.status(200).json({
       status: "success",
       message: `ไม่พบคำสั่งซื้อของร้าน ${shop} ในระบบ: ${lostOrderNos.join(
-        ", "
+        ", ",
       )}`,
     });
   }
@@ -287,7 +296,7 @@ exports.convertSkuToPartCode = catchAsync(async (req, res, next) => {
 
   // สร้าง Map สำหรับ lookup ให้เร็วขึ้น
   const skuMap = new Map(
-    skuDictionary.map((item) => [item.seller_sku, item.partnumber])
+    skuDictionary.map((item) => [item.seller_sku, item.partnumber]),
   );
 
   // อัพเดต sku_data โดยเพิ่ม part_code
@@ -394,14 +403,14 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   const orderNos = workDocuments.map((doc) => doc.order_no);
   const existingOrders = await Pkwork.find(
     { order_no: { $in: orderNos } },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   const existingOrderNos = new Set(existingOrders.map((doc) => doc.order_no));
 
   // ✅ กรอง workDocuments ที่ order_no ไม่ซ้ำ
   workDocuments = workDocuments.filter(
-    (doc) => !existingOrderNos.has(doc.order_no)
+    (doc) => !existingOrderNos.has(doc.order_no),
   );
 
   // ✅ ตรวจสอบว่าไม่มี tracking_code ซ้ำในฐานข้อมูล
@@ -409,23 +418,23 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 
   const existingTrackings = await Pkwork.find(
     { tracking_code: { $in: trackingCodes } },
-    { tracking_code: 1 }
+    { tracking_code: 1 },
   );
 
   const existingTrackingCodes = new Set(
-    existingTrackings.map((doc) => doc.tracking_code)
+    existingTrackings.map((doc) => doc.tracking_code),
   );
 
   // ✅ กรอง workDocuments ที่ tracking_code ไม่ซ้ำ
   workDocuments = workDocuments.filter(
-    (doc) => !existingTrackingCodes.has(doc.tracking_code)
+    (doc) => !existingTrackingCodes.has(doc.tracking_code),
   );
 
   // ✅ 3.1 คำนวณ total_qty
   workDocuments = workDocuments.map((doc) => {
     const totalQty = doc.parts_data.reduce(
       (sum, part) => sum + Number(part.qty || 0),
-      0
+      0,
     );
     return {
       ...doc,
@@ -448,7 +457,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   try {
     existingRefs = await Pkwork.find(
       { upload_ref_no: { $regex: `^${refPrefix}` } },
-      { upload_ref_no: 1 }
+      { upload_ref_no: 1 },
     ).sort({ upload_ref_no: 1 });
   } catch (error) {
     console.error("Error querying Pkwork:", error);
@@ -481,7 +490,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   const normalizeShippingCompany = (input = "") => {
     const lowerInput = input.toLowerCase();
     const matched = shippingCompanyMap.find(({ keyword }) =>
-      keyword.some((kw) => lowerInput.includes(kw))
+      keyword.some((kw) => lowerInput.includes(kw)),
     );
     return matched ? matched.name : input;
   };
@@ -582,19 +591,23 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
   // console.log("This is setToCreateReturnWork");
   const { shop } = req.body;
-  const cleanedUniqueOrderNos = req.cleanedUniqueOrderNos;
+  const cleanedUniqueOrders = req.cleanedReturnOrders;
 
   //ในการ upload 1 ครั้งจะมีค่าข้อมูล shop เพียง 1 ค่าเท่านั้น
-  if (
-    !shop ||
-    !cleanedUniqueOrderNos ||
-    !Array.isArray(cleanedUniqueOrderNos)
-  ) {
+  if (!shop || !cleanedUniqueOrders || !Array.isArray(cleanedUniqueOrders)) {
     return res.status(400).json({
       status: "fail",
       message: "ข้อมูลไม่ครบถ้วน",
     });
   }
+
+  const reqDateMap = new Map(
+    cleanedUniqueOrders.map((item) => [item.order_no, item.req_date]),
+  );
+
+  const cleanedUniqueOrderNos = cleanedUniqueOrders.map(
+    (item) => item.order_no,
+  );
 
   // ✅ ดึงข้อมูลจาก Pkwork
   const pkworkDocs = await Pkwork.find(
@@ -603,7 +616,7 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
       shop: shop.trim(),
       canceled_at: null,
     },
-    { order_no: 1, tracking_code: 1, order_date: 1 }
+    { order_no: 1, tracking_code: 1, order_date: 1 },
   ).lean();
 
   const pkworkMap = new Map(pkworkDocs.map((doc) => [doc.order_no, doc]));
@@ -614,7 +627,7 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
       order_no: { $in: cleanedUniqueOrderNos },
       canceledAt: null,
     },
-    { order_no: 1, doc_no: 1, product_details: 1, formal_invoice_ref: 1 }
+    { order_no: 1, doc_no: 1, product_details: 1, formal_invoice_ref: 1 },
   ).lean();
 
   // ✅ สร้างเอกสาร Pkreturnwork
@@ -644,6 +657,9 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
       tracking_code: workInfo?.tracking_code || "",
       order_date: workInfo?.order_date || "",
       order_no: orderNo,
+      req_date:
+        reqDateMap.get(orderNo) ||
+        moment.tz("Asia/Bangkok").startOf("day").toDate(),
       invoice_no: invoice.formal_invoice_ref //ตรวจสอบว่ามีใบกำกับอย่างเต็มหรือไม่
         ? invoice.formal_invoice_ref.doc_no //ถ้ามีให้ให้ใช้เลขที่นั้น
         : invoice.doc_no, //ถ้าไม่มีให้ใช้เลขที่ใบกำกับอย่างย่อ
@@ -665,7 +681,7 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
   try {
     existingRefs = await Pkwork.find(
       { upload_ref_no: { $regex: `^${refPrefix}` } },
-      { upload_ref_no: 1 }
+      { upload_ref_no: 1 },
     ).sort({ upload_ref_no: 1 });
   } catch (error) {
     console.error("Error querying Pkwork:", error);

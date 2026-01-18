@@ -11,7 +11,7 @@ const txcreditnoteCreateJob = cron.schedule(
   },
   {
     timezone: "Asia/Bangkok",
-  }
+  },
 );
 
 const txcreditnoteCreateRMBKKJob = cron.schedule(
@@ -24,7 +24,7 @@ const txcreditnoteCreateRMBKKJob = cron.schedule(
   },
   {
     timezone: "Asia/Bangkok",
-  }
+  },
 );
 
 module.exports = {

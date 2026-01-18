@@ -16,7 +16,11 @@ const pkreturnworkSchema = new mongoose.Schema(
     order_date: {
       //ใช้จาก Pkwork
       type: Date,
-      required: [true, "กรุณาระบุวันที่ใบกำกับ"],
+      required: [true, "กรุณาระบุวันที่สั่งซื้อ"],
+    },
+    req_date: {
+      type: Date,
+      required: [true, "กรุณาระบุวันที่ขอคืนสินค้า"],
     },
     order_no: {
       type: String,
@@ -69,7 +73,7 @@ const pkreturnworkSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 pkreturnworkSchema.index({ order_no: 1, tracking_code: 1 });
