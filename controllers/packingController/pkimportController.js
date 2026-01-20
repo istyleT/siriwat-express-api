@@ -515,24 +515,92 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
   // เริ่มประมวลผล async
   setTimeout(async () => {
     try {
-      //✅ ถ้าค่า station เป็น RM ตรวจสอบการจองอะไหล่ และอัปเดต reserve_qty ตามลำดับ
-      if (station === "RM") {
-        for (let i = 0; i < workDocuments.length; i++) {
-          const doc = workDocuments[i];
+      // ✅ เริ่มจับเวลา
+      const startTime = Date.now();
 
-          try {
-            await Skinventory.validateMockQtyUpdate("decrease", doc.parts_data);
-            doc.station = "RM";
-            await Skinventory.updateMockQty("decrease", doc.parts_data);
-          } catch (err) {
-            doc.station = "RSM";
-            // ไม่ต้อง throw error เพราะแค่เปลี่ยนสถานะ แล้วปล่อยผ่าน
+      // เริ่มต้น block ใหม่
+      let finalDocuments = workDocuments;
+
+      if (station === "RM") {
+        // 🧱 1. รวม parts ทุกชิ้นจาก workDocuments
+        const totalPartsMap = new Map();
+
+        workDocuments.forEach((doc) => {
+          doc.parts_data.forEach((part) => {
+            const key = part.partnumber;
+            const qty = Number(part.qty);
+            if (totalPartsMap.has(key)) {
+              totalPartsMap.get(key).qty += qty;
+            } else {
+              totalPartsMap.set(key, { ...part, qty });
+            }
+          });
+        });
+
+        // 🧱 2. ดึง stock ปัจจุบันจากคลัง (mock_qty)
+        const partnumbers = Array.from(totalPartsMap.keys());
+        const inventoryStock = await Skinventory.getMockQtyByPartnumbers(
+          partnumbers,
+        ); // → [{ part_code, mock_qty }]
+
+        const stockMap = new Map();
+        inventoryStock.forEach(({ part_code, mock_qty }) => {
+          stockMap.set(part_code, mock_qty); // ใส่ตาม part_code
+        });
+
+        // 🧱 3. สร้าง Map สำหรับติดตามว่าใช้ stock ไปแล้วเท่าไร (ใน memory)
+        const usedQtyMap = new Map(); // partnumber -> qty used แล้ว
+        const mockQtyDecreases = []; // เตรียม bulkWrite สำหรับลด stock
+        const processedDocuments = []; // workDocument ที่จัดการเสร็จแล้ว
+
+        // 🧱 4. ตรวจสอบว่าแต่ละ work ใช้ stock พอหรือไม่ และจัดกลุ่ม station
+        workDocuments.forEach((doc) => {
+          let canFulfill = true;
+
+          for (const part of doc.parts_data) {
+            const available = stockMap.get(part.partnumber) || 0;
+            const used = usedQtyMap.get(part.partnumber) || 0;
+            const required = Number(part.qty);
+
+            if (available - used < required) {
+              canFulfill = false;
+              break;
+            }
           }
+
+          if (canFulfill) {
+            // ✅ stock พอ → ลดใน memory + เตรียมลดจริง
+            doc.parts_data.forEach((part) => {
+              const prevUsed = usedQtyMap.get(part.partnumber) || 0;
+              usedQtyMap.set(part.partnumber, prevUsed + Number(part.qty));
+
+              mockQtyDecreases.push({
+                updateOne: {
+                  filter: { part_code: part.partnumber },
+                  update: { $inc: { mock_qty: -Number(part.qty) } },
+                },
+              });
+            });
+
+            doc.station = "RM";
+          } else {
+            // ❌ stock ไม่พอ → ส่งไป RSM
+            doc.station = "RSM";
+          }
+
+          processedDocuments.push(doc);
+        });
+
+        finalDocuments = processedDocuments;
+
+        // 🧱 5. ทำการ bulkWrite ลด stock จริงใน inventory
+        if (mockQtyDecreases.length > 0) {
+          await Skinventory.bulkWrite(mockQtyDecreases);
         }
       }
 
-      //✅ เตรียมข้อมูลสำหรับ bulkWrite
-      const bulkOps = workDocuments.map((doc) => ({
+      // ✅ เตรียม bulkWrite สำหรับ insert งานลงใน Pkwork
+      const bulkOps = finalDocuments.map((doc) => ({
         insertOne: {
           document: {
             ...doc,
@@ -541,7 +609,42 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
         },
       }));
 
+      // ✅ insert ข้อมูลทั้งหมดลงใน Pkwork
       const result = await Pkwork.bulkWrite(bulkOps, { ordered: false });
+
+      //สิ้นสุด block ใหม่
+
+      // //✅ ถ้าค่า station เป็น RM ตรวจสอบการจองอะไหล่ และอัปเดต reserve_qty ตามลำดับ
+      // if (station === "RM") {
+      //   for (let i = 0; i < workDocuments.length; i++) {
+      //     const doc = workDocuments[i];
+
+      //     try {
+      //       await Skinventory.validateMockQtyUpdate("decrease", doc.parts_data);
+      //       doc.station = "RM";
+      //       await Skinventory.updateMockQty("decrease", doc.parts_data);
+      //     } catch (err) {
+      //       doc.station = "RSM";
+      //       // ไม่ต้อง throw error เพราะแค่เปลี่ยนสถานะ แล้วปล่อยผ่าน
+      //     }
+      //   }
+      // }
+
+      // //✅ เตรียมข้อมูลสำหรับ bulkWrite
+      // const bulkOps = workDocuments.map((doc) => ({
+      //   insertOne: {
+      //     document: {
+      //       ...doc,
+      //       upload_ref_no: uploadRefNo,
+      //     },
+      //   },
+      // }));
+
+      // const result = await Pkwork.bulkWrite(bulkOps, { ordered: false });
+
+      // ✅ สิ้นสุดการจับเวลา
+      const endTime = Date.now();
+      const processingTimeMs = endTime - startTime;
 
       // อัปเดตสถานะของ Jobqueue เป็น "done"
       await Jobqueue.findByIdAndUpdate(job._id, {
@@ -551,6 +654,7 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
           message: `สร้าง Work สำเร็จทั้งหมด (${result.insertedCount} รายการ)`,
           insertedCount: result.insertedCount,
           failedTrackingCodes: [], // ใส่ไว้เผื่ออนาคต
+          processingTimeMs: processingTimeMs,
         },
       });
     } catch (error) {

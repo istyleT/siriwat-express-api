@@ -7,7 +7,7 @@ const unitSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     size: { type: Number, required: true, min: 1 },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const skinventorySchema = new mongoose.Schema({
@@ -65,12 +65,13 @@ const skinventorySchema = new mongoose.Schema({
 //create index
 skinventorySchema.index({
   part_code: 1,
+  mock_qty: 1,
 });
 
 //methods
 skinventorySchema.statics.validateMockQtyUpdate = async function (
   method,
-  partnumbers
+  partnumbers,
 ) {
   if (!["increase", "decrease"].includes(method)) {
     throw new Error("method ต้องเป็น increase หรือ decrease เท่านั้น");
@@ -85,7 +86,7 @@ skinventorySchema.statics.validateMockQtyUpdate = async function (
 
     if (typeof qty !== "number" || qty < 0) {
       throw new Error(
-        `จำนวน qty ต้องเป็นตัวเลขมากกว่าหรือเท่ากับ 0 (รหัส: ${partnumber})`
+        `จำนวน qty ต้องเป็นตัวเลขมากกว่าหรือเท่ากับ 0 (รหัส: ${partnumber})`,
       );
     }
 
@@ -108,7 +109,7 @@ skinventorySchema.statics.validateMockQtyUpdate = async function (
 
     if (method === "decrease" && mock_qty - qty < 0) {
       throw new Error(
-        `ไม่สามารถจ่ายอะไหล่ ${partnumber} ได้ เนื่องจาก mock_qty จะติดลบ`
+        `ไม่สามารถจ่ายอะไหล่ ${partnumber} ได้ เนื่องจาก mock_qty จะติดลบ`,
       );
     }
   }
@@ -142,6 +143,19 @@ skinventorySchema.statics.updateMockQty = async function (method, partnumbers) {
   });
 
   return Promise.all(updatePromises);
+};
+
+skinventorySchema.statics.getMockQtyByPartnumbers = async function (
+  partnumbers,
+) {
+  if (!Array.isArray(partnumbers)) {
+    throw new Error("partnumbers ต้องเป็น Array");
+  }
+
+  return await this.find(
+    { part_code: { $in: partnumbers } },
+    { part_code: 1, mock_qty: 1, _id: 0 },
+  );
 };
 
 const Skinventory = mongoose.model("Skinventory", skinventorySchema);
