@@ -25,7 +25,7 @@ exports.cancelIFNAfterCancelDeliver = catchAsync(async (req, res, next) => {
         user_canceled: req.user?.firstname || "-",
         remark_canceled: "ยกเลิกการจัดส่ง",
       },
-    }
+    },
   );
 
   res.status(204).json({
@@ -39,7 +39,7 @@ exports.cancelIFNAfterCancelDeliver = catchAsync(async (req, res, next) => {
 exports.getAllTxinformalinvoice = factory.getAll(Txinformalinvoice);
 exports.getOneTxinformalinvoice = factory.getOne(Txinformalinvoice);
 exports.getSuggestTxinformalinvoice = factory.getSuggestWithDate(
-  Txinformalinvoice
+  Txinformalinvoice,
 );
 exports.updateTxinformalinvoice = factory.updateOne(Txinformalinvoice);
 
@@ -84,7 +84,7 @@ exports.getReportTaxTxinformalinvoice = catchAsync(async (req, res, next) => {
     const fieldType = getFieldType(Txinformalinvoice.schema.paths, field);
     if (fieldType !== "String") {
       return next(
-        new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท ${fieldType}`, 400)
+        new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท ${fieldType}`, 400),
       );
     }
 
@@ -152,7 +152,7 @@ exports.updateFormalInvoiceRef = catchAsync(async (req, res, next) => {
   const updatedInformalInvoice = await Txinformalinvoice.findByIdAndUpdate(
     informal_invoice_id,
     { formal_invoice_ref: formalInvoice._id },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!updatedInformalInvoice) {
@@ -164,7 +164,7 @@ exports.updateFormalInvoiceRef = catchAsync(async (req, res, next) => {
     await Txcreditnote.findByIdAndUpdate(
       updatedInformalInvoice.credit_note_ref,
       { invoice_no: formalInvoice.doc_no },
-      { new: true }
+      { new: true },
     );
   }
 
@@ -205,7 +205,7 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
   }, {});
 
   const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
-    -2
+    -2,
   );
   const prefix = `IFN${current_year}`;
 
@@ -260,7 +260,7 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
       const total_net = Number(
         chunk
           .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
-          .toFixed(2)
+          .toFixed(2),
       );
 
       invoicesToCreate.push({
@@ -276,7 +276,7 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
   await Txinformalinvoice.insertMany(invoicesToCreate);
 
   console.log(
-    `Created ${invoicesToCreate.length} informal invoices grouped by order_no.`
+    `Created ${invoicesToCreate.length} informal invoices grouped by order_no.`,
   );
 });
 
@@ -294,6 +294,16 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
     .endOf("day")
     .toDate();
 
+  //เอาไว้ run ย้อนหลังดูค่า current year ด้วยนะ
+  // const yesterdayStart = moment
+  //   .tz("2025-12-01", "YYYY-MM-DD", "Asia/Bangkok")
+  //   .startOf("day")
+  //   .toDate();
+  // const yesterdayEnd = moment
+  //   .tz("2025-12-08", "YYYY-MM-DD", "Asia/Bangkok")
+  //   .endOf("day")
+  //   .toDate();
+
   // ดึงข้อมูล Deliver เฉพาะที่มี deliver_date เมื่อวานและไม่ถูกยกเลิก
   const deliverJobs = await Deliver.find({
     deliver_date: { $gte: yesterdayStart, $lte: yesterdayEnd },
@@ -308,7 +318,7 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
 
   //กระบวนการกำหนดเลขที่ใบกำกับภาษีอย่างย่อ
   const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
-    -2
+    -2,
   );
   const prefix = `IFN${current_year}`;
 
@@ -365,7 +375,7 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
       const total_net = Number(
         product_details
           .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
-          .toFixed(2)
+          .toFixed(2),
       );
 
       invoicesToCreate.push({
@@ -383,7 +393,7 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
   await Txinformalinvoice.insertMany(invoicesToCreate);
 
   console.log(
-    `Created ${invoicesToCreate.length} informal invoices from RMBKK deliver.`
+    `Created ${invoicesToCreate.length} informal invoices from RMBKK deliver.`,
   );
 });
 
@@ -425,7 +435,7 @@ exports.cancelInFormalInvoice = catchAsync(async (req, res, next) => {
       user_canceled: "System",
       remark_canceled: "งานถูกยกเลิกในระบบจัดส่งสินค้า",
       canceledAt: moment().tz("Asia/Bangkok").toDate(),
-    }
+    },
   );
 
   console.log(`Canceled ${invoicesToCancel.modifiedCount} informal invoices.`);
