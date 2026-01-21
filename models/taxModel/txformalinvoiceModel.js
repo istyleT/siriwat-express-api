@@ -1,6 +1,5 @@
 //txformalvoiceModel.js
 const mongoose = require("mongoose");
-const moment = require("moment-timezone");
 
 const txformalinvoiceSchema = new mongoose.Schema(
   {
@@ -128,7 +127,7 @@ const txformalinvoiceSchema = new mongoose.Schema(
   // กระบวนการทำงานคือ ทุกครั้งที่มีการกดพิมพ์ จะมีการนับจำนวนครั้งที่พิมพ์โดยใช้ findOneAndUpdate
   // ถ้าค่า approved_print เป็น false จะมีปุ่มให้ขออนุมัติการพิมพ์ใหม่ เเละต้องใส่เหตุผล request_edit ก่อน
   // เมื่อผู้มีสิทธิ์อนุมัติจะทำการเปลี่ยน approved_print เป็น true เเละล้างค่า request_edit ทิ้งเอาไปไว้ใน history_edit พร้อมวันที่และชื่อผู้อนุมัติ
-  { timestamps: true }
+  { timestamps: true },
 );
 
 txformalinvoiceSchema.index({
@@ -176,7 +175,7 @@ txformalinvoiceSchema.post("findOneAndUpdate", async function (doc, next) {
 
 const Txformalinvoice = mongoose.model(
   "Txformalinvoice",
-  txformalinvoiceSchema
+  txformalinvoiceSchema,
 );
 
 module.exports = Txformalinvoice;

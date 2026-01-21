@@ -141,7 +141,7 @@ exports.updatePartsDataInWork = catchAsync(async (req, res, next) => {
     }
     //ทำการย้ายข้อมูล  new_parts_data ที่มีค่า qty = 0 ยังไปยัง scan_data
     const zeroQtyParts = new_parts_data.filter(
-      (item) => Number(item.qty) === 0
+      (item) => Number(item.qty) === 0,
     );
     if (zeroQtyParts.length > 0) {
       //ถ้ามีข้อมูลที่ qty = 0 ให้ย้ายไปยัง scan_data
@@ -326,7 +326,7 @@ exports.changeStation = catchAsync(async (req, res, next) => {
     if (combinedPartsMap.has(partnumber)) {
       combinedPartsMap.set(
         partnumber,
-        combinedPartsMap.get(partnumber) + quantity
+        combinedPartsMap.get(partnumber) + quantity,
       );
     } else {
       combinedPartsMap.set(partnumber, quantity);
@@ -337,7 +337,7 @@ exports.changeStation = catchAsync(async (req, res, next) => {
     ([partnumber, qty]) => ({
       partnumber,
       qty,
-    })
+    }),
   );
 
   // ตรวจสอบการเปลี่ยนแปลงสถานี
@@ -420,7 +420,7 @@ exports.adjustMockQtyInInventory = catchAsync(async (req, res, next) => {
       if (combinedPartsMap.has(partnumber)) {
         combinedPartsMap.set(
           partnumber,
-          combinedPartsMap.get(partnumber) + quantity
+          combinedPartsMap.get(partnumber) + quantity,
         );
       } else {
         combinedPartsMap.set(partnumber, quantity);
@@ -431,7 +431,7 @@ exports.adjustMockQtyInInventory = catchAsync(async (req, res, next) => {
       ([partnumber, qty]) => ({
         partnumber,
         qty,
-      })
+      }),
     );
     // เรียกใช้งาน updateMockQty เพื่อตัดยอด mock ออกจาก inventory
     await Skinventory.updateMockQty("decrease", combinedParts);
@@ -458,7 +458,7 @@ exports.movePartsToScan = catchAsync(async (req, res, next) => {
 
       // ✅ ย้ายเฉพาะ part ที่ยังไม่มีใน scan_data
       const newParts = pkwork.parts_data.filter(
-        (p) => !existingPartNumbers.includes(p.partnumber)
+        (p) => !existingPartNumbers.includes(p.partnumber),
       );
 
       if (newParts.length > 0) {
@@ -516,7 +516,7 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
       status: { $ne: "ยกเลิก" },
       transport_waranty: false,
     },
-    "order_no" // เอาเฉพาะ order_no พอ
+    "order_no", // เอาเฉพาะ order_no พอ
   );
 
   //เอาเฉพาะ order_no ที่ไม่ซ้ำและสามารถยกเลิกได้
@@ -536,7 +536,7 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
         canceled_at: currentTime,
         cancel_status: "ดำเนินการ",
       },
-    }
+    },
   );
 
   return res.status(200).json({
@@ -579,7 +579,7 @@ exports.getDataPartsInWorkUpload = catchAsync(async (req, res, next) => {
       parts_data: 1,
       upload_ref_no: 1,
       tracking_code: 1,
-    }
+    },
   );
 
   if (pkworks.length === 0) {
@@ -606,7 +606,7 @@ exports.getDataPartsInWorkUpload = catchAsync(async (req, res, next) => {
 
   // ทำการ sort ข้อมูลตาม tracking_code
   const sortedData = prepareData.sort((a, b) =>
-    a.tracking_code.localeCompare(b.tracking_code)
+    a.tracking_code.localeCompare(b.tracking_code),
   );
 
   res.status(200).json({
@@ -632,7 +632,7 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
       work.parts_data?.map((el) => ({
         partnumber: el.partnumber,
         qty: Number(el.qty),
-      })) || []
+      })) || [],
   );
 
   // ❗ สร้างชุดของ partnumber ที่ไม่ซ้ำ
@@ -643,17 +643,17 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
   // ❗ ดึงข้อมูลจาก Skinventory โดยใช้ partnumber เทียบกับ part_code
   const inventoryParts = await Skinventory.find(
     { part_code: { $in: uniquePartNumbers } },
-    { part_code: 1, part_name: 1, location: 1, _id: 0 } // ดึงเฉพาะ field ที่ต้องการ
+    { part_code: 1, part_name: 1, location: 1, _id: 0 }, // ดึงเฉพาะ field ที่ต้องการ
   );
 
   // ❗ สร้าง Map สำหรับ mapping part_code => part_name
   const partNameMap = new Map(
-    inventoryParts.map((part) => [part.part_code, part.part_name])
+    inventoryParts.map((part) => [part.part_code, part.part_name]),
   );
 
   // ❗ สร้าง Map สำหรับ mapping part_code => location
   const partLocationMap = new Map(
-    inventoryParts.map((part) => [part.part_code, part.location])
+    inventoryParts.map((part) => [part.part_code, part.location]),
   );
 
   // ❗ เพิ่ม field part_name เข้าไปใน formattedData
@@ -689,7 +689,7 @@ exports.formatPartsInPickDoc = catchAsync(async (req, res, next) => {
   const sortedData = Array.from(qtyMap.values()).sort(
     (a, b) =>
       a.location.localeCompare(b.location) ||
-      a.partnumber.localeCompare(b.partnumber)
+      a.partnumber.localeCompare(b.partnumber),
   );
 
   res.status(200).json({
@@ -758,12 +758,12 @@ exports.formatPartsInArrangeDoc = catchAsync(async (req, res, next) => {
   // ❗ ดึงข้อมูล part_name จาก Skinventory
   const inventoryParts = await Skinventory.find(
     { part_code: { $in: uniquePartNumbers } },
-    { part_code: 1, part_name: 1, _id: 0 }
+    { part_code: 1, part_name: 1, _id: 0 },
   );
 
   // ❗ สร้าง Map สำหรับ mapping part_code => part_name
   const partNameMap = new Map(
-    inventoryParts.map((part) => [part.part_code, part.part_name])
+    inventoryParts.map((part) => [part.part_code, part.part_name]),
   );
 
   // ❗ เพิ่ม part_name ลงใน formattedData
@@ -820,7 +820,7 @@ exports.getDataPartsInWorkCancel = catchAsync(async (req, res, next) => {
       upload_ref_no: 1,
       tracking_code: 1,
       station: 1,
-    }
+    },
   );
 
   if (pkworks.length === 0) {
@@ -845,7 +845,7 @@ exports.getDataPartsInWorkCancel = catchAsync(async (req, res, next) => {
 
   // ทำการ sort ข้อมูลตาม tracking_code
   const sortedData = prepareData.sort((a, b) =>
-    a.tracking_code.localeCompare(b.tracking_code)
+    a.tracking_code.localeCompare(b.tracking_code),
   );
 
   res.status(200).json({
@@ -913,7 +913,7 @@ exports.movePartsToScanWorkSuccessMany = catchAsync(async (req, res, next) => {
               updated_at: moment().tz("Asia/Bangkok").toDate(),
             },
           },
-          { new: true }
+          { new: true },
         );
         updatedCount++;
       }
@@ -965,47 +965,76 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
   });
 
   setTimeout(async () => {
+    //เริ่มตจับเวลา
+    const startTime = Date.now();
+
+    //เริ่มต้น block ใหม่
     const trackingCodes = [];
+    const pkworkBulkOps = [];
+    const mockQtyIncreasesMap = new Map(); // partnumber -> qty รวมทั้งหมด
 
-    //จัดการคืน mock_qty ใน inventory
-    for (const pkwork of pkworks) {
-      if (pkwork.station === "RM") {
-        if (pkwork.scan_data && pkwork.scan_data.length > 0) {
-          //โยกย้ายข้อมูลจาก scan_data ไปยัง parts_data
-          const partsMap = new Map();
-
-          pkwork.parts_data.forEach((item) => {
-            partsMap.set(item.partnumber, item);
-          });
-
-          pkwork.scan_data.forEach((scanItem) => {
-            const existing = partsMap.get(scanItem.partnumber);
-            if (existing) {
-              existing.qty += scanItem.qty;
-            } else {
-              const newItem = {
-                partnumber: scanItem.partnumber,
-                qty: scanItem.qty,
-              };
-              pkwork.parts_data.push(newItem);
-              partsMap.set(scanItem.partnumber, newItem);
-            }
-          });
-
-          pkwork.scan_data = [];
-
-          await pkwork.save();
-        }
-        await Skinventory.updateMockQty("increase", pkwork.parts_data);
-      }
-
-      //เก็บ tracking_code ที่จะใช้ในการลบ
+    // ✅ 1. รวมข้อมูลเพื่อ update คืน stock และล้าง scan_data แบบ bulk
+    pkworks.forEach((pkwork) => {
       if (pkwork.tracking_code) {
         trackingCodes.push(pkwork.tracking_code);
       }
+
+      if (pkwork.station !== "RM") return;
+
+      // เตรียมรวม parts_data + scan_data
+      const partsMap = new Map();
+      pkwork.parts_data.forEach((item) => {
+        partsMap.set(item.partnumber, { ...item }); // clone ไว้ก่อน
+      });
+
+      (pkwork.scan_data || []).forEach((scanItem) => {
+        if (partsMap.has(scanItem.partnumber)) {
+          partsMap.get(scanItem.partnumber).qty += scanItem.qty;
+        } else {
+          partsMap.set(scanItem.partnumber, { ...scanItem });
+        }
+      });
+
+      // รวม qty กลับเข้าคลัง
+      for (const part of partsMap.values()) {
+        if (mockQtyIncreasesMap.has(part.partnumber)) {
+          mockQtyIncreasesMap.get(part.partnumber).qty += Number(part.qty);
+        } else {
+          mockQtyIncreasesMap.set(part.partnumber, { ...part });
+        }
+      }
+
+      // เตรียม bulk update pkwork → เคลียร์ scan_data
+      pkworkBulkOps.push({
+        updateOne: {
+          filter: { _id: pkwork._id },
+          update: {
+            $set: { parts_data: Array.from(partsMap.values()), scan_data: [] },
+          },
+        },
+      });
+    });
+
+    // ✅ 2. ดำเนินการ bulk update pkwork (ล้าง scan_data)
+    if (pkworkBulkOps.length > 0) {
+      await Pkwork.bulkWrite(pkworkBulkOps);
     }
 
-    //หลังจาก for loop เสร็จสิ้น ให้ลบเอกสาร pkwork ทั้งหมดที่มี upload_ref_no ตรงกัน
+    // ✅ 3. คืน stock ด้วย bulkWrite → Skinventory
+    const mockQtyBulkOps = Array.from(mockQtyIncreasesMap.values()).map(
+      (item) => ({
+        updateOne: {
+          filter: { part_code: item.partnumber },
+          update: { $inc: { mock_qty: Number(item.qty) } },
+        },
+      }),
+    );
+
+    if (mockQtyBulkOps.length > 0) {
+      await Skinventory.bulkWrite(mockQtyBulkOps);
+    }
+
+    // ✅ 4. ลบ pkwork
     const result = await Pkwork.deleteMany({
       upload_ref_no: upload_ref_no.trim(),
     });
@@ -1014,11 +1043,67 @@ exports.returnMockQtyAndDeleteWork = catchAsync(async (req, res, next) => {
       return next(new AppError("ไม่พบข้อมูลที่ต้องการลบ", 404));
     }
 
+    //สิ้นสุด block ใหม่
+
+    // const trackingCodes = [];
+
+    // //จัดการคืน mock_qty ใน inventory
+    // for (const pkwork of pkworks) {
+    //   if (pkwork.station === "RM") {
+    //     if (pkwork.scan_data && pkwork.scan_data.length > 0) {
+    //       //โยกย้ายข้อมูลจาก scan_data ไปยัง parts_data
+    //       const partsMap = new Map();
+
+    //       pkwork.parts_data.forEach((item) => {
+    //         partsMap.set(item.partnumber, item);
+    //       });
+
+    //       pkwork.scan_data.forEach((scanItem) => {
+    //         const existing = partsMap.get(scanItem.partnumber);
+    //         if (existing) {
+    //           existing.qty += scanItem.qty;
+    //         } else {
+    //           const newItem = {
+    //             partnumber: scanItem.partnumber,
+    //             qty: scanItem.qty,
+    //           };
+    //           pkwork.parts_data.push(newItem);
+    //           partsMap.set(scanItem.partnumber, newItem);
+    //         }
+    //       });
+
+    //       pkwork.scan_data = [];
+
+    //       await pkwork.save();
+    //     }
+    //     await Skinventory.updateMockQty("increase", pkwork.parts_data);
+    //   }
+
+    //   //เก็บ tracking_code ที่จะใช้ในการลบ
+    //   if (pkwork.tracking_code) {
+    //     trackingCodes.push(pkwork.tracking_code);
+    //   }
+    // }
+
+    // //หลังจาก for loop เสร็จสิ้น ให้ลบเอกสาร pkwork ทั้งหมดที่มี upload_ref_no ตรงกัน
+    // const result = await Pkwork.deleteMany({
+    //   upload_ref_no: upload_ref_no.trim(),
+    // });
+
+    // if (result.deletedCount === 0) {
+    //   return next(new AppError("ไม่พบข้อมูลที่ต้องการลบ", 404));
+    // }
+
+    // จบการจับเวลา
+    const endTime = Date.now();
+    const processingTimeMs = endTime - startTime;
+
     // อัปเดตสถานะของ Jobqueue เป็น "done"
     await Jobqueue.findByIdAndUpdate(job._id, {
       status: "done",
       result: {
         ...job.result,
+        processingTimeMs: processingTimeMs,
         message: `ลบข้อมูลสำเร็จ ${result.deletedCount} รายการ`,
       },
     });
@@ -1058,8 +1143,8 @@ exports.dailyReportUnitPriceInWork = async () => {
 
   console.log(
     `ประมวลผลราคาต่อหน่วยในเอกสารที่สร้างเมื่อ: ${moment(today).format(
-      "YYYY-MM-DD"
-    )}`
+      "YYYY-MM-DD",
+    )}`,
   );
 
   //2. ดึงข้อมูลเอกสารที่มีการสร้างในวันนั้นๆ
@@ -1102,7 +1187,7 @@ exports.dailyReportUnitPriceInWork = async () => {
         docs.flatMap((doc) => [
           ...(doc.scan_data?.map((part) => part.partnumber) || []),
           ...(doc.parts_data?.map((part) => part.partnumber) || []),
-        ])
+        ]),
       ),
     ];
 
@@ -1196,6 +1281,6 @@ exports.deletePkworkOld = async () => {
   console.log(
     `ลบเอกสารที่มีอายุเกินกว่า 45 วันสำเร็จ ณ วันที่ ${moment()
       .tz("Asia/Bangkok")
-      .format("YYYY-MM-DD")}`
+      .format("YYYY-MM-DD")}`,
   );
 };
