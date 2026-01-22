@@ -23,7 +23,7 @@ exports.checkCanReturn = catchAsync(async (req, res, next) => {
       order_no: order_no,
       shop: shop.trim(),
     },
-    { order_no: 1, shop: 1 }
+    { order_no: 1, shop: 1 },
   );
 
   if (existingReturnDoc.length > 0) {
@@ -39,7 +39,7 @@ exports.checkCanReturn = catchAsync(async (req, res, next) => {
       order_no: order_no,
       canceledAt: null,
     },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   if (existingCreditNoteDoc.length > 0) {
@@ -56,7 +56,7 @@ exports.checkCanReturn = catchAsync(async (req, res, next) => {
       shop: shop.trim(),
       canceled_at: null,
     },
-    { order_no: 1 }
+    { order_no: 1 },
   );
 
   if (existingWorkDoc.length === 0) {
@@ -79,7 +79,7 @@ exports.deletePkreturnwork = factory.deleteOne(Pkreturnwork);
 exports.deleteManyPkreturnwork = factory.deleteMany(Pkreturnwork);
 
 exports.createPkreturnwork = catchAsync(async (req, res, next) => {
-  const { order_no, shop } = req.body;
+  const { order_no, shop, req_date, order_date } = req.body;
 
   // ✅ ดึงข้อมูลจาก Pkwork
   const workInfo = await Pkwork.findOne(
@@ -91,7 +91,7 @@ exports.createPkreturnwork = catchAsync(async (req, res, next) => {
     {
       tracking_code: 1,
       order_date: 1,
-    }
+    },
   ).lean();
 
   // ✅ ดึงข้อมูลจาก Txinformalinvoice
@@ -104,7 +104,7 @@ exports.createPkreturnwork = catchAsync(async (req, res, next) => {
       doc_no: 1,
       product_details: 1,
       formal_invoice_ref: 1,
-    }
+    },
   ).lean();
 
   if (!invoice) {
@@ -150,8 +150,9 @@ exports.createPkreturnwork = catchAsync(async (req, res, next) => {
   // ✅ บันทึกข้อมูลลงใน Pkreturnwork
   const createdDoc = await Pkreturnwork.create({
     upload_ref_no: uploadRefNo,
+    req_date: req_date,
     tracking_code: workInfo.tracking_code,
-    order_date: workInfo.order_date,
+    order_date: order_date,
     order_no,
     invoice_no: invoice.formal_invoice_ref?.doc_no || invoice.doc_no,
     shop,

@@ -8,7 +8,6 @@ const {
   updatePkreturnwork,
   deletePkreturnwork,
   checkCanReturn,
-  deleteManyPkreturnwork,
   createPkreturnwork,
 } = require("../../controllers/packingController/pkreturnworkController");
 const { protect, restrictTo } = require("../../controllers/authController");
@@ -22,7 +21,6 @@ router
   .post(checkCanReturn, createPkreturnwork);
 router.route("/suggest").get(getSuggestPkreturnwork);
 router.route("/report").get(getByDatePkreturnwork);
-// router.route("/deletework").delete(deleteManyPkreturnwork);
 
 router
   .route("/:id")

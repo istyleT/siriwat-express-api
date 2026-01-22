@@ -15,7 +15,7 @@ const pkreturnworkSchema = new mongoose.Schema(
     },
     order_date: {
       //ใช้จาก Pkwork
-      type: Date,
+      type: String,
       required: [true, "กรุณาระบุวันที่สั่งซื้อ"],
     },
     req_date: {

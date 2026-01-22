@@ -783,12 +783,12 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
   // ✅ 5. หาลำดับ upload_ref_no ล่าสุดที่มี prefix เดียวกัน
   let existingRefs = [];
   try {
-    existingRefs = await Pkwork.find(
+    existingRefs = await Pkreturnwork.find(
       { upload_ref_no: { $regex: `^${refPrefix}` } },
       { upload_ref_no: 1 },
     ).sort({ upload_ref_no: 1 });
   } catch (error) {
-    console.error("Error querying Pkwork:", error);
+    console.error("Error querying Pkreturnwork:", error);
   }
   // หาเลขลำดับสูงสุดที่มีอยู่
   let lastNumber = 0;
@@ -829,7 +829,10 @@ exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
         },
       }));
 
-      const result = await Pkreturnwork.bulkWrite(bulkOps, { ordered: false });
+      const result = await Pkreturnwork.bulkWrite(bulkOps, {
+        ordered: false,
+        runValidators: true, // ✅ บังคับให้เช็คตาม schema
+      });
 
       // อัปเดตสถานะของ Jobqueue เป็น "done"
       await Jobqueue.findByIdAndUpdate(job._id, {
