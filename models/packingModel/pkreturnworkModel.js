@@ -96,18 +96,23 @@ pkreturnworkSchema.pre(/^find/, function (next) {
 //stamp เวลาที่เสร็จสิ้น
 pkreturnworkSchema.post("findOneAndUpdate", async function (doc) {
   if (doc) {
-    const updatedDoc = await this.model.findById(doc._id);
+    try {
+      const updatedDoc = await this.model.findById(doc._id);
 
-    //work ที่ไม่โดนยกเลิก เป็นงานที่เสร็จสิ้นเมื่อ parts_data ว่าง
-    if (
-      updatedDoc &&
-      updatedDoc.parts_data.length === 0 &&
-      updatedDoc.scan_data.length >= 1 &&
-      !updatedDoc.successAt
-    ) {
-      updatedDoc.status = "เสร็จสิ้น";
-      updatedDoc.successAt = moment().tz("Asia/Bangkok").toDate();
-      await updatedDoc.save();
+      //work ที่ไม่โดนยกเลิก เป็นงานที่เสร็จสิ้นเมื่อ parts_data ว่าง
+      if (
+        updatedDoc &&
+        updatedDoc.parts_data.length === 0 &&
+        updatedDoc.scan_data.length >= 1 &&
+        !updatedDoc.successAt
+      ) {
+        updatedDoc.status = "เสร็จสิ้น";
+        updatedDoc.successAt = moment().tz("Asia/Bangkok").toDate();
+
+        await updatedDoc.save();
+      }
+    } catch (error) {
+      console.error(error); // ดูแลข้อผิดพลาด
     }
   }
 });

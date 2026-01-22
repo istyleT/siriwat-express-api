@@ -1256,9 +1256,9 @@ exports.dailyReportUnitPriceInWork = async () => {
   }
 };
 
-//ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ
+//ลบเอกสารที่มีอายุเกินกว่า 180 วัน มีเงื่อนไขในการลบ
 exports.deletePkworkOld = async () => {
-  const date = moment().tz("Asia/Bangkok").subtract(45, "days").toDate();
+  const date = moment().tz("Asia/Bangkok").subtract(180, "days").toDate();
 
   //ลบเอกสารที่เสร็จสิ้นไปเเล้วทั้ง 2 ร้าน
   await Pkwork.deleteMany({
@@ -1279,7 +1279,7 @@ exports.deletePkworkOld = async () => {
   });
 
   console.log(
-    `ลบเอกสารที่มีอายุเกินกว่า 45 วันสำเร็จ ณ วันที่ ${moment()
+    `ลบเอกสารที่มีอายุเกินกว่า 180 วันสำเร็จ ณ วันที่ ${moment()
       .tz("Asia/Bangkok")
       .format("YYYY-MM-DD")}`,
   );

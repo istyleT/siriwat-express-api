@@ -16,12 +16,12 @@ const createPkunitprice = async (sku_data, shop) => {
 
   const skinvData = await Skinventory.find(
     { part_code: { $in: uniquePartCodes } },
-    { part_code: 1, avg_cost: 1 }
+    { part_code: 1, avg_cost: 1 },
   );
 
   //สร้าง Map เพื่อเก็บค่า avg_cost
   const costMap = new Map(
-    skinvData.map((d) => [d.part_code, Number(d.avg_cost || 0)])
+    skinvData.map((d) => [d.part_code, Number(d.avg_cost || 0)]),
   );
 
   // ✅ ฟังก์ชันปรับเศษทศนิยม
@@ -30,7 +30,7 @@ const createPkunitprice = async (sku_data, shop) => {
     const diff = Number((baseUnitPrice - priceSum).toFixed(2));
     if (Math.abs(diff) > 0) {
       parts[parts.length - 1].price_per_unit = Number(
-        (parts[parts.length - 1].price_per_unit + diff).toFixed(2)
+        (parts[parts.length - 1].price_per_unit + diff).toFixed(2),
       );
     }
     return parts;
@@ -110,7 +110,7 @@ const createPkunitprice = async (sku_data, shop) => {
 
     for (const item of unitPrices) {
       const existing = merged.find(
-        (e) => e.tracking_code === item.tracking_code && e.shop === item.shop
+        (e) => e.tracking_code === item.tracking_code && e.shop === item.shop,
       );
 
       if (!existing) {
@@ -124,7 +124,7 @@ const createPkunitprice = async (sku_data, shop) => {
           const found = existing.detail_price_per_unit.find(
             (ep) =>
               ep.partnumber === p.partnumber &&
-              ep.price_per_unit === p.price_per_unit
+              ep.price_per_unit === p.price_per_unit,
           );
 
           if (found) {
@@ -180,11 +180,11 @@ exports.createPkunitpriceHandler = catchAsync(async (req, res, next) => {
 
 //Method
 
-//ลบเอกสารที่มีอายุเกินกว่า 45 วัน มีเงื่อนไขในการลบ
+//ลบเอกสารที่มีอายุเกินกว่า 180 วัน มีเงื่อนไขในการลบ
 exports.deletePkunitpriceOld = async () => {
-  const date = moment().tz("Asia/Bangkok").subtract(60, "days").toDate();
+  const date = moment().tz("Asia/Bangkok").subtract(180, "days").toDate();
 
-  //ลบเอกสารที่มีอายุมากว่า 60 วัน
+  //ลบเอกสารที่มีอายุมากว่า 180 วัน
   await Pkunitprice.deleteMany({
     createdAt: { $lt: date },
   });
