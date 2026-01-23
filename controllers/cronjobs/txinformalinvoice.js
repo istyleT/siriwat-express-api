@@ -11,7 +11,7 @@ const txinformalinvoiceJob = cron.schedule(
   },
   {
     timezone: "Asia/Bangkok",
-  }
+  },
 );
 
 const txinformalinvoiceRMBKKJob = cron.schedule(
@@ -24,7 +24,7 @@ const txinformalinvoiceRMBKKJob = cron.schedule(
   },
   {
     timezone: "Asia/Bangkok",
-  }
+  },
 );
 
 // ยกเลิกใบกำกับภาษีอย่างย่อรายวัน
@@ -37,7 +37,7 @@ const canceltxinformalinvoiceJob = cron.schedule(
   },
   {
     timezone: "Asia/Bangkok",
-  }
+  },
 );
 
 module.exports = {

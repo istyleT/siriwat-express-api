@@ -101,7 +101,7 @@ exports.pushTrackingNumber = catchAsync(async (req, res, next) => {
       new: true,
       runValidators: true,
       context: { user },
-    }
+    },
   );
 
   if (!doc) {
@@ -148,7 +148,7 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
 
   // หา Orders ที่มี id ตรงกับ order_no
   const orders = await Order.find({ id: { $in: orderNos } }).select(
-    "id status_bill cust_tier anothercost"
+    "id status_bill cust_tier anothercost",
   );
 
   // สร้าง mapping ระหว่าง id และ status_bill, cust_tier เพื่อให้เข้าถึงข้อมูลได้เร็ว
@@ -176,7 +176,7 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
   const filteredDelivers = updatedDelivers.map((deliver) => {
     if (deliver.deliverlist && Array.isArray(deliver.deliverlist)) {
       deliver.deliverlist = deliver.deliverlist.filter(
-        (item) => item.qty_deliver !== 0
+        (item) => item.qty_deliver !== 0,
       );
     }
     return deliver;
@@ -187,58 +187,4 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
     results: filteredDelivers.length,
     data: filteredDelivers,
   });
-});
-
-//ส่วน function ที่ทำงานกับ cron job
-//update เลขที่ใบกำกับภาษีใน deliver ที่มีการยืนยันใบกำกับภาษีแล้ว(ต้องทำงานหลังจาก ออกใบกำกับภาษีแล้ว)
-exports.updateInvoiceNoInDeliver = catchAsync(async (req, res, next) => {
-  //ดึงข้อมูลที่ deliver ที่มีการยืนยันใบกำกับภาษีในวันนี้
-  const yesterdayStart = moment()
-    .tz("Asia/Bangkok")
-    .subtract(1, "day")
-    .startOf("day")
-    .toDate();
-  const yesterdayEnd = moment()
-    .tz("Asia/Bangkok")
-    .subtract(1, "day")
-    .endOf("day")
-    .toDate();
-
-  // ดึงข้อมูล Deliver เฉพาะที่มี deliver_date เมื่อวานและไม่ถูกยกเลิก
-  const deliverJobs = await Deliver.find({
-    deliver_date: { $gte: yesterdayStart, $lte: yesterdayEnd },
-    date_canceled: null,
-  })
-    .sort({ created_at: 1 })
-    .exec();
-
-  if (!deliverJobs || deliverJobs.length === 0) {
-    return console.log("No deliver jobs found for yesterday.");
-  }
-
-  // ใช้ Promise.all เพื่อทำงาน async แบบ parallel
-  await Promise.all(
-    deliverJobs.map(async (deliver) => {
-      const invoice = await Txinformalinvoice.findOne({
-        deliver_no: deliver.id,
-      });
-
-      if (!invoice) {
-        // console.log(`No invoice found for deliver ID: ${deliver.id}`);
-        return;
-      }
-
-      // อัปเดต deliver ให้มี doc_no
-      deliver.informal_invoice_no = invoice.doc_no;
-      deliver._skipCODPaymentCreation = true;
-      await deliver.save();
-      // console.log(
-      //   `Updated deliver ID: ${deliver._id} with invoice no: ${invoice.doc_no}`
-      // );
-    })
-  );
-
-  console.log(
-    `Updated ${deliverJobs.length} deliver records with invoice numbers.`
-  );
 });

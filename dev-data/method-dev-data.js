@@ -14,7 +14,7 @@ dotenv.config({ path: "./config.env" });
 
 const DB = process.env.DATABASE.replace(
   "<PASSWORD>",
-  process.env.DATABASE_PASSWORD
+  process.env.DATABASE_PASSWORD,
 );
 
 mongoose
@@ -26,26 +26,26 @@ mongoose
 
 // READ JSON FILE
 const convertorderno = JSON.parse(
-  fs.readFileSync(`${__dirname}/data/convertorderno.json`, "utf-8")
+  fs.readFileSync(`${__dirname}/data/convertorderno.json`, "utf-8"),
 );
 
 const ordernolist = JSON.parse(
-  fs.readFileSync(`${__dirname}/data/checkorderno.json`, "utf-8")
+  fs.readFileSync(`${__dirname}/data/checkorderno.json`, "utf-8"),
 );
 
 const stock_init = JSON.parse(
-  fs.readFileSync(`${__dirname}/data/stock_init_210825.json`, "utf-8")
+  fs.readFileSync(`${__dirname}/data/stock_init_210825.json`, "utf-8"),
 );
 
 const partnumber_service_rate = JSON.parse(
-  fs.readFileSync(`${__dirname}/data/partnumber_service_rate.json`, "utf-8")
+  fs.readFileSync(`${__dirname}/data/partnumber_service_rate.json`, "utf-8"),
 );
 
 // Function สำหรับ decode string ที่เป็น Unicode escape (ภาษาไทย)
 const decodeUnicodeEscape = (text) => {
   if (typeof text !== "string") return text;
   return text.replace(/\\u[\dA-F]{4}/gi, (match) =>
-    String.fromCharCode(parseInt(match.replace(/\\u/g, ""), 16))
+    String.fromCharCode(parseInt(match.replace(/\\u/g, ""), 16)),
   );
 };
 
@@ -133,7 +133,7 @@ const updateUnitsFromCSV = async () => {
             mergedUnits.push(newUnit);
             updated = true;
             console.log(
-              `⚙️ ขนาดหน่วย '${newUnit.name}' ของ ${part_code} เปลี่ยนจาก ${existing.size} → ${newUnit.size}`
+              `⚙️ ขนาดหน่วย '${newUnit.name}' ของ ${part_code} เปลี่ยนจาก ${existing.size} → ${newUnit.size}`,
             );
           }
         }
@@ -170,7 +170,7 @@ const updateServiceRateInventory = async (data) => {
       const updatedInventory = await Skinventory.findOneAndUpdate(
         { part_code: partnumber },
         { service_rate },
-        { new: true }
+        { new: true },
       );
 
       if (updatedInventory) {
@@ -199,7 +199,7 @@ const updateQtyInventory = async (data) => {
       const updatedInventory = await Skinventory.findOneAndUpdate(
         { part_code: part },
         { qty: value },
-        { new: true }
+        { new: true },
       );
 
       if (updatedInventory) {
@@ -241,7 +241,7 @@ const updateQtyDeliverToOrder = async (orderId, deliverId) => {
 
     const updateResult = await order.addDeliverAndUpdateParts(
       deliverId,
-      deliverList
+      deliverList,
     );
 
     console.log("Update result:", updateResult);
@@ -280,7 +280,7 @@ const updatePartNameInSkinventoryFromPricelist = async () => {
       const updatedSkinventory = await Skinventory.findOneAndUpdate(
         { part_code: part_code },
         { part_name: name_thai },
-        { new: true }
+        { new: true },
       );
       if (updatedSkinventory) {
         console.log(`Updated part_name for ${part_code} in Skinventory`);
@@ -308,7 +308,7 @@ const updateOrderNoInPkwork = async () => {
       const updatePkwork = await Pkwork.findOneAndUpdate(
         { order_no: orderItemId },
         { order_no: orderNumber },
-        { new: true }
+        { new: true },
       );
 
       if (updatePkwork) {
@@ -338,15 +338,15 @@ const checkOrderNumbersInPkwork = async () => {
     // ดึงรายการ order_no ที่มีอยู่จริงทั้งหมดในฐานข้อมูล
     const existingOrders = await Pkwork.find(
       { order_no: { $in: uniqueOrderNumbers } },
-      { order_no: 1, _id: 0 }
+      { order_no: 1, _id: 0 },
     ).lean();
 
     const existingOrderSet = new Set(
-      existingOrders.map((item) => item.order_no)
+      existingOrders.map((item) => item.order_no),
     );
 
     const notFound = uniqueOrderNumbers.filter(
-      (orderNo) => !existingOrderSet.has(orderNo)
+      (orderNo) => !existingOrderSet.has(orderNo),
     );
 
     if (notFound.length === 0) {
@@ -382,7 +382,7 @@ const checkMissingTrackingCodesInPkwork = async (trackingCodes) => {
 
     // ค้นหารายการที่ไม่มีในเอกสาร
     const notFoundCodes = trackingCodes.filter(
-      (code) => !foundTrackingCodes.includes(code)
+      (code) => !foundTrackingCodes.includes(code),
     );
 
     if (notFoundCodes.length === 0) {
@@ -430,7 +430,7 @@ const findDuplicateTrackingCodes = async () => {
         console.log(
           `tracking_code: ${item._id}, count: ${
             item.count
-          }, ids: ${item.docs.join(", ")}`
+          }, ids: ${item.docs.join(", ")}`,
         );
       });
     }
@@ -493,6 +493,70 @@ const updateCancelledPkworkToComplete = async (ids) => {
   }
 };
 
+// ฟังก์ชัน recursive แปลงทุก field ที่จำเป็น
+const normalizeMongoExportObject = (obj) => {
+  if (Array.isArray(obj)) {
+    return obj.map(normalizeMongoExportObject);
+  }
+
+  if (obj && typeof obj === "object") {
+    // แปลง ObjectId
+    if (obj.$oid) {
+      return new mongoose.Types.ObjectId(obj.$oid);
+    }
+
+    // แปลง Date
+    if (obj.$date) {
+      return new Date(obj.$date);
+    }
+
+    // แปลง property อื่นๆ
+    const newObj = {};
+    for (const key in obj) {
+      newObj[key] = normalizeMongoExportObject(obj[key]);
+    }
+    return newObj;
+  }
+
+  return obj;
+};
+//functions เพิ่ม Pkwork เดิมที่ถูกลบไปโดยไม่ตั้งใจ กลับมาใหม่ เเละต้องไม่ซ้ำกับที่ยังอยู่
+const restorePkworkFromJSON = async () => {
+  try {
+    const rawData = JSON.parse(
+      fs.readFileSync(`${__dirname}/data/06Siriwatjobs.pkworks.json`, "utf-8"),
+    );
+
+    if (!Array.isArray(rawData)) {
+      throw new Error("ข้อมูล JSON ไม่ใช่ Array");
+    }
+
+    // ✅ แปลงข้อมูลทั้งหมด
+    const data = rawData.map(normalizeMongoExportObject);
+
+    const ids = data.map((doc) => doc._id);
+    const existingDocs = await Pkwork.find({ _id: { $in: ids } }).select("_id");
+    const existingIds = new Set(existingDocs.map((doc) => doc._id.toString()));
+
+    const newDocs = data.filter((doc) => !existingIds.has(doc._id.toString()));
+
+    if (newDocs.length === 0) {
+      console.log("✅ ไม่มีข้อมูลใหม่ที่จะเพิ่ม (ทั้งหมดมีอยู่แล้วในระบบ)");
+    } else {
+      await Pkwork.insertMany(newDocs);
+      console.log(
+        `✅ เพิ่มข้อมูลใหม่เข้า Pkwork แล้วจำนวน ${newDocs.length} รายการ`,
+      );
+    }
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดระหว่าง restore ข้อมูล:", error.message);
+  } finally {
+    if (process.argv.includes("--restorePkworkFromJSON")) {
+      process.exit();
+    }
+  }
+};
+
 //command in terminal
 if (process.argv[2] === "--updateQtyDeliverToOrder") {
   const orderId = "671614eb4b2c4bd6a37f093e";
@@ -514,6 +578,10 @@ if (process.argv[2] === "--checkOrderNumbersInPkwork") {
 
 if (process.argv[2] === "--updateQtyInventory") {
   updateQtyInventory(stock_init);
+}
+
+if (process.argv[2] === "--restorePkworkFromJSON") {
+  restorePkworkFromJSON();
 }
 
 if (process.argv[2] === "--updateServiceRateInventory") {
@@ -559,4 +627,4 @@ if (process.argv[2] === "--updateUnitsFromCSV") {
 
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
-// node dev-data/method-dev-data.js --updateUnitsFromCSV
+// node dev-data/method-dev-data.js --restorePkworkFromJSON

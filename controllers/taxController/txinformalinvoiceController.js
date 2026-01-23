@@ -282,44 +282,26 @@ exports.createInFormalInvoice = catchAsync(async (req, res, next) => {
 
 //สร้างใบกำกับภาษีอย่างย่อรายวันจากการดส่งสินค้า(Facebook RMBKK)
 exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
-  //ดึงข้อมูลที่จะออกใบกำกับมาตรวจสอบ
-  const yesterdayStart = moment()
-    .tz("Asia/Bangkok")
-    .subtract(1, "day")
-    .startOf("day")
-    .toDate();
-  const yesterdayEnd = moment()
-    .tz("Asia/Bangkok")
-    .subtract(1, "day")
-    .endOf("day")
-    .toDate();
-
-  //เอาไว้ run ย้อนหลังดูค่า current year ด้วยนะ
-  // const yesterdayStart = moment
-  //   .tz("2025-12-01", "YYYY-MM-DD", "Asia/Bangkok")
-  //   .startOf("day")
-  //   .toDate();
-  // const yesterdayEnd = moment
-  //   .tz("2025-12-08", "YYYY-MM-DD", "Asia/Bangkok")
-  //   .endOf("day")
-  //   .toDate();
-
-  // ดึงข้อมูล Deliver เฉพาะที่มี deliver_date เมื่อวานและไม่ถูกยกเลิก
+  // ดึงข้อมูล Deliver เฉพาะที่มี field invoice_no เป็น [] และไม่ถูกยกเลิก
   const deliverJobs = await Deliver.find({
-    deliver_date: { $gte: yesterdayStart, $lte: yesterdayEnd },
+    // id: { $regex: /^DN2512/ },
+    invoice_no: { $eq: [] },
     date_canceled: null,
   })
     .sort({ created_at: 1 })
     .exec();
 
   if (!deliverJobs || deliverJobs.length === 0) {
-    return console.log("No deliver jobs found for yesterday.");
+    return console.log("No deliver jobs found for creating informal invoices.");
   }
+
+  //return console.log(`Found ${deliverJobs.length} deliver jobs`);
 
   //กระบวนการกำหนดเลขที่ใบกำกับภาษีอย่างย่อ
   const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
     -2,
   );
+
   const prefix = `IFN${current_year}`;
 
   // ค้นหา doc_no ล่าสุด
@@ -338,31 +320,36 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
 
   const invoicesToCreate = [];
 
-  // ใช้วันที่ของ Deliver ตัวแรกเป็น invoiceDate (ทุกตัวเป็นวันเดียวกัน)
-  const invoiceDate = moment(deliverJobs[0].deliver_date)
-    .tz("Asia/Bangkok")
-    .startOf("day")
-    .toDate();
-
   for (const job of deliverJobs) {
-    const { order_no, deliverlist = [], deliver_cost, id } = job;
+    const { deliver_date, order_no, deliverlist = [], deliver_cost, id } = job;
 
-    // แบ่ง deliverlist เป็นกลุ่มย่อย (chunk) ละไม่เกิน 9 รายการ + 1 รายการสำหรับค่าขนส่ง
-    for (let i = 0; i < deliverlist.length; i += 9) {
-      const chunk = deliverlist.slice(i, i + 9); // ดึงกลุ่มรายการสินค้า
+    // ✅ กรองรายการที่ qty_deliver > 0 เท่านั้น
+    const validDeliverList = deliverlist.filter((item) => item.qty_deliver > 0);
+
+    if (validDeliverList.length === 0) continue;
+
+    const hasTransportCost = deliver_cost && deliver_cost !== 0;
+    let i = 0;
+    let isFirstChunk = true;
+
+    while (i < validDeliverList.length) {
+      // ✅ group แรก = 9 รายการถ้ามีค่าขนส่ง, จากนั้น 10
+      const chunkSize = isFirstChunk && hasTransportCost ? 9 : 10;
+      const chunk = validDeliverList.slice(i, i + chunkSize);
+      i += chunkSize;
 
       lastSeq += 1;
       const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
 
-      const product_details = chunk.map((i) => ({
-        partnumber: i.partnumber || "",
-        part_name: i.description || "",
-        price_per_unit: i.net_price || 0,
-        qty: i.qty_order || 0,
+      const product_details = chunk.map((item) => ({
+        partnumber: item.partnumber || "",
+        part_name: item.description || "",
+        price_per_unit: item.net_price || 0,
+        qty: item.qty_deliver || 0,
       }));
 
-      // ✅ เพิ่มค่าขนส่งเฉพาะใบแรกของแต่ละ job
-      if (i === 0 && deliver_cost && deliver_cost !== 0) {
+      // ✅ ใส่ค่าขนส่งเฉพาะใน chunk แรก
+      if (isFirstChunk && hasTransportCost) {
         product_details.push({
           partnumber: "TRANS-COST",
           part_name: "ค่าขนส่งสินค้า",
@@ -371,7 +358,7 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
         });
       }
 
-      // คำนวณ total_net
+      // ✅ คำนวณ total_net
       const total_net = Number(
         product_details
           .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
@@ -382,10 +369,12 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
         doc_no: newDocNo,
         order_no: order_no || "N/A",
         product_details,
-        invoice_date: invoiceDate,
+        invoice_date: deliver_date,
         total_net,
-        deliver_no: id, // อ้างอิงถึง Deliver ID (DN)
+        deliver_no: id, // อ้างอิงถึง Deliver (DN)
       });
+
+      isFirstChunk = false;
     }
   }
 
@@ -395,6 +384,19 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
   console.log(
     `Created ${invoicesToCreate.length} informal invoices from RMBKK deliver.`,
   );
+
+  //เตรียมเข้าบันทึกเลขที่ใบกำกับภาษีอย่างย่อใน Deliver
+  const bulkOps = invoicesToCreate.map((invoice) => ({
+    updateOne: {
+      filter: { id: invoice.deliver_no },
+      update: { $addToSet: { invoice_no: invoice.doc_no } },
+    },
+  }));
+
+  // บันทึกเลขที่ใบกำกับภาษีอย่างย่อใน Deliver
+  await Deliver.bulkWrite(bulkOps);
+
+  console.log(`Updated invoice_no in ${bulkOps.length} deliver records.`);
 });
 
 //ยกเลิกใบกำกับภาษีอย่างย่อรายวัน

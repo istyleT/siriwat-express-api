@@ -98,18 +98,10 @@ const deliverSchema = new mongoose.Schema({
     ],
     default: [],
   },
-  // confirmed_invoice_date: {
-  //   type: Date,
-  //   default: null,
-  // },
-  // confirmed_invoice_user: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "User",
-  //   default: null,
-  // },
-  informal_invoice_no: {
-    type: String,
-    default: null,
+  //อ้างอิงใบกำกับภาษี
+  invoice_no: {
+    type: [String],
+    default: [],
   },
   cod: {
     type: Boolean,
