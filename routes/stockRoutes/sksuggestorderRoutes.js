@@ -36,7 +36,7 @@ router
     setReceiveUploadRefNo,
     setSkipResNext(true),
     createManySkreceive,
-    suggestToReceiveConfirm
+    suggestToReceiveConfirm,
   );
 router
   .route("/:id")

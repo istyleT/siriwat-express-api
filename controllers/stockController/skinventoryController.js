@@ -5,6 +5,7 @@ const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const { calculateWeightedAverageCost } = require("./helper");
+const { breakdownUnits } = require("../../services/suggestJobService");
 
 //Middleware
 exports.checkForAdjustPart = catchAsync(async (req, res, next) => {
@@ -53,6 +54,53 @@ exports.getSuggestSkinventory = factory.getSuggest(Skinventory);
 exports.createSkinventory = factory.createOne(Skinventory);
 exports.updateSkinventory = factory.updateOne(Skinventory);
 
+//เตรียมข้อมูลสินค้าเพิ่มเข้ารายการ suggest
+exports.getPartForSuggestList = catchAsync(async (req, res, next) => {
+  const partnumber = req.params.partnumber;
+
+  if (!partnumber) {
+    return res.status(400).json({
+      status: "fail",
+      message: "กรุณาระบุรหัสอะไหล่ที่ต้องการ",
+    });
+  }
+
+  const part = await Skinventory.findOne({ part_code: partnumber }).select(
+    "part_code part_name qty avg_cost units",
+  );
+
+  if (!part) {
+    return res.status(404).json({
+      status: "fail",
+      message: `ไม่พบข้อมูลอะไหล่: ${partnumber}`,
+    });
+  }
+
+  //หาข้อมูลค้างรับด้วย
+  const pendingReceives = await Skreceive.aggregate([
+    { $match: { partnumber: partnumber, status: "pending" } },
+    {
+      $group: {
+        _id: null,
+        total_pending_qty: { $sum: { $subtract: ["$qty", "$received_qty"] } },
+      },
+    },
+  ]);
+
+  const pendingQty =
+    pendingReceives.length > 0 ? pendingReceives[0].total_pending_qty : 0;
+  part._doc.back_order_qty = pendingQty;
+
+  //เพิ่มค่า breakdown_units
+  part._doc.breakdown_units = breakdownUnits(0, part.units);
+
+  return res.status(200).json({
+    status: "success",
+    message: "ดึงข้อมูลอะไหล่สำเร็จ",
+    data: part,
+  });
+});
+
 //upload สินค้าเข้าคลังโดยไม่ต้องผ่านการสแกน
 exports.uploadReceivePart = catchAsync(async (req, res, next) => {
   const receive_parts = req.body;
@@ -86,7 +134,7 @@ exports.uploadReceivePart = catchAsync(async (req, res, next) => {
   // หาค่า part_code ที่ไม่มีอยู่ใน inventory
   const foundPartCodes = inventoryParts.map((i) => i.part_code);
   const missingPartCodes = uniquePartCodes.filter(
-    (code) => !foundPartCodes.includes(code)
+    (code) => !foundPartCodes.includes(code),
   );
 
   if (missingPartCodes.length > 0) {
@@ -114,7 +162,7 @@ exports.uploadReceivePart = catchAsync(async (req, res, next) => {
       const updatedInventory = await Skinventory.findOneAndUpdate(
         { part_code: partnumber },
         { $inc: { qty: qty, mock_qty: qty } }, // รับเข้า → qty และ mock_qty บวกเพิ่ม
-        { new: true } // ✅ คืนค่าหลังอัพเดททันที
+        { new: true }, // ✅ คืนค่าหลังอัพเดททันที
       );
 
       if (!updatedInventory) continue;
@@ -184,7 +232,7 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
   // หาค่า part_code ที่ไม่มีอยู่ใน inventory
   const foundPartCodes = inventoryParts.map((i) => i.part_code);
   const missingPartCodes = uniquePartCodes.filter(
-    (code) => !foundPartCodes.includes(code)
+    (code) => !foundPartCodes.includes(code),
   );
 
   if (missingPartCodes.length > 0) {
@@ -212,7 +260,7 @@ exports.uploadMoveOutPart = catchAsync(async (req, res, next) => {
       const updatedInventory = await Skinventory.findOneAndUpdate(
         { part_code: partnumber },
         { $inc: { qty: -qty, mock_qty: -qty } },
-        { new: true }
+        { new: true },
       );
 
       if (!updatedInventory) continue;
@@ -455,7 +503,7 @@ exports.fromWorkUploadMoveOutPart = catchAsync(async (req, res, next) => {
     });
 
     const duplicateKeys = new Set(
-      alreadyMovedOut.map((item) => `${item.partnumber}::${item.document_ref}`)
+      alreadyMovedOut.map((item) => `${item.partnumber}::${item.document_ref}`),
     );
 
     //ไล่ลบรายการที่ซ้ำออกจาก mergedMap
@@ -486,7 +534,7 @@ exports.fromWorkUploadMoveOutPart = catchAsync(async (req, res, next) => {
       const updatedInventory = await Skinventory.findOneAndUpdate(
         { part_code: partnumber },
         { $inc: { qty: -qty } },
-        { new: true } // ✅ ได้ค่าใหม่หลัง update ทันที
+        { new: true }, // ✅ ได้ค่าใหม่หลัง update ทันที
       );
 
       if (!updatedInventory) continue;
@@ -577,7 +625,7 @@ exports.fromWorkCancelDoneMoveInPart = catchAsync(async (req, res, next) => {
   });
 
   const duplicateKeys = new Set(
-    alreadyMovedIn.map((item) => `${item.partnumber}::${item.document_ref}`)
+    alreadyMovedIn.map((item) => `${item.partnumber}::${item.document_ref}`),
   );
 
   for (const key of duplicateKeys) {
@@ -612,7 +660,7 @@ exports.fromWorkCancelDoneMoveInPart = catchAsync(async (req, res, next) => {
       const updatedInventory = await Skinventory.findOneAndUpdate(
         { part_code: partnumber },
         { $inc: { qty: qty } }, // ✅ เพิ่มทีละ qty แบบ atomic
-        { new: true } // ✅ ได้ document หลังอัพเดทมาเลย
+        { new: true }, // ✅ ได้ document หลังอัพเดทมาเลย
       );
 
       if (!updatedInventory) continue;
@@ -670,7 +718,7 @@ exports.getInventoriesWithZeroFilter = catchAsync(async (req, res) => {
   }
 
   const inventories = await Skinventory.find(filter).select(
-    "part_code part_name qty avg_cost"
+    "part_code part_name qty avg_cost",
   );
 
   res.status(200).json({

@@ -13,6 +13,7 @@ const {
   fromWorkUploadMoveOutPart,
   fromWorkCancelDoneMoveInPart,
   getInventoriesWithZeroFilter,
+  getPartForSuggestList,
 } = require("../../controllers/stockController/skinventoryController");
 const {
   setAdjustDocNo,
@@ -39,6 +40,7 @@ router.route("/confirm-receive/:partnum").patch(confirmReceivePart);
 router.route("/suggest").get(getSuggestSkinventory);
 router.route("/balance").get(getInventoriesWithZeroFilter);
 router.route("/cancel/:id").patch(cancelData, updateSkinventory);
+router.route("/suggest-item/:partnumber").get(getPartForSuggestList);
 router
   .route("/:id")
   .get(getSkinventory)
@@ -46,7 +48,7 @@ router
     checkForAdjustPart,
     updateSkinventory,
     setAdjustDocNo,
-    createSkinventorymovementAdjust
+    createSkinventorymovementAdjust,
   );
 
 module.exports = router;
