@@ -12,6 +12,7 @@ const {
   updateManyPrintCount,
   approvedEdit,
   removeRefOnAnotherModel,
+  validateCreditnoteQuantity,
 } = require("../../controllers/taxController/txcreditnoteController");
 const {
   cancelData,
@@ -28,6 +29,7 @@ router
   .route("/")
   .get(getAllTxcreditnote)
   .post(
+    validateCreditnoteQuantity,
     setDocnoForTxcreditnote,
     setSkipResNext(true),
     createTxcreditnote,

@@ -70,7 +70,11 @@ exports.checkBeforeCancel = catchAsync(async (req, res, next) => {
     });
   }
 
-  if (formalInvoice.credit_note_ref) {
+  if (
+    formalInvoice.credit_note_ref &&
+    Array.isArray(formalInvoice.credit_note_ref) &&
+    formalInvoice.credit_note_ref.length > 0
+  ) {
     return res.status(400).json({
       status: "fail",
       message: "ไม่สามารถยกเลิกได้ ออกใบลดหนี้แล้ว",

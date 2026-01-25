@@ -160,11 +160,14 @@ exports.updateFormalInvoiceRef = catchAsync(async (req, res, next) => {
   }
 
   // ตรวจสอบว่ามีการอ้างอิง credit_note_ref หรือไม่ ถ้ามีให้ทำการอัพเดท invoice_no ใน credit note ด้วย
-  if (updatedInformalInvoice.credit_note_ref) {
-    await Txcreditnote.findByIdAndUpdate(
-      updatedInformalInvoice.credit_note_ref,
+  if (
+    updatedInformalInvoice.credit_note_ref &&
+    Array.isArray(updatedInformalInvoice.credit_note_ref) &&
+    updatedInformalInvoice.credit_note_ref.length > 0
+  ) {
+    await Txcreditnote.updateMany(
+      { _id: { $in: updatedInformalInvoice.credit_note_ref } },
       { invoice_no: formalInvoice.doc_no },
-      { new: true },
     );
   }
 

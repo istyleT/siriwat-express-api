@@ -84,9 +84,9 @@ const txformalinvoiceSchema = new mongoose.Schema(
       default: null,
     },
     credit_note_ref: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: [mongoose.Schema.Types.ObjectId],
       ref: "Txcreditnote",
-      default: null,
+      default: [],
     },
     //บันทึกแก้ไข
     history_edit: {

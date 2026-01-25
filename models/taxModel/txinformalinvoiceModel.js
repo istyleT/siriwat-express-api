@@ -72,9 +72,9 @@ const txinformalinvoiceSchema = new mongoose.Schema(
       default: null,
     },
     credit_note_ref: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: [mongoose.Schema.Types.ObjectId],
       ref: "Txcreditnote",
-      default: null,
+      default: [],
     },
     //ส่วนที่ทำการแก้ไข
     user_updated: {

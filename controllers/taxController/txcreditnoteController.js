@@ -12,6 +12,141 @@ const moment = require("moment-timezone");
 moment.tz.setDefault("Asia/Bangkok");
 
 //Middleware
+// ตรวจสอบว่าจำนวนใบลดหนี้ไม่เกินจำนวนใบกำกับ
+exports.validateCreditnoteQuantity = catchAsync(async (req, res, next) => {
+  const { invoice_no, creditnote_items } = req.body;
+
+  // ตรวจสอบว่ามี invoice_no และ creditnote_items หรือไม่
+  if (!invoice_no) {
+    return next(new AppError("กรุณาระบุเลขที่ใบกำกับภาษี", 400));
+  }
+
+  if (!creditnote_items || !Array.isArray(creditnote_items) || creditnote_items.length === 0) {
+    return next(new AppError("กรุณาระบุรายการสินค้าที่ต้องการลดหนี้", 400));
+  }
+
+  // ตรวจสอบ prefix ของ invoice_no
+  const prefix = invoice_no.slice(0, 3);
+  let invoice = null;
+
+  // หาข้อมูลใบกำกับตาม prefix
+  if (prefix === "INV") {
+    invoice = await Txformalinvoice.findOne({ doc_no: invoice_no }).lean();
+  } else if (prefix === "IFN") {
+    invoice = await Txinformalinvoice.findOne({ doc_no: invoice_no }).lean();
+  } else {
+    return next(
+      new AppError(
+        "รูปแบบเลขที่เอกสารไม่ถูกต้อง (ต้องขึ้นต้นด้วย INV หรือ IFN)",
+        400
+      )
+    );
+  }
+
+  // ตรวจสอบว่าพบใบกำกับหรือไม่
+  if (!invoice) {
+    return next(new AppError("ไม่พบใบกำกับภาษีที่ระบุ", 404));
+  }
+
+  // ตรวจสอบว่าใบกำกับถูกยกเลิกหรือไม่
+  if (invoice.canceledAt) {
+    return next(new AppError("ไม่สามารถออกใบลดหนี้ได้ เนื่องจากใบกำกับถูกยกเลิกแล้ว", 400));
+  }
+
+  // หาใบลดหนี้ทั้งหมดที่อ้างอิงถึงใบกำกับนี้ (ไม่รวมที่ถูกยกเลิก)
+  const existingCreditnotes = await Txcreditnote.find({
+    invoice_no: invoice_no,
+    canceledAt: null,
+  }).lean();
+
+  // สร้าง Map เพื่อเก็บจำนวนที่ลดหนี้ไปแล้วของแต่ละ partnumber
+  const creditedQtyMap = new Map();
+
+  // รวมจำนวน qty ของแต่ละ partnumber จากใบลดหนี้ที่มีอยู่
+  existingCreditnotes.forEach((creditnote) => {
+    if (creditnote.creditnote_items && Array.isArray(creditnote.creditnote_items)) {
+      creditnote.creditnote_items.forEach((item) => {
+        if (item.partnumber && item.qty) {
+          const currentQty = creditedQtyMap.get(item.partnumber) || 0;
+          creditedQtyMap.set(item.partnumber, currentQty + item.qty);
+        }
+      });
+    }
+  });
+
+  // สร้าง Map เพื่อเก็บจำนวนที่ต้องการลดหนี้เพิ่มจากใบใหม่
+  const newCreditnoteQtyMap = new Map();
+  creditnote_items.forEach((item) => {
+    if (item.partnumber && item.qty) {
+      const currentQty = newCreditnoteQtyMap.get(item.partnumber) || 0;
+      newCreditnoteQtyMap.set(item.partnumber, currentQty + item.qty);
+    }
+  });
+
+  // สร้าง Map เพื่อเก็บจำนวนที่มีในใบกำกับ
+  const invoiceQtyMap = new Map();
+  if (invoice.product_details && Array.isArray(invoice.product_details)) {
+    invoice.product_details.forEach((item) => {
+      if (item.partnumber && item.qty) {
+        invoiceQtyMap.set(item.partnumber, item.qty);
+      }
+    });
+  }
+
+  // ตรวจสอบว่ามี partnumber ใดที่เกินจำนวนในใบกำกับหรือไม่
+  const exceededItems = [];
+  
+  newCreditnoteQtyMap.forEach((newQty, partnumber) => {
+    const invoiceQty = invoiceQtyMap.get(partnumber) || 0;
+    const alreadyCreditedQty = creditedQtyMap.get(partnumber) || 0;
+    const totalCreditQty = alreadyCreditedQty + newQty;
+
+    if (totalCreditQty > invoiceQty) {
+      exceededItems.push({
+        partnumber: partnumber,
+        exceeded_by: totalCreditQty - invoiceQty,
+      });
+    }
+  });
+
+  // ถ้ามี partnumber ที่เกิน ให้ return error
+  if (exceededItems.length > 0) {
+    const errorMessage = exceededItems
+      .map(
+        (item) =>
+          `${item.partnumber} ลดหนี้เกินไป ${item.exceeded_by}`
+      )
+      .join("; ");
+
+    return next(
+      new AppError(
+        `ลดหนี้เกินใบกำกับ: ${errorMessage}`,
+        400
+      )
+    );
+  }
+
+  // ตรวจสอบว่ามี partnumber ที่ไม่อยู่ในใบกำกับหรือไม่
+  const invalidItems = [];
+  newCreditnoteQtyMap.forEach((newQty, partnumber) => {
+    if (!invoiceQtyMap.has(partnumber)) {
+      invalidItems.push(partnumber);
+    }
+  });
+
+  if (invalidItems.length > 0) {
+    return next(
+      new AppError(
+        `ไม่พบสินค้าในใบกำกับ: ${invalidItems.join(", ")}`,
+        400
+      )
+    );
+  }
+
+  // ผ่านการตรวจสอบ
+  next();
+});
+
 exports.setDocnoForTxcreditnote = catchAsync(async (req, res, next) => {
   const current_year = String(moment().tz("Asia/Bangkok").year() + 543).slice(
     -2,
@@ -65,13 +200,13 @@ exports.updateCreditnoteRef = catchAsync(async (req, res, next) => {
   if (prefix === "INV") {
     updatedInvoice = await Txformalinvoice.findByIdAndUpdate(
       invoice_id,
-      { credit_note_ref: creditNote._id },
+      { $addToSet: { credit_note_ref: creditNote._id } },
       { new: true, runValidators: true },
     );
   } else if (prefix === "IFN") {
     updatedInvoice = await Txinformalinvoice.findByIdAndUpdate(
       invoice_id,
-      { credit_note_ref: creditNote._id },
+      { $addToSet: { credit_note_ref: creditNote._id } },
       { new: true, runValidators: true },
     );
   } else {
@@ -199,13 +334,13 @@ exports.removeRefOnAnotherModel = catchAsync(async (req, res, next) => {
   if (prefix === "IFN") {
     invoice = await Txinformalinvoice.findOneAndUpdate(
       { credit_note_ref: _id },
-      { credit_note_ref: null },
+      { $pull: { credit_note_ref: _id } },
       { new: true },
     );
   } else if (prefix === "INV") {
     invoice = await Txformalinvoice.findOneAndUpdate(
       { credit_note_ref: _id },
-      { credit_note_ref: null },
+      { $pull: { credit_note_ref: _id } },
       { new: true },
     );
   } else {
@@ -317,7 +452,7 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
     // อัปเดต Txinformalinvoice
     await Txinformalinvoice.updateOne(
       { doc_no: invoice_no },
-      { $set: { credit_note_ref: _id } },
+      { $addToSet: { credit_note_ref: _id } },
     );
 
     // อัปเดต Pkreturnwork
@@ -415,7 +550,7 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
     // อัปเดต Txinformalinvoice
     await Txinformalinvoice.updateOne(
       { doc_no: invoice_no },
-      { $set: { credit_note_ref: _id } },
+      { $addToSet: { credit_note_ref: _id } },
     );
 
     // อัปเดต Return
