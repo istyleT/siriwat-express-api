@@ -1,4 +1,5 @@
 const Txinformalinvoice = require("../../models/taxModel/txinformalinvoiceModel");
+const Txformalinvoice = require("../../models/taxModel/txformalinvoiceModel");
 const Txcreditnote = require("../../models/taxModel/txcreditnoteModel");
 const AppError = require("../../utils/appError");
 const Pkwork = require("../../models/packingModel/pkworkModel");
@@ -159,16 +160,26 @@ exports.updateFormalInvoiceRef = catchAsync(async (req, res, next) => {
     return next(new AppError("ไม่พบใบกำกับภาษีอย่างย่อที่ต้องการอัพเดท", 404));
   }
 
-  // ตรวจสอบว่ามีการอ้างอิง credit_note_ref หรือไม่ ถ้ามีให้ทำการอัพเดท invoice_no ใน credit note ด้วย
+  //แก้ไข credit note ที่อ้างอิงถึงใบกำกับภาษีอย่างย่อให้เป็น doc_no ของใบกำกับภาษีอย่างเต็ม
+  //ย้าย credit_note_ref ไปที่ใบกำกับแบบเต็ม แล้วเคลียร์ของใบกำกับอย่างย่อ
   if (
     updatedInformalInvoice.credit_note_ref &&
     Array.isArray(updatedInformalInvoice.credit_note_ref) &&
     updatedInformalInvoice.credit_note_ref.length > 0
   ) {
-    await Txcreditnote.updateMany(
-      { _id: { $in: updatedInformalInvoice.credit_note_ref } },
-      { invoice_no: formalInvoice.doc_no },
-    );
+    const cnIds = updatedInformalInvoice.credit_note_ref;
+    await Promise.all([
+      Txcreditnote.updateMany(
+        { _id: { $in: cnIds } },
+        { invoice_no: formalInvoice.doc_no },
+      ),
+      Txformalinvoice.findByIdAndUpdate(formalInvoice._id, {
+        $addToSet: { credit_note_ref: { $each: cnIds } },
+      }),
+      Txinformalinvoice.findByIdAndUpdate(informal_invoice_id, {
+        credit_note_ref: [],
+      }),
+    ]);
   }
 
   res.status(200).json({

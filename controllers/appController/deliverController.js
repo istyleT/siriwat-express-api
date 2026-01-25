@@ -188,3 +188,38 @@ exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
     data: filteredDelivers,
   });
 });
+
+exports.getDeliverInvoices = catchAsync(async (req, res, next) => {
+  const deliverId = req.params.id;
+
+  // หา deliver ที่มี id ตรงกัน
+  const deliver = await Deliver.findOne({ id: deliverId, date_canceled: null });
+
+  if (!deliver) {
+    return res.status(404).json({
+      status: "fail",
+      message: "ไม่พบข้อมูลการจัดส่งหรือถูกยกเลิก",
+    });
+  }
+
+  // ตรวจสอบว่า invoice_no เป็น Array เปล่าหรือไม่
+  if (!deliver.invoice_no || deliver.invoice_no.length === 0) {
+    return res.status(200).json({
+      status: "success",
+      message: "การจัดส่งนี้ยังไม่มีใบกำกับภาษีอ้างอิง",
+      data: [],
+    });
+  }
+
+  // หาใบกำกับภาษีที่ doc_no ตรงกับค่าใน invoice_no Array
+  const invoices = await Txinformalinvoice.find({
+    doc_no: { $in: deliver.invoice_no },
+    canceledAt: null,
+  });
+
+  res.status(200).json({
+    status: "success",
+    results: invoices.length,
+    data: invoices,
+  });
+});

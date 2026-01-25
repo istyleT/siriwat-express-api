@@ -17,6 +17,10 @@ const txcreditnoteSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    return_no: {
+      type: String,
+      default: null,
+    },
     invoice_no: {
       type: String,
       required: [true, "กรุณาระบุเลขที่ใบกำกับภาษี"],

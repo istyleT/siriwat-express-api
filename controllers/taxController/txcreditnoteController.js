@@ -531,6 +531,7 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
 
     creditNotesToCreate.push({
       doc_no: newDocNo,
+      return_no: job.id || "N/A",
       order_no: order_no || "N/A",
       deliver_no: deliver_no || "N/A",
       invoice_no: invoice_no || "N/A",
@@ -545,7 +546,7 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
 
   // อัปเดต Txinformalinvoice และ Return
   const updatePromises = createdCreditNotes.map(async (creditnote) => {
-    const { invoice_no, _id, doc_no } = creditnote;
+    const { invoice_no, _id, doc_no, return_no } = creditnote;
 
     // อัปเดต Txinformalinvoice
     await Txinformalinvoice.updateOne(
@@ -555,7 +556,7 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
 
     // อัปเดต Return
     await Return.updateOne(
-      { invoice_no },
+      { id: return_no },
       {
         $set: {
           credit_note_no: doc_no,

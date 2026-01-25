@@ -10,6 +10,7 @@ const {
   pushTrackingNumber,
   getDailyDeliverMove,
   checkBeforeCancelDeliver,
+  getDeliverInvoices,
 } = require("../../controllers/appController/deliverController");
 const {
   cancelIFNAfterCancelDeliver,
@@ -38,6 +39,7 @@ router
     cancelIFNAfterCancelDeliver
   );
 router.route("/addtrackingno/:id").patch(pushTrackingNumber);
+router.route("/invoices/:id").get(getDeliverInvoices);
 router.route("/").get(getAllDeliver).post(setDeliverNo, createDeliver);
 router.route("/suggest").get(getSuggestDeliver);
 router.route("/dailyreport").get(getDailyDeliverMove);
