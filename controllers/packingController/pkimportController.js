@@ -693,7 +693,6 @@ exports.setToCreateWork = catchAsync(async (req, res, next) => {
 });
 
 exports.setToCreateReturnWork = catchAsync(async (req, res, next) => {
-  // console.log("This is setToCreateReturnWork");
   const { shop } = req.body;
   const cleanedUniqueOrders = req.cleanedReturnOrders;
 

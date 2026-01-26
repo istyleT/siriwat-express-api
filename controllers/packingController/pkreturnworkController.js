@@ -94,8 +94,8 @@ exports.createPkreturnwork = catchAsync(async (req, res, next) => {
     },
   ).lean();
 
-  // ✅ ดึงข้อมูลจาก Txinformalinvoice
-  const invoice = await Txinformalinvoice.findOne(
+  // ✅ ดึงข้อมูลจาก Txinformalinvoice ทั้งหมดของ order_no นี้
+  const invoices = await Txinformalinvoice.find(
     {
       order_no,
       canceledAt: null,
@@ -107,28 +107,14 @@ exports.createPkreturnwork = catchAsync(async (req, res, next) => {
     },
   ).lean();
 
-  if (!invoice) {
+  if (!invoices || invoices.length === 0) {
     return res.status(404).json({
       status: "fail",
       message: "ไม่พบข้อมูลใบกำกับภาษีของ order_no นี้",
     });
   }
 
-  const productDetails = invoice.product_details || [];
-
-  let parts_data = [];
-  let product_details = null;
-
-  if (
-    productDetails.length > 1 ||
-    (productDetails.length === 1 && productDetails[0].qty > 1)
-  ) {
-    product_details = productDetails;
-  } else if (productDetails.length === 1 && productDetails[0].qty === 1) {
-    parts_data = productDetails;
-  }
-
-  // ✅ สร้าง upload_ref_no เพื่อใช้ในการอ้างอิง
+  // ✅ สร้าง upload_ref_no เพื่อใช้ในการอ้างอิง (ใช้ร่วมกันสำหรับทุก invoice)
   const today = moment().format("YYMMDD");
   const shopPrefix = `RE-${shop.charAt(0).toUpperCase()}${shop
     .charAt(shop.length - 1)
@@ -147,24 +133,44 @@ exports.createPkreturnwork = catchAsync(async (req, res, next) => {
 
   const uploadRefNo = `${refPrefix}${String(nextSeq).padStart(2, "0")}`;
 
-  // ✅ บันทึกข้อมูลลงใน Pkreturnwork
-  const createdDoc = await Pkreturnwork.create({
-    upload_ref_no: uploadRefNo,
-    req_date: req_date,
-    tracking_code: workInfo.tracking_code,
-    order_date: order_date,
-    order_no,
-    invoice_no: invoice.formal_invoice_ref?.doc_no || invoice.doc_no,
-    shop,
-    parts_data,
-    product_details,
-  });
+  // ✅ สร้าง Pkreturnwork สำหรับแต่ละ invoice
+  const createdDocs = [];
+  for (const invoice of invoices) {
+    const productDetails = invoice.product_details || [];
+
+    let parts_data = [];
+    let product_details = null;
+
+    if (
+      productDetails.length > 1 ||
+      (productDetails.length === 1 && productDetails[0].qty > 1)
+    ) {
+      product_details = productDetails;
+    } else if (productDetails.length === 1 && productDetails[0].qty === 1) {
+      parts_data = productDetails;
+    }
+
+    // ✅ บันทึกข้อมูลลงใน Pkreturnwork
+    const createdDoc = await Pkreturnwork.create({
+      upload_ref_no: uploadRefNo,
+      req_date: req_date,
+      tracking_code: workInfo.tracking_code,
+      order_date: order_date,
+      order_no,
+      invoice_no: invoice.formal_invoice_ref?.doc_no || invoice.doc_no,
+      shop,
+      parts_data,
+      product_details,
+    });
+
+    createdDocs.push(createdDoc);
+  }
 
   res.status(201).json({
     status: "success",
-    message: "สร้าง Return Work สำเร็จ",
+    message: `สร้าง Return Work สำเร็จ (${createdDocs.length} รายการ)`,
     data: {
-      data: createdDoc,
+      data: createdDocs,
     },
   });
 });

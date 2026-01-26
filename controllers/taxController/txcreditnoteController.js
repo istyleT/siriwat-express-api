@@ -365,29 +365,16 @@ exports.removeRefOnAnotherModel = catchAsync(async (req, res, next) => {
 
 //ส่วน function ที่ทำงานกับ cron job
 exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
-  //หาเอกสาร Pkreturnwork ที่มี status เป็น เสร็จสิ้น successAt เป็นของวันที่เมื่อวาน และ ยังไม่มีการสร้าง credit_note_no เป็นค่า null
-  const yesterdayStart = moment()
-    .tz("Asia/Bangkok")
-    .subtract(1, "days")
-    .startOf("day")
-    .toDate();
-  const yesterdayEnd = moment()
-    .tz("Asia/Bangkok")
-    .subtract(1, "days")
-    .endOf("day")
-    .toDate();
-
   //ค้นหาเอกสารที่ตรงตามเงื่อนไขเตรียมออกใบลดหนี้
   const pkReturnWorks = await Pkreturnwork.find({
     status: "เสร็จสิ้น",
-    successAt: { $gte: yesterdayStart, $lte: yesterdayEnd },
     credit_note_no: null,
   })
     .sort({ createdAt: 1 })
     .exec();
 
   if (!pkReturnWorks || pkReturnWorks.length === 0) {
-    return console.log("No pkreturn works found for yesterday.");
+    return console.log("No pkreturn work found.");
   }
 
   //กำหนดเลขที่เอกสารเริ่มต้น
@@ -445,15 +432,28 @@ exports.createAutoTxcreditnote = catchAsync(async (req, res, next) => {
   // สร้าง credit notes ทั้งหมด
   const createdCreditNotes = await Txcreditnote.insertMany(creditNotesToCreate);
 
-  // อัปเดต Txinformalinvoice และ Pkreturnwork
+  // อัปเดต Txinformalinvoice/Txformalinvoice และ Pkreturnwork
   const updatePromises = createdCreditNotes.map(async (creditnote) => {
     const { invoice_no, _id, doc_no } = creditnote;
 
-    // อัปเดต Txinformalinvoice
-    await Txinformalinvoice.updateOne(
-      { doc_no: invoice_no },
-      { $addToSet: { credit_note_ref: _id } },
-    );
+    // ค้นหา Txinformalinvoice เพื่อตรวจสอบ formal_invoice_ref
+    const informalInvoice = await Txinformalinvoice.findOne({
+      doc_no: invoice_no,
+    }).lean();
+
+    if (informalInvoice && informalInvoice.formal_invoice_ref) {
+      // ถ้ามี formal_invoice_ref แสดงว่ามีใบกำกับภาษีแบบเต็มแล้ว -> อัปเดต Txformalinvoice
+      await Txformalinvoice.updateOne(
+        { _id: informalInvoice.formal_invoice_ref },
+        { $addToSet: { credit_note_ref: _id } },
+      );
+    } else {
+      // ถ้าไม่มี formal_invoice_ref -> อัปเดต Txinformalinvoice ตามเดิม
+      await Txinformalinvoice.updateOne(
+        { doc_no: invoice_no },
+        { $addToSet: { credit_note_ref: _id } },
+      );
+    }
 
     // อัปเดต Pkreturnwork
     await Pkreturnwork.updateOne(
@@ -544,15 +544,28 @@ exports.createAutoTxcreditnoteRMBKK = catchAsync(async (req, res, next) => {
   // สร้าง credit notes ทั้งหมด
   const createdCreditNotes = await Txcreditnote.insertMany(creditNotesToCreate);
 
-  // อัปเดต Txinformalinvoice และ Return
+  // อัปเดต Txinformalinvoice/Txformalinvoice และ Return
   const updatePromises = createdCreditNotes.map(async (creditnote) => {
     const { invoice_no, _id, doc_no, return_no } = creditnote;
 
-    // อัปเดต Txinformalinvoice
-    await Txinformalinvoice.updateOne(
-      { doc_no: invoice_no },
-      { $addToSet: { credit_note_ref: _id } },
-    );
+    // ค้นหา Txinformalinvoice เพื่อตรวจสอบ formal_invoice_ref
+    const informalInvoice = await Txinformalinvoice.findOne({
+      doc_no: invoice_no,
+    }).lean();
+
+    if (informalInvoice && informalInvoice.formal_invoice_ref) {
+      // ถ้ามี formal_invoice_ref แสดงว่ามีใบกำกับภาษีแบบเต็มแล้ว -> อัปเดต Txformalinvoice
+      await Txformalinvoice.updateOne(
+        { _id: informalInvoice.formal_invoice_ref },
+        { $addToSet: { credit_note_ref: _id } },
+      );
+    } else {
+      // ถ้าไม่มี formal_invoice_ref -> อัปเดต Txinformalinvoice ตามเดิม
+      await Txinformalinvoice.updateOne(
+        { doc_no: invoice_no },
+        { $addToSet: { credit_note_ref: _id } },
+      );
+    }
 
     // อัปเดต Return
     await Return.updateOne(
