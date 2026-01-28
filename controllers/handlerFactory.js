@@ -235,7 +235,7 @@ exports.getSuggest = (Model) =>
       const field = req.query.search_field;
       const value = req.query.search_text;
       const fields = req.query.fields;
-      const limit = parseInt(req.query.limit) || 30;
+      const limit = parseInt(req.query.limit) || 100;
       const page = parseInt(req.query.page) || 1;
       const sort = req.query.sort || "-_id";
 

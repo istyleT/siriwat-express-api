@@ -8,13 +8,14 @@ const factory = require("../handlerFactory");
 //สำหรับการ Sugesst partnumber
 exports.getPartsSugesst = catchAsync(async (req, res, next) => {
   const partnum = req.params.partnum;
+  const limit = parseInt(req.query.limit, 10) || 30;
   const regex = new RegExp(partnum, "i"); // 'i' สำหรับ case-insensitive
-  const partlists = await Pricelist.find({ partnumber: { $regex: regex } });
+  const partlists = await Pricelist.find({ partnumber: { $regex: regex } })
+    .limit(limit)
+    .select("-__v");
 
-  // เพิ่มการส่งกลับ response
   res.status(200).json({
     status: "success",
-    // results: partlists.length,
     data: partlists,
   });
 });

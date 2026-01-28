@@ -7,6 +7,7 @@ const RMorder = require("../models/appModel/orderModel");
 const Pkwork = require("../models/packingModel/pkworkModel");
 const RMdeliver = require("../models/appModel/deliverModel");
 const Skinventory = require("../models/stockModel/skinventoryModel");
+const Quotation = require("../models/appModel/quotationModel");
 const Pricelist = require("../models/appModel/pricelistModel");
 const User = require("../models/userModel");
 
@@ -625,6 +626,78 @@ if (process.argv[2] === "--updateUnitsFromCSV") {
   updateUnitsFromCSV();
 }
 
+/**
+ * ย้ายสมาชิก anothercost ตัวแรกไปใส่ใน partslist ของเอกสาร Quotation
+ * เงื่อนไข: เอกสารต้องมี anothercost.0 อยู่
+ * โครงสร้างรายการใหม่ใน partslist:
+ *   - id = id จาก anothercost
+ *   - qty = 1
+ *   - partnumber = "001-DELIVER"
+ *   - description = "ค่าขนส่ง"
+ *   - discount_percent = 0
+ *   - priceperunit = price จาก anothercost
+ *   - net_price = price จาก anothercost
+ * หลังย้าย จะลบ anothercost ตัวแรกออกจาก anothercost
+ */
+const moveFirstAnothercostToPartslist = async () => {
+  try {
+    const docs = await Quotation.find({
+      "anothercost.0": { $exists: true },
+    });
+
+    console.log(
+      `พบเอกสาร Quotation ที่มี anothercost.0 จำนวน ${docs.length} รายการ`,
+    );
+
+    for (const doc of docs) {
+      const first = doc.anothercost[0];
+      if (!first) {
+        console.warn(`⚠️ ข้ามเอกสาร ${doc.id || doc._id}: anothercost[0] ไม่พบ`);
+        continue;
+      }
+      if (first.price == null || isNaN(Number(first.price))) {
+        console.warn(
+          `⚠️ ข้ามเอกสาร ${doc.id || doc._id}: anothercost[0].price ไม่สมบูรณ์`,
+        );
+        continue;
+      }
+
+      const price = Number(first.price);
+      const newPart = {
+        id: first.id != null ? String(first.id) : new mongoose.Types.ObjectId().toString(),
+        qty: 1,
+        partnumber: "001-DELIVER",
+        description: "ค่าขนส่ง",
+        discount_percent: 0,
+        priceperunit: price,
+        net_price: price,
+      };
+
+      if (!Array.isArray(doc.partslist)) doc.partslist = [];
+      doc.partslist.push(newPart);
+      doc.anothercost = doc.anothercost.slice(1);
+      await doc.save();
+
+      console.log(
+        `✅ อัปเดตเอกสาร ${doc.id} (${doc._id}): ย้าย anothercost[0] เข้า partslist แล้ว`,
+      );
+    }
+
+    console.log("🎉 เสร็จสิ้นการย้าย anothercost ตัวแรกเข้า partslist");
+  } catch (error) {
+    console.error("❌ Error moveFirstAnothercostToPartslist:", error);
+  } finally {
+    if (process.argv.includes("--moveFirstAnothercostToPartslist")) {
+      process.exit();
+    }
+  }
+};
+
+if (process.argv[2] === "--moveFirstAnothercostToPartslist") {
+  moveFirstAnothercostToPartslist();
+}
+
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
 // node dev-data/method-dev-data.js --restorePkworkFromJSON
+// node dev-data/method-dev-data.js --moveFirstAnothercostToPartslist

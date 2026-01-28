@@ -335,7 +335,8 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
   const invoicesToCreate = [];
 
   for (const job of deliverJobs) {
-    const { deliver_date, order_no, deliverlist = [], deliver_cost, id } = job;
+    //(ผิด)ค่าส่งที่เกิดขึ้นจริง จริงๆต้องไปเอาจากรายการ anothercost จาก order_no นั้น
+    const { deliver_date, order_no, deliverlist = [], deliver_cost,id } = job;
 
     // ✅ กรองรายการที่ qty_deliver > 0 เท่านั้น
     const validDeliverList = deliverlist.filter((item) => item.qty_deliver > 0);
