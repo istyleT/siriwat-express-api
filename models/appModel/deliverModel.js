@@ -164,6 +164,11 @@ const populateFields = [
 ];
 
 deliverSchema.pre(/^find/, async function (next) {
+  // ตรวจสอบว่า query มี option ที่ชื่อว่า noPopulate หรือไม่
+  if (this.getOptions().noPopulate) {
+    return next();
+  }
+
   for (const field of populateFields) {
     this.populate({ ...field, options: { lean: true } });
   }

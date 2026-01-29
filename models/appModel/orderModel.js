@@ -244,6 +244,11 @@ orderSchema.index({ custname: 1 });
 
 // populate path
 orderSchema.pre(/^find/, function (next) {
+  // ตรวจสอบว่า query มี option ที่ชื่อว่า noPopulate หรือไม่
+  if (this.getOptions().noPopulate) {
+    return next();
+  }
+
   this.populate({
     path: "user_created",
     select: "firstname",

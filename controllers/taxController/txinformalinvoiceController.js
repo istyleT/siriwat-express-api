@@ -335,21 +335,18 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
   const invoicesToCreate = [];
 
   for (const job of deliverJobs) {
-    //(ผิด)ค่าส่งที่เกิดขึ้นจริง จริงๆต้องไปเอาจากรายการ anothercost จาก order_no นั้น
-    const { deliver_date, order_no, deliverlist = [], deliver_cost,id } = job;
+    const { deliver_date, order_no, deliverlist = [], id } = job;
 
-    // ✅ กรองรายการที่ qty_deliver > 0 เท่านั้น
+    // ✅ กรองรายการที่ qty_deliver > 0 เท่านั้น (ค่าขนส่งจัดการเป็นสินค้าชิ้นหนึ่งใน deliverlist แล้ว)
     const validDeliverList = deliverlist.filter((item) => item.qty_deliver > 0);
 
     if (validDeliverList.length === 0) continue;
 
-    const hasTransportCost = deliver_cost && deliver_cost !== 0;
     let i = 0;
-    let isFirstChunk = true;
 
     while (i < validDeliverList.length) {
-      // ✅ group แรก = 9 รายการถ้ามีค่าขนส่ง, จากนั้น 10
-      const chunkSize = isFirstChunk && hasTransportCost ? 9 : 10;
+      // ✅ แบ่ง chunk ละ 10 รายการทุกใบ
+      const chunkSize = 10;
       const chunk = validDeliverList.slice(i, i + chunkSize);
       i += chunkSize;
 
@@ -362,16 +359,6 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
         price_per_unit: item.net_price || 0,
         qty: item.qty_deliver || 0,
       }));
-
-      // ✅ ใส่ค่าขนส่งเฉพาะใน chunk แรก
-      if (isFirstChunk && hasTransportCost) {
-        product_details.push({
-          partnumber: "TRANS-COST",
-          part_name: "ค่าขนส่งสินค้า",
-          price_per_unit: deliver_cost,
-          qty: 1,
-        });
-      }
 
       // ✅ คำนวณ total_net
       const total_net = Number(
@@ -388,8 +375,6 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
         total_net,
         deliver_no: id, // อ้างอิงถึง Deliver (DN)
       });
-
-      isFirstChunk = false;
     }
   }
 

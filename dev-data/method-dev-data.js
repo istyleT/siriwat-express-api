@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 const dotenv = require("dotenv");
+const moment = require("moment-timezone");
 const RMorder = require("../models/appModel/orderModel");
 const Pkwork = require("../models/packingModel/pkworkModel");
 const RMdeliver = require("../models/appModel/deliverModel");
@@ -10,6 +11,9 @@ const Skinventory = require("../models/stockModel/skinventoryModel");
 const Quotation = require("../models/appModel/quotationModel");
 const Pricelist = require("../models/appModel/pricelistModel");
 const User = require("../models/userModel");
+const Txformalinvoice = require("../models/taxModel/txformalinvoiceModel");
+const Txinformalinvoice = require("../models/taxModel/txinformalinvoiceModel");
+const Txcreditnote = require("../models/taxModel/txcreditnoteModel");
 
 dotenv.config({ path: "./config.env" });
 
@@ -697,7 +701,190 @@ if (process.argv[2] === "--moveFirstAnothercostToPartslist") {
   moveFirstAnothercostToPartslist();
 }
 
+/**
+ * สร้างใบกำกับภาษีอย่างย่อรายวันจากการจัดส่งสินค้า(Facebook RMBKK)
+ * รองรับการรันย้อนหลังและรวมรายการ anothercost จาก Order
+ * @param {string} current_year - ปีที่ต้องการใช้ (เช่น "67" สำหรับปี 2567) ถ้าไม่ระบุจะใช้ปีปัจจุบัน
+ */
+const createInFormalInvoiceFromRMBKK = async (current_year = null) => {
+  try {
+    // ดึงข้อมูล Deliver เฉพาะที่มี field invoice_no เป็น [] และไม่ถูกยกเลิก
+    const deliverJobs = await RMdeliver.find({
+      id: { $regex: /^DN2601/ },
+      invoice_no: { $eq: [] },
+      date_canceled: null,
+    })
+      .setOptions({ noPopulate: true })
+      .sort({ created_at: 1 })
+      .exec();
+
+    if (!deliverJobs || deliverJobs.length === 0) {
+      return console.log(
+        "No deliver jobs found for creating informal invoices.",
+      );
+    }
+
+    // กำหนดปี (ถ้าไม่ระบุจะใช้ปีปัจจุบัน)
+    let yearStr;
+    if (current_year) {
+      yearStr = String(current_year).slice(-2);
+    } else {
+      yearStr = String(moment().tz("Asia/Bangkok").year() + 543).slice(-2);
+    }
+
+    const prefix = `IFN${yearStr}`;
+
+    // ค้นหา doc_no ล่าสุด
+    const latestInvoice = await Txinformalinvoice.findOne({
+      doc_no: { $regex: `^${prefix}` },
+    })
+      .sort({ doc_no: -1 })
+      .exec();
+
+    let lastSeq = 0;
+    if (latestInvoice) {
+      const seqStr = latestInvoice.doc_no.slice(-6);
+      const num = parseInt(seqStr, 10);
+      if (!isNaN(num)) lastSeq = num;
+    }
+
+    // แยก order_no ของแต่ละ job ออกมาก่อน
+    const orderNos = deliverJobs
+      .map((job) => job.order_no)
+      .filter((no) => no); // กรองค่าที่เป็น null/undefined
+
+    // หา Order ที่มี id ตรงกับ order_no เพื่อเอา anothercost
+    const ordersMap = new Map();
+    if (orderNos.length > 0) {
+      const orders = await RMorder.find({ id: { $in: orderNos } }).setOptions({ noPopulate: true }).lean();
+      orders.forEach((order) => {
+        ordersMap.set(order.id, order);
+      });
+    }
+
+    const invoicesToCreate = [];
+    // เก็บสถานะว่า order_no ไหนที่เคยสร้างใบกำกับไปแล้ว (เพื่อให้ anothercost ใส่เฉพาะใบแรกของ order)
+    const orderFirstInvoiceMap = new Map();
+
+    for (const job of deliverJobs) {
+      const { deliver_date, order_no, deliverlist = [], id } = job;
+
+      // กรองรายการที่ qty_deliver > 0 เท่านั้น
+      const validDeliverList = deliverlist.filter(
+        (item) => item.qty_deliver > 0,
+      );
+
+      if (validDeliverList.length === 0) continue;
+
+      // ตรวจสอบว่ามี anothercost ใน Order หรือไม่
+      const order = ordersMap.get(order_no);
+      const hasAnotherCost =
+        order &&
+        Array.isArray(order.anothercost) &&
+        order.anothercost.length > 0;
+
+      // ตรวจสอบว่า order_no นี้เคยสร้างใบกำกับไปแล้วหรือยัง
+      const isFirstInvoiceForOrder = !orderFirstInvoiceMap.has(order_no);
+
+      // ถ้ามี anothercost และเป็นใบแรกของ order ให้แปลงเป็น product_details
+      let anotherCostItem = null;
+      if (hasAnotherCost && isFirstInvoiceForOrder) {
+        const firstAnotherCost = order.anothercost[0];
+        anotherCostItem = {
+          partnumber: "-",
+          part_name: firstAnotherCost.description || "",
+          price_per_unit: firstAnotherCost.price || 0,
+          qty: 1,
+        };
+        // บันทึกว่า order_no นี้ได้สร้างใบกำกับไปแล้ว
+        orderFirstInvoiceMap.set(order_no, true);
+      }
+
+      let i = 0;
+
+      while (i < validDeliverList.length) {
+        // กำหนด chunkSize: ถ้ามี anothercost และเป็นใบแรกของ order ให้ใช้ 9, ไม่งั้นใช้ 10
+        const chunkSize =
+          hasAnotherCost && isFirstInvoiceForOrder && i === 0 ? 9 : 10;
+        const chunk = validDeliverList.slice(i, i + chunkSize);
+        i += chunkSize;
+
+        lastSeq += 1;
+        const newDocNo = `${prefix}${String(lastSeq).padStart(6, "0")}`;
+
+        // สร้าง product_details จาก chunk
+        const product_details = chunk.map((item) => ({
+          partnumber: item.partnumber || "",
+          part_name: item.description || "",
+          price_per_unit: item.net_price || 0,
+          qty: item.qty_deliver || 0,
+        }));
+
+        // ถ้ามี anothercost และเป็นใบแรกของ order ให้เพิ่ม anothercost เข้าไป
+        if (hasAnotherCost && isFirstInvoiceForOrder && anotherCostItem) {
+          product_details.push(anotherCostItem);
+          // เคลียร์ anotherCostItem เพื่อไม่ให้เพิ่มในใบต่อๆไป
+          anotherCostItem = null;
+        }
+
+        // คำนวณ total_net
+        const total_net = Number(
+          product_details
+            .reduce((sum, item) => sum + item.price_per_unit * item.qty, 0)
+            .toFixed(2),
+        );
+
+        invoicesToCreate.push({
+          doc_no: newDocNo,
+          order_no: order_no || "N/A",
+          product_details,
+          invoice_date: deliver_date,
+          total_net,
+          deliver_no: id, // อ้างอิงถึง Deliver (DN)
+        });
+      }
+    }
+
+    // สร้างใบกำกับภาษีอย่างย่อ
+    if (invoicesToCreate.length > 0) {
+      await Txinformalinvoice.insertMany(invoicesToCreate);
+
+      console.log(
+        `Created ${invoicesToCreate.length} informal invoices from RMBKK deliver.`,
+      );
+
+      // เตรียมเข้าบันทึกเลขที่ใบกำกับภาษีอย่างย่อใน Deliver
+      const bulkOps = invoicesToCreate.map((invoice) => ({
+        updateOne: {
+          filter: { id: invoice.deliver_no },
+          update: { $addToSet: { invoice_no: invoice.doc_no } },
+        },
+      }));
+
+      // บันทึกเลขที่ใบกำกับภาษีอย่างย่อใน Deliver
+      await RMdeliver.bulkWrite(bulkOps);
+
+      console.log(`Updated invoice_no in ${bulkOps.length} deliver records.`);
+    } else {
+      console.log("No invoices to create.");
+    }
+  } catch (error) {
+    console.error("❌ Error createInFormalInvoiceFromRMBKK:", error);
+  } finally {
+    if (process.argv.includes("--createInFormalInvoiceFromRMBKK")) {
+      process.exit();
+    }
+  }
+};
+
+if (process.argv[2] === "--createInFormalInvoiceFromRMBKK") {
+  // รับปีจาก command line argument ถ้ามี (เช่น --createInFormalInvoiceFromRMBKK 67)
+  const yearArg = process.argv[3];
+  createInFormalInvoiceFromRMBKK(yearArg);
+}
+
 //command in terminal
 // บาง model อาจจะต้องมีการปิด populate ก่อน
 // node dev-data/method-dev-data.js --restorePkworkFromJSON
 // node dev-data/method-dev-data.js --moveFirstAnothercostToPartslist
+// node dev-data/method-dev-data.js --createInFormalInvoiceFromRMBKK [year] (เช่น --createInFormalInvoiceFromRMBKK 67)
