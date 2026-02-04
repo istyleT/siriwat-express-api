@@ -366,7 +366,6 @@ exports.getSuggest = (Model) =>
 exports.getSuggestWithDate = (Model) =>
   catchAsync(async (req, res, next) => {
     try {
-      //กำหนดปีปัจจุบัน
       const currentYear = new Date().getFullYear();
 
       const {
@@ -382,8 +381,8 @@ exports.getSuggestWithDate = (Model) =>
         ...restQuery
       } = req.query;
 
-      const parsedLimit = parseInt(limit);
-      const parsedPage = parseInt(page);
+      const parsedLimit = Math.min(Math.max(1, parseInt(limit, 10) || 30), 100);
+      const parsedPage = Math.max(1, parseInt(page, 10) || 1);
 
       let filter = { ...restQuery };
 
@@ -395,38 +394,23 @@ exports.getSuggestWithDate = (Model) =>
       );
       let parsedQueryObj = JSON.parse(queryStr);
 
-      // แปลง "null" เป็น null จริง ๆ
-      Object.keys(parsedQueryObj).forEach((key) => {
-        if (parsedQueryObj[key] === "null") {
-          parsedQueryObj[key] = null;
-        }
-      });
+      // แปลง "null" เป็น null จริง ๆ และ $in/$nin string เป็น array (วนครั้งเดียว)
+      for (const key of Object.keys(parsedQueryObj)) {
+        if (parsedQueryObj[key] === "null") parsedQueryObj[key] = null;
+        const v = parsedQueryObj[key];
+        if (v?.$in && typeof v.$in === "string")
+          parsedQueryObj[key].$in = v.$in.split(",");
+        if (v?.$nin && typeof v.$nin === "string")
+          parsedQueryObj[key].$nin = v.$nin.split(",");
+      }
 
-      Object.keys(parsedQueryObj).forEach((key) => {
-        if (
-          parsedQueryObj[key]?.$in &&
-          typeof parsedQueryObj[key].$in === "string"
-        ) {
-          parsedQueryObj[key].$in = parsedQueryObj[key].$in.split(",");
-        }
-        if (
-          parsedQueryObj[key]?.$nin &&
-          typeof parsedQueryObj[key].$nin === "string"
-        ) {
-          parsedQueryObj[key].$nin = parsedQueryObj[key].$nin.split(",");
-        }
-      });
-
-      // ตรวจสอบและแปลงช่วงเวลา
       if (startdate && enddate && typedate) {
         const startDate = new Date(startdate);
         const endDate = new Date(enddate);
         endDate.setDate(endDate.getDate() + 1);
-
         parsedQueryObj[typedate] = { $gte: startDate, $lt: endDate };
       }
 
-      // ตรวจสอบการใช้ regex
       if (field && value?.trim()) {
         const fieldType = getFieldType(Model.schema.paths, field);
         if (fieldType !== "String") {
@@ -434,15 +418,24 @@ exports.getSuggestWithDate = (Model) =>
             new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท ${fieldType}`, 400)
           );
         }
-
         parsedQueryObj[field] = { $regex: new RegExp(value, "i") };
       }
 
-      filter = parsedQueryObj;
+      const filterFinal = parsedQueryObj;
+      const skip = (parsedPage - 1) * parsedLimit;
+      const projection = fields ? fields.split(",").join(" ") : "-__v";
 
-      // console.log("Filter:", filter);
+      // รัน count กับ find พร้อมกัน ลดเวลารอรวม + ใช้ .lean() ให้ได้ plain object เร็วและประหยัดหน่วยความจำ
+      const [totalRecords, suggestionList] = await Promise.all([
+        Model.countDocuments(filterFinal),
+        Model.find(filterFinal)
+          .select(projection)
+          .sort(sort)
+          .skip(skip)
+          .limit(parsedLimit)
+          .lean(),
+      ]);
 
-      const totalRecords = await Model.countDocuments(filter);
       const totalPages = Math.ceil(totalRecords / parsedLimit);
 
       if (parsedPage > totalPages && totalPages > 0) {
@@ -453,20 +446,6 @@ exports.getSuggestWithDate = (Model) =>
           )
         );
       }
-
-      let query = Model.find(filter);
-
-      if (fields) {
-        const selectedFields = fields.split(",").join(" ");
-        query = query.select(selectedFields);
-      } else {
-        query = query.select("-__v");
-      }
-
-      const skip = (parsedPage - 1) * parsedLimit;
-      query = query.sort(sort).skip(skip).limit(parsedLimit);
-
-      const suggestionList = await query;
 
       if (suggestionList.length === 0) {
         return res.status(404).json({

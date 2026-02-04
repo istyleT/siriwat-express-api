@@ -20,5 +20,6 @@
   },
   "peacock.color": "#215732",
   "CodeGPT.apiKey": "OpenAI",
-  "editor.fontSize": 14.5
+  "editor.fontSize": 14.5,
+  "postman.settings.dotenv-detection-notification-visibility": false
 }
