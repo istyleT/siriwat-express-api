@@ -12,6 +12,7 @@ const DB = process.env.DATABASE.replace(
 
 const Payment = require("../models/appModel/paymentModel");
 const User = require("../models/userModel");
+const { runValidation } = require("../scripts/validateInvoiceCompleteness");
 
 mongoose.connect(DB, {
   useNewUrlParser: true,
@@ -66,9 +67,32 @@ async function checkDuplicatePayments() {
 
 // --- รันตาม flag จาก command line ---
 
+const getArg = (name) => {
+  const idx = process.argv.indexOf(name);
+  return idx >= 0 && process.argv[idx + 1] ? process.argv[idx + 1] : null;
+};
+
 if (process.argv[2] === "--checkDuplicatePayments") {
   checkDuplicatePayments();
 }
 
+if (process.argv.includes("--validateInvoiceCompleteness")) {
+  const start_date = getArg("--start") || getArg("-s");
+  const end_date = getArg("--end") || getArg("-e");
+  const typedate = getArg("--typedate") || getArg("-t") || "created_at";
+  if (start_date && end_date) {
+    runValidation(start_date, end_date, typedate)
+      .then(() => process.exit(0))
+      .catch((err) => {
+        console.error("Error:", err);
+        process.exit(1);
+      });
+  } else {
+    console.log("Usage: node dev-data/run-dev-function.js --validateInvoiceCompleteness --start YYYY-MM-DD --end YYYY-MM-DD [--typedate created_at]");
+    process.exit(1);
+  }
+}
+
 // command in terminal:
 // node dev-data/run-dev-function.js --checkDuplicatePayments
+// node dev-data/run-dev-function.js --validateInvoiceCompleteness --start 2025-01-01 --end 2025-02-05 --typedate created_at

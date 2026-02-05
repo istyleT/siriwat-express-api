@@ -402,14 +402,13 @@ exports.createInFormalInvoiceFromRMBKK = catchAsync(async (req, res, next) => {
 //ยกเลิกใบกำกับภาษีอย่างย่อรายวัน
 exports.cancelInFormalInvoice = catchAsync(async (req, res, next) => {
   //1. ดึงข้อมูลจาก Pkwork ที่มีการยกเลิกเสร็จสิ้นในวันปัจจุบันเอาเเค่ค่าของ order_no
-  // ใช้เวลาเป็นของเมื่อวาน (Yesterday)
   const startOfDay = moment()
-    .tz("Asia/Bangkok")
-    .subtract(1, "day")
+  .tz("Asia/Bangkok")
+    .subtract(2, "day")
     .startOf("day")
     .toDate();
   const endOfDay = moment()
-    .tz("Asia/Bangkok")
+  .tz("Asia/Bangkok")
     .subtract(1, "day")
     .endOf("day")
     .toDate();
@@ -435,10 +434,27 @@ exports.cancelInFormalInvoice = catchAsync(async (req, res, next) => {
     },
     {
       user_canceled: "System",
-      remark_canceled: "งานถูกยกเลิกในระบบจัดส่งสินค้า",
+      remark_canceled: "งานถูกยกเลิกใน Packing",
+      canceledAt: moment().tz("Asia/Bangkok").toDate(),
+    },
+  );
+  
+  console.log(
+    `Canceled ${invoicesToCancel.modifiedCount} informal invoices.`,
+  );
+
+  //ดึงข้อมูลจาก Txformalinvoice ที่มี order_no ตรงกับ order_no ที่ได้จากข้อ 2 และยังไม่มีการยกเลิก
+  const formalInvoicesToCancel = await Txformalinvoice.updateMany(
+    {
+      order_no: { $in: uniqueOrderNos },
+      canceledAt: null,
+    },
+    {
+      user_canceled: "System",
+      remark_canceled: "งานถูกยกเลิกใน Packing",
       canceledAt: moment().tz("Asia/Bangkok").toDate(),
     },
   );
 
-  console.log(`Canceled ${invoicesToCancel.modifiedCount} informal invoices.`);
+  console.log(`Canceled ${formalInvoicesToCancel.modifiedCount} formal invoices.`);
 });

@@ -2,7 +2,8 @@ const Pkwork = require("../../models/packingModel/pkworkModel");
 const Skinventory = require("../../models/stockModel/skinventoryModel");
 const Pkunitprice = require("../../models/packingModel/pkunitpriceModel");
 const Jobqueue = require("../../models/basedataModel/jobqueueModel");
-const { startOfDay, endOfDay } = require("date-fns");
+const { startOfDay, endOfDay, format } = require("date-fns");
+const AppError = require("../../utils/appError");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
@@ -479,6 +480,84 @@ exports.createPkwork = factory.createOne(Pkwork);
 exports.getSuggestPkwork = factory.getSuggest(Pkwork);
 exports.getAllPkwork = factory.getAll(Pkwork);
 exports.getByDatePkwork = factory.getByDate(Pkwork);
+
+/**
+ * รายงาน pkwork พร้อมยอดรวมสุทธิ (total_net) ต่อ order_no
+ * ดึงข้อมูลจาก Pkwork ตามช่วงวันที่ แล้วไปคำนวณ total_net จาก Jobqueue (pkdailyreportwork)
+ * Query: startdate, enddate, typedate (default: created_at)
+ */
+exports.getPkworkReportWithTotalNet = catchAsync(async (req, res, next) => {
+  const { startdate, enddate, typedate = "created_at", ...filters } =
+    req.query;
+
+  if (!startdate || !enddate) {
+    return next(new AppError("กรุณาระบุ startdate และ enddate", 400));
+  }
+
+  // Step 1: Query Pkwork (เหมือน getByDate) - เฉพาะฟิลด์ที่ต้องการ
+  const startDate = new Date(startdate);
+  const endDate = new Date(enddate);
+  endDate.setDate(endDate.getDate() + 1);
+
+  const pkworkQuery = { ...filters };
+  pkworkQuery[typedate] = { $gte: startDate, $lt: endDate };
+
+  //console.log(pkworkQuery);
+
+  const pkworkDocs = await Pkwork.find(pkworkQuery)
+    .select("upload_ref_no order_no cancel_status canceled_at created_at")
+    .sort({ _id: 1 })
+    .lean();
+
+  //console.log(pkworkDocs.length);
+
+  // Step 2: Query Jobqueue (เหมือน getJobqueueReportUnitPrice)
+  const start = new Date(`${startdate}T00:00:00+07:00`);
+  const end = new Date(`${enddate}T23:59:59+07:00`);
+
+  const jobqueueQuery = {
+    status: "done",
+    job_source: "pkdailyreportwork",
+    createdAt: { $gte: start, $lte: end },
+  };
+
+  const reportData = await Jobqueue.find(jobqueueQuery).sort({
+    createdAt: -1,
+  });
+  const mergedData = reportData.flatMap((doc) => doc.result?.data || []);
+
+  // Step 3: คำนวณ total_net ต่อ order_no (sum ของ price_per_unit * qty)
+  const orderTotalMap = new Map();
+  for (const item of mergedData) {
+    const orderNo = item.order_no;
+    if (orderNo != null) {
+      const amount =
+        (Number(item.price_per_unit) || 0) * (Number(item.qty) || 0);
+      orderTotalMap.set(orderNo, (orderTotalMap.get(orderNo) || 0) + amount);
+    }
+  }
+
+  // Step 4: รวมข้อมูล pkwork กับ total_net
+  const resultData = pkworkDocs.map((doc) => ({
+    upload_ref_no: doc.upload_ref_no,
+    order_no: doc.order_no,
+    canceled_at: doc.canceled_at,
+    created_at: doc.created_at,
+    cancel_status: doc.cancel_status,
+    total_net: orderTotalMap.get(doc.order_no) ?? 0,
+  }));
+
+  res.status(200).json({
+    status: "success",
+    message: `รายงานจาก ${format(new Date(startdate), "dd/MM/yyyy")} ถึง ${format(
+      new Date(enddate),
+      "dd/MM/yyyy"
+    )}`,
+    results: resultData.length,
+    data: resultData,
+  });
+});
+
 exports.getOnePkwork = factory.getOne(Pkwork);
 exports.updatePkwork = factory.updateOne(Pkwork);
 exports.deletePkwork = factory.deleteOne(Pkwork);

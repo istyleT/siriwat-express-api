@@ -58,6 +58,8 @@ exports.getTaxReportSummaryTax = catchAsync(async (req, res, next) => {
       .lean(),
   ]);
 
+  //console.log(informals.length, formals.length, credits.length);
+
   // ฟังก์ชันช่วยคำนวณ exclude_vat, vat_amount
   const calc = (includeVat) => {
     const net = Number(includeVat) || 0;
@@ -150,6 +152,9 @@ exports.getTaxReportSummaryTax = catchAsync(async (req, res, next) => {
     exclude_vat: Number(creditSum.exclude_vat.toFixed(2)),
     vat_amount: Number(creditSum.vat_amount.toFixed(2)),
   };
+
+  //console.log(summary_tax_data.subpage_credit_note);
+  //console.log(creditSum);
 
   // สรุปยอดรวมทั้งหมด
   summary_tax_data.sum_total = {

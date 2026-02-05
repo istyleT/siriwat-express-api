@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   getAllPkwork,
-  getByDatePkwork,
+  getPkworkReportWithTotalNet,
   createPkwork,
   getOnePkwork,
   updatePkwork,
@@ -45,7 +45,7 @@ router
   .route("/part-cancel-done/:cancel_success_at")
   .get(getDataPartsInWorkCancel);
 router.route("/suggest").get(getSuggestPkwork);
-router.route("/report").get(getByDatePkwork);
+router.route("/report").get(getPkworkReportWithTotalNet);
 router.route("/deletework").delete(returnMockQtyAndDeleteWork);
 router
   .route("/cancel-by-order")

@@ -86,6 +86,8 @@ const allowedOrigins = [
 
 //ใน development mode เพิ่ม origin ของ localhost เข้าไป
 if (isDevelopment) {
+  allowedOrigins.push("http://localhost:5176");
+  allowedOrigins.push("http://localhost:5175");
   allowedOrigins.push("http://localhost:5174");
   allowedOrigins.push("http://localhost:5173");
   // allowedOrigins.push("https://5a748a183a8e.ngrok-free.app/");
