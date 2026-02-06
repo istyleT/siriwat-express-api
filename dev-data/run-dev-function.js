@@ -79,20 +79,20 @@ if (process.argv[2] === "--checkDuplicatePayments") {
 if (process.argv.includes("--validateInvoiceCompleteness")) {
   const start_date = getArg("--start") || getArg("-s");
   const end_date = getArg("--end") || getArg("-e");
-  const typedate = getArg("--typedate") || getArg("-t") || "created_at";
   if (start_date && end_date) {
-    runValidation(start_date, end_date, typedate)
+    runValidation(start_date, end_date)
       .then(() => process.exit(0))
       .catch((err) => {
         console.error("Error:", err);
         process.exit(1);
       });
   } else {
-    console.log("Usage: node dev-data/run-dev-function.js --validateInvoiceCompleteness --start YYYY-MM-DD --end YYYY-MM-DD [--typedate created_at]");
+    console.log("Usage: node dev-data/run-dev-function.js --validateInvoiceCompleteness --start YYYY-MM-DD --end YYYY-MM-DD");
+    console.log("Note: Case 1 ใช้ created_at, Case 2 ใช้ cancel_success_at สำหรับ filter วันที่");
     process.exit(1);
   }
 }
 
 // command in terminal:
 // node dev-data/run-dev-function.js --checkDuplicatePayments
-// node dev-data/run-dev-function.js --validateInvoiceCompleteness --start 2025-01-01 --end 2025-02-05 --typedate created_at
+// node dev-data/run-dev-function.js --validateInvoiceCompleteness --start 2025-01-01 --end 2025-02-05

@@ -192,7 +192,7 @@ if (process.env.NODE_ENV === "development") {
   // production: method, url, status, response time, size, IP, user-agent (ไม่มีสี แยก parse ได้)
   app.use(
     morgan(
-      ':method :url :status :response-time ms - :res[content-length] - :remote-addr ":user-agent"'
+      ':method :url :status :response-time ms - :res[content-length]'
     )
   );
 }
