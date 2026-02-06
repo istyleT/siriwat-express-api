@@ -7,8 +7,6 @@ const { isValid, parseISO } = require("date-fns");
 
 moment.tz.setDefault("Asia/Bangkok");
 
-//test change deploy on railway
-
 
 // ปกติ query จาก query string: แปลง operator + null + $in/$nin ในรอบเดียว (ไม่ใช้ JSON stringify/parse)
 const QUERY_OP_KEYS = new Set(["gt", "gte", "lt", "lte", "ne", "in", "nin", "or", "and"]);
