@@ -7,6 +7,41 @@ const { isValid, parseISO } = require("date-fns");
 
 moment.tz.setDefault("Asia/Bangkok");
 
+
+// ปกติ query จาก query string: แปลง operator + null + $in/$nin ในรอบเดียว (ไม่ใช้ JSON stringify/parse)
+const QUERY_OP_KEYS = new Set(["gt", "gte", "lt", "lte", "ne", "in", "nin", "or", "and"]);
+function normalizeQueryObj(restQuery) {
+  const out = {};
+  for (const key of Object.keys(restQuery)) {
+    let val = restQuery[key];
+    if (val === "null") {
+      out[key] = null;
+      continue;
+    }
+    if (val && typeof val === "object" && !Array.isArray(val) && !(val instanceof Date)) {
+      const normalized = {};
+      for (const k of Object.keys(val)) {
+        const opKey = QUERY_OP_KEYS.has(k) ? `$${k}` : k;
+        let v = val[k];
+        if (v === "null") v = null;
+        if (opKey === "$in" && typeof v === "string") v = v.split(",");
+        if (opKey === "$nin" && typeof v === "string") v = v.split(",");
+        normalized[opKey] = v;
+      }
+      out[key] = normalized;
+    } else {
+      out[key] = val;
+    }
+  }
+  return out;
+}
+
+// escape อักขระพิเศษใน regex เพื่อใช้ค้นแบบ literal และลดความเสี่ยง ReDoS
+function escapeRegexLiteral(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+
 //Middleware
 exports.setSkipResNext = (skip) =>
   catchAsync(async (req, res, next) => {
@@ -254,7 +289,10 @@ exports.getSuggest = (Model) =>
         delete req.query.search_field;
         delete req.query.search_text;
         filter = {};
-        const features = new APIFeatures(Model.find(filter), req.query)
+        const features = new APIFeatures(
+          Model.find(filter).maxTimeMS(30000), // เพิ่ม timeout
+          req.query
+        )
           .filter()
           .sort()
           .limitFields();
@@ -263,7 +301,7 @@ exports.getSuggest = (Model) =>
           await features.paginate();
         }
 
-        const doc = await features.query;
+        const doc = await features.query.lean(); // ใช้ lean() เพื่อลด overhead
 
         return res.status(200).json({
           status: "success",
@@ -310,12 +348,26 @@ exports.getSuggest = (Model) =>
         );
       }
 
-      filter[field] = { $regex: new RegExp(value, "i") };
+      const safePattern = escapeRegexLiteral(value.trim());
+      filter[field] = { $regex: new RegExp(safePattern, "i") };
 
-      const totalRecords = (await Model.countDocuments(filter)) || 1;
+      // ใช้ maxTimeMS เพื่อป้องกัน query timeout
+      const queryOptions = { maxTimeMS: 30000 }; // 30 seconds timeout
+
+      // สำหรับ countDocuments ใช้ estimatedDocumentCount ถ้า filter ไม่ซับซ้อน
+      // แต่ถ้ามี filter หลายตัวให้ใช้ countDocuments แทน
+      let totalRecords;
+      try {
+        totalRecords = await Model.countDocuments(filter).maxTimeMS(10000) || 1;
+      } catch (countError) {
+        console.error("CountDocuments error:", countError);
+        // ถ้า countDocuments timeout หรือ error ให้ใช้ค่า default
+        totalRecords = 1;
+      }
+
       const totalPages = Math.ceil(totalRecords / limit);
 
-      if (page > totalPages) {
+      if (page > totalPages && totalRecords > 0) {
         return next(
           new AppError(
             `หน้าที่ร้องขอเกินจำนวนหน้าที่มี (${totalPages} หน้า)`,
@@ -324,7 +376,7 @@ exports.getSuggest = (Model) =>
         );
       }
 
-      let query = Model.find(filter);
+      let query = Model.find(filter).maxTimeMS(30000); // 30 seconds timeout
 
       if (fields) {
         const selectedFields = fields.split(",").join(" ");
@@ -334,13 +386,18 @@ exports.getSuggest = (Model) =>
       }
 
       const skip = (page - 1) * limit;
-      query = query.sort(sort).skip(skip).limit(limit);
+      query = query.sort(sort).skip(skip).limit(limit).lean(); // ใช้ lean() เพื่อลด overhead
 
       const suggestionList = await query;
 
+      // เปลี่ยนจาก 404 เป็น 200 พร้อม empty array เพื่อให้ client handle ได้ง่ายขึ้น
       if (suggestionList.length === 0) {
-        return res.status(404).json({
-          status: "fail",
+        return res.status(200).json({
+          status: "success",
+          data: [],
+          length: 0,
+          totalRecords: 0,
+          totalPages: 0,
           message: "ไม่พบข้อมูลที่คุณค้นหา",
         });
       }
@@ -354,6 +411,20 @@ exports.getSuggest = (Model) =>
       });
     } catch (error) {
       console.error("Error fetching suggestions:", error);
+
+      // Handle timeout errors
+      if (error.name === "MongoServerError" && error.code === 50) {
+        return next(
+          new AppError("การค้นหาข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง", 408)
+        );
+      }
+
+      // Handle network errors
+      if (error.name === "MongoNetworkError" || error.name === "MongoTimeoutError") {
+        return next(
+          new AppError("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล กรุณาลองใหม่อีกครั้ง", 503)
+        );
+      }
 
       if (error.name === "CastError") {
         return next(new AppError("รูปแบบข้อมูลไม่ถูกต้อง", 400));
@@ -384,25 +455,7 @@ exports.getSuggestWithDate = (Model) =>
       const parsedLimit = Math.min(Math.max(1, parseInt(limit, 10) || 30), 100);
       const parsedPage = Math.max(1, parseInt(page, 10) || 1);
 
-      let filter = { ...restQuery };
-
-      // แปลง operator
-      let queryStr = JSON.stringify(filter);
-      queryStr = queryStr.replace(
-        /\b(gt|gte|lt|lte|ne|in|nin|or|and)\b/g,
-        (match) => `$${match}`
-      );
-      let parsedQueryObj = JSON.parse(queryStr);
-
-      // แปลง "null" เป็น null จริง ๆ และ $in/$nin string เป็น array (วนครั้งเดียว)
-      for (const key of Object.keys(parsedQueryObj)) {
-        if (parsedQueryObj[key] === "null") parsedQueryObj[key] = null;
-        const v = parsedQueryObj[key];
-        if (v?.$in && typeof v.$in === "string")
-          parsedQueryObj[key].$in = v.$in.split(",");
-        if (v?.$nin && typeof v.$nin === "string")
-          parsedQueryObj[key].$nin = v.$nin.split(",");
-      }
+      const parsedQueryObj = normalizeQueryObj(restQuery);
 
       if (startdate && enddate && typedate) {
         const startDate = new Date(startdate);
@@ -418,14 +471,14 @@ exports.getSuggestWithDate = (Model) =>
             new AppError(`ไม่สามารถใช้ $regex กับฟิลด์ประเภท ${fieldType}`, 400)
           );
         }
-        parsedQueryObj[field] = { $regex: new RegExp(value, "i") };
+        const safePattern = escapeRegexLiteral(value.trim());
+        parsedQueryObj[field] = { $regex: new RegExp(safePattern, "i") };
       }
 
       const filterFinal = parsedQueryObj;
       const skip = (parsedPage - 1) * parsedLimit;
-      const projection = fields ? fields.split(",").join(" ") : "-__v";
+      const projection = fields ? fields.replace(/,/g, " ").trim() : "-__v";
 
-      // รัน count กับ find พร้อมกัน ลดเวลารอรวม + ใช้ .lean() ให้ได้ plain object เร็วและประหยัดหน่วยความจำ
       const [totalRecords, suggestionList] = await Promise.all([
         Model.countDocuments(filterFinal),
         Model.find(filterFinal)

@@ -188,12 +188,18 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
+} else if (process.env.NODE_ENV === "production") {
+  // production: method, url, status, response time, size, IP, user-agent (ไม่มีสี แยก parse ได้)
+  app.use(
+    morgan(
+      ':method :url :status :response-time ms - :res[content-length] - :remote-addr ":user-agent"'
+    )
+  );
 }
 
 app.use((req, res, next) => {
   const x = (req.requestTime = new Date().toISOString());
-  console.log(x);
-  // console.log(req.headers);
+  console.log(`Request Time: ${x}`);
   next();
 });
 

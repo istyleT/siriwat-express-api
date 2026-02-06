@@ -102,7 +102,23 @@ const pkworkSchema = new mongoose.Schema({
   },
 });
 
+// Index เดิม (unique constraint)
 pkworkSchema.index({ tracking_code: 1 });
+
+// Indexes ที่จำเป็นจริงๆ (ลดจำนวนเพื่อไม่ให้ write ช้า)
+// 1. order_no - ใช้สำหรับ search ด้วย regex (จาก log)
+pkworkSchema.index({ order_no: 1 });
+
+// 2. Compound index สำหรับ filter ที่ใช้บ่อยที่สุด (status + cancel_status + cancel_will_return_inventory)
+// จาก log: status=ยกเลิก&cancel_status=เสร็จสิ้น&cancel_will_return_inventory=true
+pkworkSchema.index({ 
+  status: 1, 
+  cancel_status: 1, 
+  cancel_will_return_inventory: 1 
+});
+
+// 3. canceled_at - ใช้บ่อยใน queries (เช่น canceled_at[ne]=null)
+pkworkSchema.index({ canceled_at: 1 });
 
 // populate path
 const populateFields = [
