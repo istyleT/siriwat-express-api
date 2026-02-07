@@ -264,6 +264,10 @@ exports.setSwDocno = (Model) =>
   });
 
 //Method
+// ค่า timeout สำหรับ suggest (มิลลิวินาที)
+const SUGGEST_MAX_TIME_MS = 30000;
+const SUGGEST_COUNT_MAX_TIME_MS = 10000;
+
 exports.getSuggest = (Model) =>
   catchAsync(async (req, res, next) => {
     try {
@@ -273,6 +277,8 @@ exports.getSuggest = (Model) =>
       const limit = parseInt(req.query.limit) || 100;
       const page = parseInt(req.query.page) || 1;
       const sort = req.query.sort || "-_id";
+      // include_total=false จะไม่เรียก countDocuments ทำให้ค้นหาเร็วขึ้นเมื่อ collection เยอะ
+      const includeTotal = req.query.include_total !== "false" && req.query.include_total !== "0";
 
       let filter = { ...req.query };
       const excludedFields = [
@@ -282,32 +288,62 @@ exports.getSuggest = (Model) =>
         "sort",
         "limit",
         "fields",
+        "include_total",
       ];
       excludedFields.forEach((el) => delete filter[el]);
 
       if (!field || !value || value.trim() === "") {
         delete req.query.search_field;
         delete req.query.search_text;
-        filter = {};
-        const features = new APIFeatures(
-          Model.find(filter).maxTimeMS(30000), // เพิ่ม timeout
-          req.query
-        )
-          .filter()
-          .sort()
-          .limitFields();
+        // โหมดไม่มีคำค้น: parse filter จาก query (เหมือน getSuggest มี search) แล้วใช้ find + limit โดยตรง
+        let queryStr = JSON.stringify(filter);
+        queryStr = queryStr.replace(
+          /\b(gt|gte|lt|lte|ne|in|nin|or|and)\b/g,
+          (match) => `$${match}`
+        );
+        let parsedQueryObj = JSON.parse(queryStr);
+        Object.keys(parsedQueryObj).forEach((key) => {
+          if (parsedQueryObj[key]?.$in && typeof parsedQueryObj[key].$in === "string") {
+            parsedQueryObj[key].$in = parsedQueryObj[key].$in.split(",");
+          }
+          if (parsedQueryObj[key]?.$nin && typeof parsedQueryObj[key].$nin === "string") {
+            parsedQueryObj[key].$nin = parsedQueryObj[key].$nin.split(",");
+          }
+        });
+        if (parsedQueryObj.canceled_at && parsedQueryObj.canceled_at.$ne) {
+          parsedQueryObj.canceled_at.$ne = null;
+        }
+        const parsedFilter = parsedQueryObj;
 
-        if (req.query.page || req.query.limit) {
-          await features.paginate();
+        const skip = (page - 1) * limit;
+        let totalRecords;
+        let totalPages;
+        if (includeTotal) {
+          try {
+            totalRecords = await Model.countDocuments(parsedFilter).maxTimeMS(SUGGEST_COUNT_MAX_TIME_MS);
+            totalPages = Math.ceil(totalRecords / limit);
+          } catch (countError) {
+            console.error("CountDocuments error:", countError);
+            totalRecords = 0;
+            totalPages = 0;
+          }
         }
 
-        const doc = await features.query.lean(); // ใช้ lean() เพื่อลด overhead
+        let query = Model.find(parsedFilter).maxTimeMS(SUGGEST_MAX_TIME_MS);
+        if (fields) {
+          query = query.select(fields.split(",").join(" "));
+        } else {
+          query = query.select("-__v");
+        }
+        query = query.sort(sort).skip(skip).limit(limit).lean();
+
+        const doc = await query;
 
         return res.status(200).json({
           status: "success",
-          totalRecords: features.totalDocuments || undefined,
+          totalRecords: includeTotal ? totalRecords : undefined,
           data: doc,
-          totalPages: features.totalPages || undefined,
+          totalPages: includeTotal ? totalPages : undefined,
         });
       }
 
@@ -334,7 +370,6 @@ exports.getSuggest = (Model) =>
         }
       });
 
-      // Handle specific null value (e.g., canceled_at[ne]=null)
       if (parsedQueryObj.canceled_at && parsedQueryObj.canceled_at.$ne) {
         parsedQueryObj.canceled_at.$ne = null;
       }
@@ -351,23 +386,19 @@ exports.getSuggest = (Model) =>
       const safePattern = escapeRegexLiteral(value.trim());
       filter[field] = { $regex: new RegExp(safePattern, "i") };
 
-      // ใช้ maxTimeMS เพื่อป้องกัน query timeout
-      const queryOptions = { maxTimeMS: 30000 }; // 30 seconds timeout
-
-      // สำหรับ countDocuments ใช้ estimatedDocumentCount ถ้า filter ไม่ซับซ้อน
-      // แต่ถ้ามี filter หลายตัวให้ใช้ countDocuments แทน
-      let totalRecords;
-      try {
-        totalRecords = await Model.countDocuments(filter).maxTimeMS(10000) || 1;
-      } catch (countError) {
-        console.error("CountDocuments error:", countError);
-        // ถ้า countDocuments timeout หรือ error ให้ใช้ค่า default
-        totalRecords = 1;
+      let totalRecords = 0;
+      let totalPages = 0;
+      if (includeTotal) {
+        try {
+          totalRecords = await Model.countDocuments(filter).maxTimeMS(SUGGEST_COUNT_MAX_TIME_MS) || 0;
+          totalPages = Math.ceil(totalRecords / limit);
+        } catch (countError) {
+          console.error("CountDocuments error:", countError);
+          totalRecords = 0;
+        }
       }
 
-      const totalPages = Math.ceil(totalRecords / limit);
-
-      if (page > totalPages && totalRecords > 0) {
+      if (includeTotal && page > totalPages && totalRecords > 0) {
         return next(
           new AppError(
             `หน้าที่ร้องขอเกินจำนวนหน้าที่มี (${totalPages} หน้า)`,
@@ -376,7 +407,8 @@ exports.getSuggest = (Model) =>
         );
       }
 
-      let query = Model.find(filter).maxTimeMS(30000); // 30 seconds timeout
+      const skip = (page - 1) * limit;
+      let query = Model.find(filter).maxTimeMS(SUGGEST_MAX_TIME_MS);
 
       if (fields) {
         const selectedFields = fields.split(",").join(" ");
@@ -385,19 +417,17 @@ exports.getSuggest = (Model) =>
         query = query.select("-__v");
       }
 
-      const skip = (page - 1) * limit;
-      query = query.sort(sort).skip(skip).limit(limit).lean(); // ใช้ lean() เพื่อลด overhead
+      query = query.sort(sort).skip(skip).limit(limit).lean();
 
       const suggestionList = await query;
 
-      // เปลี่ยนจาก 404 เป็น 200 พร้อม empty array เพื่อให้ client handle ได้ง่ายขึ้น
       if (suggestionList.length === 0) {
         return res.status(200).json({
           status: "success",
           data: [],
           length: 0,
-          totalRecords: 0,
-          totalPages: 0,
+          totalRecords: includeTotal ? totalRecords : undefined,
+          totalPages: includeTotal ? totalPages : undefined,
           message: "ไม่พบข้อมูลที่คุณค้นหา",
         });
       }
@@ -406,8 +436,8 @@ exports.getSuggest = (Model) =>
         status: "success",
         data: suggestionList,
         length: suggestionList.length,
-        totalRecords,
-        totalPages,
+        totalRecords: includeTotal ? totalRecords : undefined,
+        totalPages: includeTotal ? totalPages : undefined,
       });
     } catch (error) {
       console.error("Error fetching suggestions:", error);
@@ -454,6 +484,8 @@ exports.getSuggestWithDate = (Model) =>
 
       const parsedLimit = Math.min(Math.max(1, parseInt(limit, 10) || 30), 100);
       const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+      const includeTotal = restQuery.include_total !== "false" && restQuery.include_total !== "0";
+      delete restQuery.include_total;
 
       const parsedQueryObj = normalizeQueryObj(restQuery);
 
@@ -479,32 +511,51 @@ exports.getSuggestWithDate = (Model) =>
       const skip = (parsedPage - 1) * parsedLimit;
       const projection = fields ? fields.replace(/,/g, " ").trim() : "-__v";
 
-      const [totalRecords, suggestionList] = await Promise.all([
-        Model.countDocuments(filterFinal),
-        Model.find(filterFinal)
+      let totalRecords = 0;
+      let totalPages = 0;
+      let suggestionList;
+
+      if (includeTotal) {
+        const [count, list] = await Promise.all([
+          Model.countDocuments(filterFinal).maxTimeMS(SUGGEST_COUNT_MAX_TIME_MS),
+          Model.find(filterFinal)
+            .maxTimeMS(SUGGEST_MAX_TIME_MS)
+            .select(projection)
+            .sort(sort)
+            .skip(skip)
+            .limit(parsedLimit)
+            .lean(),
+        ]);
+        totalRecords = count;
+        totalPages = Math.ceil(totalRecords / parsedLimit);
+        suggestionList = list;
+
+        if (parsedPage > totalPages && totalPages > 0) {
+          return next(
+            new AppError(
+              `หน้าที่ร้องขอเกินจำนวนหน้าที่มี (${totalPages} หน้า)`,
+              400
+            )
+          );
+        }
+      } else {
+        suggestionList = await Model.find(filterFinal)
+          .maxTimeMS(SUGGEST_MAX_TIME_MS)
           .select(projection)
           .sort(sort)
           .skip(skip)
           .limit(parsedLimit)
-          .lean(),
-      ]);
-
-      const totalPages = Math.ceil(totalRecords / parsedLimit);
-
-      if (parsedPage > totalPages && totalPages > 0) {
-        return next(
-          new AppError(
-            `หน้าที่ร้องขอเกินจำนวนหน้าที่มี (${totalPages} หน้า)`,
-            400
-          )
-        );
+          .lean();
       }
 
       if (suggestionList.length === 0) {
-        return res.status(404).json({
-          status: "fail",
+        return res.status(200).json({
+          status: "success",
+          data: [],
+          length: 0,
+          totalRecords: includeTotal ? totalRecords : undefined,
+          totalPages: includeTotal ? totalPages : undefined,
           message: "ไม่พบข้อมูลที่คุณค้นหา",
-          data: suggestionList,
         });
       }
 
@@ -512,12 +563,22 @@ exports.getSuggestWithDate = (Model) =>
         status: "success",
         data: suggestionList,
         length: suggestionList.length,
-        totalRecords,
-        totalPages,
+        totalRecords: includeTotal ? totalRecords : undefined,
+        totalPages: includeTotal ? totalPages : undefined,
       });
     } catch (error) {
       console.error("Error fetching suggestions with date:", error);
 
+      if (error.name === "MongoServerError" && error.code === 50) {
+        return next(
+          new AppError("การค้นหาข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง", 408)
+        );
+      }
+      if (error.name === "MongoNetworkError" || error.name === "MongoTimeoutError") {
+        return next(
+          new AppError("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล กรุณาลองใหม่อีกครั้ง", 503)
+        );
+      }
       if (error.name === "CastError") {
         return next(new AppError("รูปแบบข้อมูลไม่ถูกต้อง", 400));
       }
