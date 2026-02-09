@@ -6,6 +6,7 @@ const {
   updateTxinformalinvoice,
   getOneTxinformalinvoice,
   getReportTaxTxinformalinvoice,
+  clearReportTaxTxinformalinvoiceCache,
 } = require("../../controllers/taxController/txinformalinvoiceController");
 const { protect, restrictTo } = require("../../controllers/authController");
 
@@ -16,6 +17,7 @@ router.use(restrictTo("Owner", "Sale"));
 router.route("/").get(getAllTxinformalinvoice);
 router.route("/suggest").get(getSuggestTxinformalinvoice);
 router.route("/report-tax").get(getReportTaxTxinformalinvoice);
+router.route("/report-tax/cache").delete(clearReportTaxTxinformalinvoiceCache);
 router
   .route("/:id")
   .get(getOneTxinformalinvoice)

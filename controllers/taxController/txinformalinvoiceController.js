@@ -8,6 +8,7 @@ const Jobqueue = require("../../models/basedataModel/jobqueueModel");
 const factory = require("../handlerFactory");
 const catchAsync = require("../../utils/catchAsync");
 const moment = require("moment-timezone");
+const reportInformalInvoiceCache = require("../../cache/reportInformalInvoiceCache");
 
 // ตั้งค่าให้ใช้เวลาไทย
 moment.tz.setDefault("Asia/Bangkok");
@@ -92,6 +93,18 @@ exports.getReportTaxTxinformalinvoice = catchAsync(async (req, res, next) => {
     parsedQueryObj[field] = { $regex: new RegExp(value, "i") };
   }
 
+  // ตรวจสอบ cache ก่อนประมวลผล (ใช้ req.query เป็น key เพื่อให้ query เดียวกันได้ผลลัพธ์จาก cache)
+  const cacheKey = reportInformalInvoiceCache.getCacheKey(req.query);
+  const cachedResult = reportInformalInvoiceCache.get(cacheKey);
+  if (cachedResult !== undefined) {
+    // console.log("🔄 ผลลัพธ์จาก cache");
+    return res.status(200).json({
+      status: "success",
+      message: "ผลลัพธ์จาก cache",
+      data: cachedResult,
+    });
+  }
+
   let query = Txinformalinvoice.find(parsedQueryObj).setOptions({
     noPopulate: true,
   });
@@ -120,6 +133,9 @@ exports.getReportTaxTxinformalinvoice = catchAsync(async (req, res, next) => {
     try {
       const result = await query.lean();
 
+      // เก็บผลลัพธ์ลง cache หลังประมวลผลเสร็จ (ใช้ cacheKey จาก closure)
+      reportInformalInvoiceCache.set(cacheKey, result);
+
       // อัปเดตสถานะของ Jobqueue เป็น "done"
       await Jobqueue.findByIdAndUpdate(job._id, {
         status: "done",
@@ -142,6 +158,16 @@ exports.getReportTaxTxinformalinvoice = catchAsync(async (req, res, next) => {
     data: {
       jobId: job._id, //เอาไปใช้ check สถานะของ Jobqueue ได้
     },
+  });
+});
+
+// ล้าง cache รายงานใบกำกับภาษีอย่างย่อ (report-tax)
+exports.clearReportTaxTxinformalinvoiceCache = catchAsync(async (req, res) => {
+  reportInformalInvoiceCache.invalidateAll();
+  res.status(200).json({
+    status: "success",
+    message: "ล้าง cache รายงานใบกำกับภาษีอย่างย่อเรียบร้อยแล้ว",
+    data: null,
   });
 });
 
