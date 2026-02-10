@@ -32,7 +32,7 @@ const txinformalinvoiceRMBKKJob = cron.schedule(
 
 // ยกเลิกใบกำกับภาษีอย่างย่อรายวัน
 const canceltxinformalinvoiceJob = cron.schedule(
-  "30 12 * * *", // run every day at 2:15 AM Edit
+  "32 12 * * *", // run every day at 2:15 AM Edit
   //"* * * * *",
   () => {
     runCronjobWithLog("canceltxinformalinvoiceJob", () => {
