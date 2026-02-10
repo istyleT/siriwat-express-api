@@ -205,11 +205,10 @@ app.use((req, res, next) => {
 
 // การตั้งค่า cron job — ทำงานเมื่อ ENABLE_CRON=true เท่านั้น (ตั้งบน Heroku, ไม่ตั้งบน Railway)
 if (process.env.ENABLE_CRON === "true") {
-  console.log("Cron jobs started");
-  console.log(process.env.ENABLE_CRON);
+  console.log("Cron jobs started ENABLE_CRON is true");
   startAllJobs();
 } else {
-  console.log("Cron jobs skipped (ENABLE_CRON is not true)");
+  console.log("Cron jobs skipped ENABLE_CRON is false");
 }
 
 // ROUTES Pages Pug
