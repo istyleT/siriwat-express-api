@@ -203,8 +203,12 @@ app.use((req, res, next) => {
   next();
 });
 
-//การภตั้งค่า function จาก Controller ที่จะทำงานเป็น cron job
-startAllJobs();
+// การตั้งค่า cron job — ทำงานเมื่อ ENABLE_CRON=true เท่านั้น (ตั้งบน Heroku, ไม่ตั้งบน Railway)
+if (process.env.ENABLE_CRON === "true") {
+  startAllJobs();
+} else {
+  console.log("Cron jobs skipped (ENABLE_CRON is not true)");
+}
 
 // ROUTES Pages Pug
 app.get("/", (req, res) => {
