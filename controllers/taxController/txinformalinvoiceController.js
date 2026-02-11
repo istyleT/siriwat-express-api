@@ -469,15 +469,16 @@ exports.cancelInFormalInvoice = catchAsync(async (req, res, next) => {
     `Canceled ${invoicesToCancel.modifiedCount} informal invoices.`,
   );
 
-  //ดึงข้อมูลจาก Txformalinvoice ที่มี order_no ตรงกับ order_no ที่ได้จากข้อ 2 และยังไม่มีการยกเลิก
+  // ดึงข้อมูลจาก Txformalinvoice ที่มี order_no ตรงกับ order_no ที่ได้จากข้อ 2 และยังไม่มีการยกเลิก
+  // โมเดล formal invoice กำหนด user_canceled เป็น ObjectId (ref User) จึงใช้ null สำหรับการยกเลิกโดยระบบ
   const formalInvoicesToCancel = await Txformalinvoice.updateMany(
     {
       order_no: { $in: uniqueOrderNos },
       canceledAt: null,
     },
     {
-      user_canceled: "System",
-      remark_canceled: "งานถูกยกเลิกใน Packing",
+      user_canceled: null,
+      remark_canceled: "งานถูกยกเลิกใน Packing (System)",
       canceledAt: moment().tz("Asia/Bangkok").toDate(),
     },
   );

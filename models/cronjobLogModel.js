@@ -8,7 +8,7 @@ const cronjobLogSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["success", "error"],
+    enum: ["running", "success", "error"],
     required: [true, "กรุณาระบุสถานะการทำงาน"],
   },
   startTime: {
