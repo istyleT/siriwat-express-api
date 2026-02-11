@@ -34,35 +34,30 @@ const txcreditnoteSchema = new mongoose.Schema(
       default: 0.07,
     },
     customer_info: {
-      type: {
-        name: { type: String, default: "ลูกค้าทั่วไป ภายในประเทศ" },
-        address: { type: String, default: null },
-        tax_id: {
-          type: String,
-          default: null,
-        },
-        phone: { type: String, default: null },
-        branch: { type: String, default: null },
+      name: { type: String, default: "ลูกค้าทั่วไป ภายในประเทศ" },
+      address: { type: String, default: null },
+      tax_id: {
+        type: String,
+        default: null,
       },
+      phone: { type: String, default: null },
+      branch: { type: String, default: null },
     },
     seller_info: {
-      type: {
-        name: { type: String, default: "RM BANGKOK" },
-        address_thai: {
-          type: String,
-          default:
-            "สำนักงานใหญ่: 26/11 ถ.สถิตย์นิมานการ ต.พิบูล อ.พิบูลมังสาหาร จ.อุบลราชธานี 34110",
-        },
-        address_eng: {
-          type: String,
-          default:
-            "Head Office: 26/11 Sathitnimankan Rd., Phiboonmungsahan, Ubonratchathani, Thailand.",
-        },
-        tax_id: { type: String, default: "1-3499-00740-73-0" },
-        phone: { type: String, default: "062-029-7333" },
-        branch: { type: String, default: "0000" },
+      name: { type: String, default: "RM BANGKOK" },
+      address_thai: {
+        type: String,
+        default:
+          "สำนักงานใหญ่: 26/11 ถ.สถิตย์นิมานการ ต.พิบูล อ.พิบูลมังสาหาร จ.อุบลราชธานี 34110",
       },
-      default: {},
+      address_eng: {
+        type: String,
+        default:
+          "Head Office: 26/11 Sathitnimankan Rd., Phiboonmungsahan, Ubonratchathani, Thailand.",
+      },
+      tax_id: { type: String, default: "1-3499-00740-73-0" },
+      phone: { type: String, default: "062-029-7333" },
+      branch: { type: String, default: "0000" },
     },
     creditnote_items: {
       type: Array,

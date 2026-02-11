@@ -729,7 +729,7 @@ exports.getInventoriesWithZeroFilter = catchAsync(async (req, res) => {
 });
 
 //cron job function
-exports.resetMockQty = catchAsync(async () => {
+exports.resetMockQty = catchAsync(async (req, res) => {
   // ✅ สร้าง Jobqueue สำหรับการทำงานนี้
   const job = await Jobqueue.create({
     status: "pending",
@@ -741,12 +741,21 @@ exports.resetMockQty = catchAsync(async () => {
     { $set: { mock_qty: "$qty" } },
   ]);
 
+  const message = `รีเซ็ต mock_qty สำเร็จจำนวน ${result.modifiedCount} รายการ`;
+
   // อัปเดตสถานะของ Jobqueue เป็น "done"
   await Jobqueue.findByIdAndUpdate(job._id, {
     status: "done",
     result: {
       ...job.result,
-      message: `รีเซ็ต mock_qty สำเร็จจำนวน ${result.modifiedCount} รายการ`,
+      message,
     },
   });
+
+  if (res) {
+    return res.status(200).json({
+      status: "success",
+      message,
+  });
+  }
 });

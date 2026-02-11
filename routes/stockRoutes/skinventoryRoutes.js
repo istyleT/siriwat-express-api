@@ -14,13 +14,14 @@ const {
   fromWorkCancelDoneMoveInPart,
   getInventoriesWithZeroFilter,
   getPartForSuggestList,
+  resetMockQty
 } = require("../../controllers/stockController/skinventoryController");
 const {
   setAdjustDocNo,
   createSkinventorymovementAdjust,
 } = require("../../controllers/stockController/skinventorymovementController");
 const { cancelData } = require("../../controllers/handlerFactory");
-const { protect } = require("../../controllers/authController");
+const { protect,restrictTo  } = require("../../controllers/authController");
 //Global
 router.use(protect);
 //Routes
@@ -39,6 +40,7 @@ router
 router.route("/confirm-receive/:partnum").patch(confirmReceivePart);
 router.route("/suggest").get(getSuggestSkinventory);
 router.route("/balance").get(getInventoriesWithZeroFilter);
+router.route("/reset-mock-qty").patch(restrictTo("Owner"), resetMockQty);
 router.route("/cancel/:id").patch(cancelData, updateSkinventory);
 router.route("/suggest-item/:partnumber").get(getPartForSuggestList);
 router
