@@ -61,9 +61,6 @@ const sksuggestorderRouter = require("./routes/stockRoutes/sksuggestorderRoutes"
 const jobqueueRouter = require("./routes/basedataRoutes/jobqueueRoutes");
 const monitorRouter = require("./routes/basedataRoutes/monitorRoutes");
 
-//Controller ที่ต้องการจะให้ cron ทำงาน
-const startAllJobs = require("./controllers/cronjobs/index");
-
 const app = express();
 
 // // ✅ ให้ Express รู้ว่ามี Proxy ข้างหน้า (เช่น Ngrok)
@@ -204,8 +201,10 @@ app.use((req, res, next) => {
 });
 
 // การตั้งค่า cron job — ทำงานเมื่อ ENABLE_CRON=true เท่านั้น (ตั้งบน Heroku, ไม่ตั้งบน Railway)
+// โหลด cron modules เฉพาะเมื่อเปิด cron เพื่อไม่ให้ cron.schedule() ถูกเรียกบน host ที่ปิด cron
 if (process.env.ENABLE_CRON === "true") {
   console.log("Cron jobs started ENABLE_CRON is true");
+  const startAllJobs = require("./controllers/cronjobs/index");
   startAllJobs();
 } else {
   console.log("Cron jobs skipped ENABLE_CRON is false");
