@@ -119,7 +119,7 @@ exports.pushTrackingNumber = catchAsync(async (req, res, next) => {
 exports.getDailyDeliverMove = catchAsync(async (req, res, next) => {
   const startdate = req.query.startdate;
   const enddate = req.query.enddate;
-  const typedate = req.query.typedate;
+  const typedate = req.query.typedate || "created_at";
 
   if (!startdate || !enddate || !typedate) {
     return next(new Error("กรุณาระบุวันที่ใน query string", 400));
