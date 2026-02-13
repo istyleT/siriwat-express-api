@@ -60,6 +60,7 @@ const sksuggestorderRouter = require("./routes/stockRoutes/sksuggestorderRoutes"
 //Routes ของ ส่วนกลาง
 const jobqueueRouter = require("./routes/basedataRoutes/jobqueueRoutes");
 const monitorRouter = require("./routes/basedataRoutes/monitorRoutes");
+const cronjobLogRouter = require("./routes/cronjobLogRoutes");
 
 const app = express();
 
@@ -221,6 +222,7 @@ app.get("/", (req, res) => {
 app.use("/users", usersRouter);
 app.use("/jobqueues", jobqueueRouter);
 app.use("/monitors", monitorRouter);
+app.use("/cronjoblogs", cronjobLogRouter);
 
 // application routes
 app.use("/price", priceRouter);
