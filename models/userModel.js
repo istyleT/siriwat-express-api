@@ -19,16 +19,14 @@ const userSchema = new mongoose.Schema({
   lastname: {
     type: String,
     trim: true,
-    required: [true, "ต้องระบุนามสกุล"],
+    default: null,
     select: false,
   },
   email: {
-    unique: true,
-    required: [true, "ต้องระบุ E-mail"],
     type: String,
+    default: null,
     trim: true,
     lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, "กรุณาระบุรูปแบบ E-mail ให้ถูกต้อง"],
     select: false,
   },
   password: {
@@ -88,6 +86,14 @@ const userSchema = new mongoose.Schema({
     enum: {
       values: ["All", "HQ", "Online"],
       message: "สาขาไม่ถูกต้อง",
+    },
+  },
+  access_app: {
+    type: [String],
+    default: ["RMpacking"],
+    enum: {
+      values: ["RMbkk", "RMstock", "RMtax", "RMpacking"],
+      message: "สิทธิ์การใช้งานไม่ถูกต้อง",
     },
   },
   contact: {
