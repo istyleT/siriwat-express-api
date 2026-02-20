@@ -49,6 +49,11 @@ const sksuggestorderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    supplier: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Sksupplier",
+      default: null,
+    },
     user_ordered: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -78,6 +83,10 @@ sksuggestorderSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user_created",
     select: "firstname",
+    options: { lean: true },
+  }).populate({
+    path: "supplier",
+    select: "supplier_name",
     options: { lean: true },
   }).populate({
     path: "user_ordered",

@@ -95,4 +95,4 @@ if (process.argv.includes("--validateInvoiceCompleteness")) {
 
 // command in terminal:
 // node dev-data/run-dev-function.js --checkDuplicatePayments
-// node dev-data/run-dev-function.js --validateInvoiceCompleteness --start 2025-01-01 --end 2025-02-05
+// node dev-data/run-dev-function.js --validateInvoiceCompleteness --start 2026-01-01 --end 2026-01-31

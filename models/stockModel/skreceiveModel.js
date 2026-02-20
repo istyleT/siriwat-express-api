@@ -6,6 +6,10 @@ const skreceiveSchema = new mongoose.Schema({
     type: String,
     required: [true, "กรุณาระบุเลขที่การ upload"],
   },
+  supplier_name: {
+    type: String,
+    default: "-",
+  },
   partnumber: {
     type: String,
     required: [true, "กรุณาระบุรหัสอะไหล่"],

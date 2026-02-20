@@ -71,6 +71,7 @@ exports.prepareSuggestToReceive = catchAsync(async (req, res, next) => {
     .map((item) => ({
       partnumber: item.partnumber,
       qty: item.order_qty,
+      supplier_name: doc.supplier?.supplier_name || "-",
       cost_per_unit: item.avg_cost_per_unit || 0,
     }));
 

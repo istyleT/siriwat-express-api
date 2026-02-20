@@ -24,12 +24,14 @@ exports.cleanDataUpload = catchAsync(async (req, res, next) => {
     .map((item) => {
       const partnumber =
         typeof item.partnumber === "string" ? item.partnumber.trim() : null;
+      const supplier_name =
+        typeof item.supplier_name === "string" ? item.supplier_name.trim() : "-";
       const qty = Number(item.qty);
       const cost_per_unit = item.cost_per_unit
         ? parseFloat(parseFloat(item.cost_per_unit).toFixed(2))
         : 0.0;
 
-      return { partnumber, qty, cost_per_unit };
+      return { partnumber,supplier_name, qty, cost_per_unit };
     })
     .filter((item) => item.partnumber && !isNaN(item.qty));
 
@@ -67,6 +69,7 @@ exports.cleanDataUpload = catchAsync(async (req, res, next) => {
 
       mergedDataMap.set(item.partnumber, {
         partnumber: item.partnumber,
+        supplier_name: item.supplier_name,
         qty: totalQty,
         cost_per_unit: parseFloat(weightedAvgCost.toFixed(2)),
       });
